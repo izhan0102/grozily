@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Login - Grozily</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow-x: hidden;
+        }
+
+        .background-pattern {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 35vh;
+            background-color: #805AD5;
+            z-index: -1;
+            clip-path: polygon(0 0, 100% 0, 100% 85%, 0 100%);
+        }
+
+        .header {
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .app-title {
+            color: white;
+            font-size: 20px;
+            font-weight: bold;
+        }
+
+        .back-btn {
+            color: white;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            font-size: 14px;
+        }
+
+        .login-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .login-card {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 90%;
+            max-width: 400px;
+            position: relative;
+        }
+
+        .login-icon {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background-color: #805AD5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: -65px auto 20px;
+            box-shadow: 0 5px 15px rgba(128, 90, 213, 0.3);
+        }
+
+        .login-icon i {
+            font-size: 30px;
+            color: white;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #2D3748;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4A5568;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px 15px 12px 40px;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #805AD5;
+            box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.2);
+        }
+
+        .form-group i {
+            position: absolute;
+            left: 15px;
+            top: 38px;
+            color: #718096;
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 14px;
+            background-color: #805AD5;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 10px rgba(128, 90, 213, 0.3);
+        }
+
+        .login-btn:hover {
+            background-color: #6B46C1;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(128, 90, 213, 0.4);
+        }
+
+        .login-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 2px 5px rgba(128, 90, 213, 0.3);
+        }
+
+        .login-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .error-message {
+            color: #E53E3E;
+            font-size: 14px;
+            text-align: center;
+            margin-top: 16px;
+            padding: 10px;
+            border-radius: 10px;
+            background-color: rgba(229, 62, 62, 0.1);
+            display: none;
+        }
+
+        .error-message.show {
+            display: block;
+        }
+
+        .footer {
+            text-align: center;
+            padding: 20px;
+            color: #718096;
+            font-size: 12px;
+        }
+
+        /* Loader Animation */
+        .loader-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(128, 90, 213, 0.2);
+            border-radius: 50%;
+            border-top-color: #805AD5;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="background-pattern"></div>
+    
+    <div class="header">
+        <h1 class="app-title">Grozily Vendor</h1>
+        <a href="index.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back
+        </a>
+    </div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <div class="login-icon">
+                <i class="fas fa-store"></i>
+            </div>
+            <div class="login-header">
+                <h1>Vendor Login</h1>
+                <p>Access your vendor dashboard</p>
+            </div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email Address</label>
+                    <i class="fas fa-envelope"></i>
+                    <input type="email" id="email" placeholder="Enter your email" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <i class="fas fa-lock"></i>
+                    <input type="password" id="password" placeholder="Enter your password" required>
+                </div>
+                <button type="submit" class="login-btn" id="login-btn">
+                    <i class="fas fa-sign-in-alt"></i>
+                    Login to Dashboard
+                </button>
+                <div class="error-message" id="error-message"></div>
+            </form>
+        </div>
+    </div>
+
+    <div class="footer">
+        &copy; 2023 Grozily Vendor Portal. All rights reserved.
+    </div>
+
+    <div class="loader-container" id="loader">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+            authDomain: "grozily2.firebaseapp.com",
+            databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+            projectId: "grozily2",
+            storageBucket: "grozily2.firebasestorage.app",
+            messagingSenderId: "665300145710",
+            appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+            measurementId: "G-83S7ZWXEB9"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // DOM Elements
+        const loginForm = document.getElementById('login-form');
+        const loginBtn = document.getElementById('login-btn');
+        const errorMessage = document.getElementById('error-message');
+        const loader = document.getElementById('loader');
+
+        // Show/Hide Loader
+        function showLoader() {
+            loader.style.display = 'flex';
+        }
+
+        function hideLoader() {
+            loader.style.display = 'none';
+        }
+
+        // Check if already logged in
+        showLoader();
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                // Verify if the user is a vendor
+                firebase.database().ref(`vendors/${user.uid}`).once('value')
+                    .then((snapshot) => {
+                        if (snapshot.exists()) {
+                            // User is a vendor, redirect to vendor home
+                            window.location.href = 'vendor-home.html';
+                        } else {
+                            // Not a vendor, sign out
+                            firebase.auth().signOut();
+                            showError('This account is not registered as a vendor.');
+                            hideLoader();
+                        }
+                    })
+                    .catch((error) => {
+                        console.error('Error verifying vendor:', error);
+                        showError('Error verifying vendor account.');
+                        hideLoader();
+                    });
+            } else {
+                hideLoader();
+            }
+        });
+
+        // Handle login form submission
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+
+            // Show loader
+            showLoader();
+            loginBtn.disabled = true;
+
+            try {
+                // Sign in with Firebase Auth
+                const userCredential = await firebase.auth().signInWithEmailAndPassword(email, password);
+                
+                // Check if the user is a vendor
+                const vendorSnapshot = await firebase.database().ref(`vendors/${userCredential.user.uid}`).once('value');
+                
+                if (vendorSnapshot.exists()) {
+                    // User is a vendor, redirect to vendor home
+                    window.location.href = 'vendor-home.html';
+                } else {
+                    // Not a vendor, sign out
+                    await firebase.auth().signOut();
+                    showError('This account is not registered as a vendor.');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError(error.message);
+            } finally {
+                hideLoader();
+                loginBtn.disabled = false;
+            }
+        });
+
+        // Show error message
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+    </script>
+</body>
+</html> 

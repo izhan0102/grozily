@@ -1,0 +1,48 @@
+/* User details specific styles */
+.page-title {
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.page-title h2 {
+    font-size: 24px;
+    font-weight: 600;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+}
+
+.page-title p {
+    font-size: 14px;
+    color: var(--text-secondary);
+}
+
+.details-form {
+    width: 100%;
+}
+
+/* Fixed width for country code in phone input */
+.phone-input .country-code {
+    min-width: 50px;
+    text-align: center;
+}
+
+/* Add some spacing between fields */
+.details-form .input-group {
+    margin-bottom: 16px;
+}
+
+/* Style for the last field with extra bottom margin */
+.details-form .input-group:last-of-type {
+    margin-bottom: 24px;
+}
+
+/* Mobile-specific adjustments */
+@media (max-width: 480px) {
+    .auth-card {
+        padding: 20px 16px;
+    }
+    
+    .input-group input {
+        font-size: 15px;
+    }
+} 

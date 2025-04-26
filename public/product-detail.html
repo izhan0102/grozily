@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Product Details - Grozily</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Loading overlay script -->
+    <script src="loader.js" defer></script>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        /* Product detail specific styles */
+        .product-detail-header {
+            background-color: #6c5ce7;
+            color: white;
+            padding: 12px 16px;
+            position: relative;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .back-arrow {
+            color: white;
+            font-size: 20px;
+            margin-right: 15px;
+            cursor: pointer;
+        }
+        
+        .shop-info {
+            flex: 1;
+        }
+        
+        .shop-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 0;
+        }
+        
+        .owner-name {
+            font-size: 12px;
+            opacity: 0.9;
+            margin: 0;
+        }
+        
+        .product-detail-container {
+            background-color: #fff;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.08);
+            margin-bottom: 20px;
+        }
+        
+        .product-image-gallery {
+            position: relative;
+            width: 100%;
+            height: 300px;
+            background-color: #f7f7f7;
+            overflow: hidden;
+        }
+        
+        .product-main-image {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+            transition: transform 0.3s ease;
+        }
+        
+        .product-info {
+            padding: 20px;
+        }
+        
+        .product-name {
+            font-size: 22px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .product-price-container {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .product-current-price {
+            font-size: 24px;
+            font-weight: 700;
+            color: #6c5ce7;
+        }
+        
+        .product-original-price {
+            margin-left: 10px;
+            font-size: 16px;
+            color: #999;
+            text-decoration: line-through;
+        }
+        
+        .product-discount {
+            margin-left: 10px;
+            background-color: #FF6B6B;
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        .product-description {
+            color: #666;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        .divider {
+            height: 1px;
+            background-color: #eee;
+            margin: 20px 0;
+        }
+        
+        .vendor-section {
+            margin-bottom: 20px;
+            background-color: #f8f9fa;
+            border-radius: 12px;
+            padding: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+        }
+        
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: #4a5568;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section-title i {
+            margin-right: 8px;
+            color: #6c5ce7;
+        }
+        
+        .vendor-card {
+            display: flex;
+            align-items: flex-start;
+            background: none;
+            padding: 0;
+            border-radius: 0;
+        }
+        
+        .vendor-icon {
+            width: 50px;
+            height: 50px;
+            background-color: #6c5ce7;
+            background-image: linear-gradient(135deg, #6c5ce7, #8E78FF);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+            box-shadow: 0 3px 8px rgba(108, 92, 231, 0.2);
+        }
+        
+        .vendor-icon i {
+            color: white;
+            font-size: 20px;
+        }
+        
+        .vendor-info {
+            flex: 1;
+        }
+        
+        .vendor-name {
+            font-weight: 600;
+            font-size: 16px;
+            color: #2d3748;
+            margin-bottom: 6px;
+        }
+        
+        .vendor-detail {
+            display: flex;
+            align-items: center;
+            margin-bottom: 6px;
+            color: #4a5568;
+            font-size: 14px;
+        }
+        
+        .vendor-detail i {
+            width: 20px;
+            margin-right: 8px;
+            color: #6c5ce7;
+        }
+        
+        .vendor-detail:last-child {
+            margin-bottom: 0;
+        }
+        
+        .vendor-phone {
+            display: flex;
+            align-items: center;
+            font-size: 14px;
+            color: #6c5ce7;
+            text-decoration: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            background-color: rgba(108, 92, 231, 0.1);
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+        
+        .vendor-phone:hover {
+            background-color: rgba(108, 92, 231, 0.2);
+        }
+        
+        .vendor-phone i {
+            margin-right: 8px;
+        }
+        
+        .action-buttons {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: white;
+            padding: 15px;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
+            display: flex;
+            justify-content: space-between;
+            z-index: 100;
+        }
+        
+        .quantity-selector {
+            display: flex;
+            align-items: center;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        
+        .quantity-btn {
+            width: 40px;
+            height: 40px;
+            background: #f5f5f5;
+            border: none;
+            color: #333;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        }
+        
+        .quantity-input {
+            width: 40px;
+            height: 40px;
+            border: none;
+            text-align: center;
+            font-size: 16px;
+            font-weight: 500;
+            background: white;
+        }
+        
+        .add-to-cart-btn {
+            flex: 1;
+            margin-left: 15px;
+            height: 40px;
+            background-color: #6c5ce7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        
+        .add-to-cart-btn i {
+            margin-right: 8px;
+        }
+        
+        .add-to-cart-btn:hover {
+            background-color: #5b4cc4;
+        }
+        
+        .app-content {
+            padding-bottom: 80px; /* Make space for the fixed action buttons */
+        }
+        
+        .loading-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 50px 0;
+        }
+        
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(108, 92, 231, 0.2);
+            border-top-color: #6c5ce7;
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+            margin-bottom: 15px;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .loading-text {
+            font-size: 16px;
+            color: #666;
+        }
+        
+        .error-container {
+            text-align: center;
+            padding: 50px 20px;
+        }
+        
+        .error-icon {
+            font-size: 48px;
+            color: #f56565;
+            margin-bottom: 15px;
+        }
+        
+        .error-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+        }
+        
+        .error-message {
+            color: #666;
+            margin-bottom: 20px;
+        }
+        
+        .error-button {
+            background-color: #6c5ce7;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 10px 20px;
+            font-weight: 500;
+            cursor: pointer;
+        }
+        
+        /* Toast Message */
+        .toast-message {
+            position: fixed;
+            bottom: 80px; /* Position above the action buttons */
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 12px 20px;
+            border-radius: 8px;
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            font-size: 14px;
+            z-index: 1000;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            opacity: 0;
+            transition: opacity 0.3s;
+            text-align: center;
+            max-width: 80%;
+        }
+        
+        .toast-message.show {
+            opacity: 1;
+        }
+        
+        /* Product detail specific overrides */
+        .app-container {
+            background-color: #f8f9fa;
+        }
+        
+        .app-content {
+            padding: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="product-detail-header" id="product-header">
+            <a href="home.html" class="back-arrow">
+                <i class="fas fa-arrow-left"></i>
+            </a>
+            <div class="shop-info">
+                <h1 class="shop-name" id="shop-name">Loading shop...</h1>
+                <p class="owner-name" id="owner-name">Loading owner...</p>
+            </div>
+        </header>
+
+        <main class="app-content">
+            <div id="product-container">
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <p class="loading-text">Loading product details...</p>
+                </div>
+            </div>
+        </main>
+
+        <div class="action-buttons" id="action-buttons" style="display: none;">
+            <div class="quantity-selector">
+                <button class="quantity-btn" id="decrease-qty">-</button>
+                <input type="number" class="quantity-input" id="quantity" value="1" min="1" max="10" readonly>
+                <button class="quantity-btn" id="increase-qty">+</button>
+            </div>
+            <button class="add-to-cart-btn" id="add-to-cart-btn">
+                <i class="fas fa-cart-plus"></i> Add to Cart
+            </button>
+        </div>
+
+        <nav class="bottom-nav">
+            <a href="home.html" class="nav-item">
+                <i class="fa-solid fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="cart.html" class="nav-item">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span>Cart</span>
+            </a>
+            <a href="shop.html" class="nav-item">
+                <i class="fa-solid fa-basket-shopping"></i>
+                <span>Shop</span>
+            </a>
+            <a href="orders.html" class="nav-item">
+                <i class="fa-solid fa-list-check"></i>
+                <span>Orders</span>
+            </a>
+        </nav>
+    </div>
+
+    <div id="toast-message" class="toast-message">Added to cart</div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+            authDomain: "grozily2.firebaseapp.com",
+            databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+            projectId: "grozily2",
+            storageBucket: "grozily2.firebasestorage.app",
+            messagingSenderId: "665300145710",
+            appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+            measurementId: "G-83S7ZWXEB9"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+        
+        // DOM elements
+        const productContainer = document.getElementById('product-container');
+        const actionButtons = document.getElementById('action-buttons');
+        const decreaseQtyBtn = document.getElementById('decrease-qty');
+        const increaseQtyBtn = document.getElementById('increase-qty');
+        const quantityInput = document.getElementById('quantity');
+        const addToCartBtn = document.getElementById('add-to-cart-btn');
+        const toastMessage = document.getElementById('toast-message');
+        const shopName = document.getElementById('shop-name');
+        const ownerName = document.getElementById('owner-name');
+        
+        // Variables
+        let productData = null;
+        let vendorData = null;
+        
+        // Get product ID from URL
+        function getProductIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+        
+        // Check if user is authenticated
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                // Not logged in, redirect to login
+                window.location.href = 'login.html';
+            } else {
+                // Load product details
+                const productId = getProductIdFromUrl();
+                if (productId) {
+                    loadProductDetails(productId);
+                } else {
+                    showError("Missing product ID");
+                }
+            }
+        });
+        
+        // Load product details
+        function loadProductDetails(productId) {
+            // Show loading state
+            productContainer.innerHTML = `
+                <div class="loading-container">
+                    <div class="spinner"></div>
+                    <p class="loading-text">Loading product details...</p>
+                </div>
+            `;
+            
+            // Fetch product data
+            database.ref(`products/${productId}`).once('value')
+                .then(snapshot => {
+                    if (!snapshot.exists()) {
+                        showError("Product not found");
+                        return;
+                    }
+                    
+                    // Store product data
+                    productData = snapshot.val();
+                    productData.id = productId;
+                    
+                    // Load vendor data if available
+                    if (productData.vendorId) {
+                        return database.ref(`vendors/${productData.vendorId}`).once('value')
+                            .then(vendorSnapshot => {
+                                if (vendorSnapshot.exists()) {
+                                    vendorData = vendorSnapshot.val();
+                                    vendorData.id = productData.vendorId;
+                                    
+                                    // Update shop name and owner name in header
+                                    shopName.textContent = vendorData.storeName || 'Shop Name Not Available';
+                                    ownerName.textContent = vendorData.name || 'Owner Name Not Available';
+                                }
+                                // Render product with vendor data
+                                renderProductDetails();
+                            });
+                    } else {
+                        // Render product without vendor data
+                        shopName.textContent = 'Grozily Store';
+                        ownerName.textContent = 'Product Details';
+                        renderProductDetails();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading product details:', error);
+                    showError("Failed to load product details");
+                });
+        }
+        
+        // Render product details
+        function renderProductDetails() {
+            if (!productData) {
+                showError("Product data is missing");
+                return;
+            }
+            
+            // Calculate discount percentage
+            const discount = calculateDiscount(productData.originalPrice, productData.discountedPrice);
+            
+            // Create product detail HTML
+            const productHtml = `
+                <div class="product-detail-container">
+                    <div class="product-image-gallery">
+                        <img src="${productData.imageURL || 'https://via.placeholder.com/500?text=No+Image'}" 
+                             alt="${productData.name}" 
+                             class="product-main-image"
+                             onerror="this.src='https://via.placeholder.com/500?text=No+Image'">
+                    </div>
+                    
+                    <div class="product-info">
+                        <h1 class="product-name">${productData.name}</h1>
+                        
+                        <div class="product-price-container">
+                            <span class="product-current-price">₹${formatPrice(productData.discountedPrice)}</span>
+                            ${parseFloat(productData.originalPrice) > parseFloat(productData.discountedPrice) ? 
+                              `<span class="product-original-price">₹${formatPrice(productData.originalPrice)}</span>` : ''}
+                            ${discount > 0 ? `<span class="product-discount">${discount}% OFF</span>` : ''}
+                        </div>
+                        
+                        <p class="product-description">${productData.description || 'No description available'}</p>
+                        
+                        <div class="divider"></div>
+                        
+                        ${vendorData ? `
+                            <div class="vendor-section">
+                                <h2 class="section-title">
+                                    <i class="fas fa-store"></i>
+                                    Seller Information
+                                </h2>
+                                <div class="vendor-card">
+                                    <div class="vendor-icon">
+                                        <i class="fas fa-shopping-bag"></i>
+                                    </div>
+                                    <div class="vendor-info">
+                                        <div class="vendor-name">${vendorData.storeName || vendorData.name}</div>
+                                        
+                                        <div class="vendor-detail">
+                                            <i class="fas fa-user"></i>
+                                            <span>${vendorData.name || 'Owner name not available'}</span>
+                                        </div>
+                                        
+                                        <div class="vendor-detail">
+                                            <i class="fas fa-map-marker-alt"></i>
+                                            <span>${vendorData.location || 'Location not available'}</span>
+                                        </div>
+                                        
+                                        ${vendorData.pinCode ? `
+                                        <div class="vendor-detail">
+                                            <i class="fas fa-thumbtack"></i>
+                                            <span>PIN: ${vendorData.pinCode}</span>
+                                        </div>
+                                        ` : ''}
+                                        
+                                        <a href="tel:${vendorData.phone}" class="vendor-phone">
+                                            <i class="fas fa-phone"></i>
+                                            ${vendorData.phone || 'Contact not available'}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            `;
+            
+            productContainer.innerHTML = productHtml;
+            
+            // Show action buttons
+            actionButtons.style.display = 'flex';
+        }
+        
+        // Show error message
+        function showError(message) {
+            productContainer.innerHTML = `
+                <div class="error-container">
+                    <div class="error-icon">
+                        <i class="fas fa-exclamation-circle"></i>
+                    </div>
+                    <h2 class="error-title">Oops, something went wrong</h2>
+                    <p class="error-message">${message}</p>
+                    <button class="error-button" onclick="history.back()">Go Back</button>
+                </div>
+            `;
+            
+            // Hide action buttons
+            actionButtons.style.display = 'none';
+        }
+        
+        // Calculate discount percentage
+        function calculateDiscount(originalPrice, discountedPrice) {
+            if (!originalPrice || !discountedPrice || parseFloat(originalPrice) <= parseFloat(discountedPrice)) {
+                return 0;
+            }
+            const discount = ((parseFloat(originalPrice) - parseFloat(discountedPrice)) / parseFloat(originalPrice)) * 100;
+            return Math.round(discount);
+        }
+        
+        // Format price with commas for thousands
+        function formatPrice(price) {
+            return parseFloat(price).toLocaleString('en-IN');
+        }
+        
+        // Show toast message
+        function showToast(message) {
+            toastMessage.textContent = message;
+            toastMessage.classList.add('show');
+            
+            setTimeout(() => {
+                toastMessage.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Quantity controls
+        decreaseQtyBtn.addEventListener('click', () => {
+            const currentQty = parseInt(quantityInput.value);
+            if (currentQty > 1) {
+                quantityInput.value = currentQty - 1;
+            }
+        });
+        
+        increaseQtyBtn.addEventListener('click', () => {
+            const currentQty = parseInt(quantityInput.value);
+            if (currentQty < 10) {
+                quantityInput.value = currentQty + 1;
+            }
+        });
+        
+        // Add to cart
+        addToCartBtn.addEventListener('click', () => {
+            if (!productData) {
+                showToast('Product data not available');
+                return;
+            }
+            
+            const userId = auth.currentUser.uid;
+            if (!userId) {
+                showToast('Please log in to add items to cart');
+                return;
+            }
+            
+            const quantity = parseInt(quantityInput.value);
+            const cartRef = database.ref(`carts/${userId}/items/${productData.id}`);
+            
+            // Check if product is already in cart
+            cartRef.once('value')
+                .then(snapshot => {
+                    if (snapshot.exists()) {
+                        // Product exists, update quantity
+                        const currentQuantity = snapshot.val().quantity || 1;
+                        return cartRef.update({
+                            quantity: currentQuantity + quantity,
+                            updatedAt: new Date().toISOString()
+                        });
+                    } else {
+                        // Product doesn't exist, add it
+                        return cartRef.set({
+                            productId: productData.id,
+                            name: productData.name,
+                            price: parseFloat(productData.discountedPrice),
+                            originalPrice: parseFloat(productData.originalPrice),
+                            imageURL: productData.imageURL,
+                            vendorId: productData.vendorId,
+                            vendorName: vendorData ? (vendorData.storeName || vendorData.name) : 'Unknown Vendor',
+                            quantity: quantity,
+                            addedAt: new Date().toISOString(),
+                            updatedAt: new Date().toISOString()
+                        });
+                    }
+                })
+                .then(() => {
+                    showToast(`Added ${quantity} ${quantity > 1 ? 'items' : 'item'} to cart`);
+                    // Reset quantity
+                    quantityInput.value = 1;
+                })
+                .catch(error => {
+                    console.error('Error adding to cart:', error);
+                    showToast('Error adding item to cart');
+                });
+        });
+    </script>
+</body>
+</html> 

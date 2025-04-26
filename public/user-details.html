@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grozily - Complete Your Profile</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="login.css">
+    <link rel="stylesheet" href="user-details.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Loading overlay script -->
+    <script src="loader.js" defer></script>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <main class="auth-content">
+            <div class="auth-logo">
+                <i class="fa-solid fa-shopping-basket"></i>
+                <h1>Grozily</h1>
+            </div>
+
+            <div class="auth-card">
+                <div class="page-title">
+                    <h2>Complete Your Profile</h2>
+                    <p>Please provide your delivery details</p>
+                </div>
+
+                <form id="user-details-form" class="details-form">
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-user"></i>
+                        <input type="text" id="full-name" placeholder="Full Name" required>
+                    </div>
+
+                    <div class="input-group phone-input">
+                        <span class="country-code">+91</span>
+                        <input type="tel" id="phone-number" placeholder="Phone Number" pattern="[0-9]{10}" maxlength="10" required>
+                    </div>
+
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-home"></i>
+                        <input type="text" id="house-number" placeholder="House/Flat Number" required>
+                    </div>
+
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-map"></i>
+                        <input type="text" id="area" placeholder="Area/Locality" required>
+                    </div>
+
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-location-dot"></i>
+                        <input type="text" id="landmark" placeholder="Landmark (Optional)">
+                    </div>
+
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-road"></i>
+                        <input type="text" id="address" placeholder="Street Address" required>
+                    </div>
+
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-location-pin"></i>
+                        <input type="text" id="pin-code" placeholder="PIN Code" pattern="[0-9]{6}" maxlength="6" required>
+                    </div>
+
+                    <button id="save-details-btn" type="submit" class="primary-button">
+                        <span class="btn-text">Save & Continue</span>
+                        <span class="btn-loader"></span>
+                    </button>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <!-- Message toast -->
+    <div id="toast-message" class="toast-message">
+        <div class="toast-content">
+            <i class="toast-icon fa-solid fa-check-circle"></i>
+            <p class="toast-text">Message here</p>
+        </div>
+    </div>
+
+    <script src="user-details.js"></script>
+</body>
+</html> 

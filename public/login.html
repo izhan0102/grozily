@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grozily - Login</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Loading overlay script - Use custom loader -->
+    <script src="loader.js" defer></script>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    
+    <style>
+        :root {
+            --primary: #805AD5;
+            --primary-dark: #6B46C1;
+            --secondary: #38B2AC;
+            --accent: #F6AD55;
+            --success: #10B981;
+            --error: #EF4444;
+            --bg-primary: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --text-dark: #1A202C;
+            --text-medium: #4A5568;
+            --text-light: #A0AEC0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            height: 100%;
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-dark);
+        }
+        
+        /* Main container */
+        .app-container {
+            display: flex;
+            min-height: 100%;
+            background: linear-gradient(135deg, #F5F7FA 0%, #E4EDF9 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        /* Geometric elements */
+        .geometric-elements {
+            position: absolute;
+            inset: 0;
+            overflow: hidden;
+            z-index: 0;
+        }
+        
+        .geo-element {
+            position: absolute;
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            opacity: 0.1;
+        }
+        
+        .geo-element-1 {
+            width: 300px;
+            height: 300px;
+            background: var(--primary);
+            top: -100px;
+            left: -50px;
+            animation: morph 15s linear infinite alternate;
+        }
+        
+        .geo-element-2 {
+            width: 400px;
+            height: 400px;
+            background: var(--secondary);
+            bottom: -200px;
+            right: -100px;
+            animation: morph 20s linear infinite alternate-reverse;
+        }
+        
+        .geo-element-3 {
+            width: 200px;
+            height: 200px;
+            background: var(--accent);
+            bottom: 30%;
+            left: -100px;
+            animation: morph 12s linear infinite alternate;
+        }
+        
+        .geo-element-4 {
+            width: 150px;
+            height: 150px;
+            background: var(--secondary);
+            top: 20%;
+            right: -50px;
+            animation: morph 18s linear infinite alternate-reverse;
+        }
+        
+        @keyframes morph {
+            0% {
+                border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            }
+            25% {
+                border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%;
+            }
+            50% {
+                border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%;
+            }
+            75% {
+                border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%;
+            }
+            100% {
+                border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            }
+        }
+        
+        /* Grid pattern */
+        .grid-pattern {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+        }
+        
+        /* Auth content */
+        .auth-content {
+            position: relative;
+            z-index: 2;
+            max-width: 460px;
+            width: 100%;
+            margin: 0 auto;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100%;
+        }
+        
+        /* Logo */
+        .auth-logo {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .logo-container {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 15px;
+            transition: transform 0.3s ease;
+        }
+        
+        .logo-container:hover {
+            transform: scale(1.05) rotate(5deg);
+        }
+        
+        .logo-icon {
+            font-size: 36px;
+            color: white;
+        }
+        
+        .brand-name {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        
+        .brand-tagline {
+            margin-top: 5px;
+            color: var(--text-medium);
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        /* Auth card */
+        .auth-card {
+            background: var(--bg-card);
+            border-radius: 16px;
+            box-shadow: var(--shadow-lg);
+            width: 100%;
+            overflow: hidden;
+            position: relative;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: slide-up 0.8s forwards 0.2s;
+        }
+        
+        @keyframes slide-up {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        /* Tab switch */
+        .tab-switch-container {
+            width: 100%;
+            position: relative;
+            margin-bottom: 20px;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: slide-up 0.8s forwards;
+        }
+        
+        .tab-switch {
+            display: flex;
+            background: var(--bg-card);
+            border-radius: 12px;
+            overflow: hidden;
+            position: relative;
+            padding: 4px;
+            box-shadow: var(--shadow-md);
+        }
+        
+        .tab-slider {
+            position: absolute;
+            height: calc(100% - 8px);
+            top: 4px;
+            width: calc(50% - 4px);
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border-radius: 8px;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            z-index: 1;
+        }
+        
+        .tab-btn {
+            flex: 1;
+            text-align: center;
+            padding: 12px 0;
+            border: none;
+            background: transparent;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-medium);
+            z-index: 2;
+            cursor: pointer;
+            transition: color 0.3s;
+            font-family: 'DM Sans', sans-serif;
+        }
+        
+        .tab-btn.active {
+            color: white;
+        }
+        
+        /* Auth forms */
+        .auth-form {
+            padding: 24px;
+            transition: transform 0.3s, opacity 0.3s;
+        }
+        
+        .auth-form.hidden {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            opacity: 0;
+            transform: translateX(50px);
+            pointer-events: none;
+        }
+        
+        .input-group {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+        
+        input {
+            width: 100%;
+            padding: 14px 16px 14px 44px;
+            border-radius: 12px;
+            border: 2px solid rgba(0, 0, 0, 0.08);
+            background-color: rgba(0, 0, 0, 0.02);
+            font-family: 'DM Sans', sans-serif;
+            font-size: 15px;
+            color: var(--text-dark);
+            transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s;
+        }
+        
+        input::placeholder {
+            color: var(--text-light);
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: white;
+            box-shadow: 0 0 0 4px rgba(128, 90, 213, 0.1);
+        }
+        
+        input:focus + .input-icon {
+            color: var(--primary);
+        }
+        
+        .password-toggle {
+            position: absolute;
+            right: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-light);
+            font-size: 16px;
+            cursor: pointer;
+            transition: color 0.3s;
+        }
+        
+        .password-toggle:hover {
+            color: var(--primary);
+        }
+        
+        /* Buttons */
+        .primary-button {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            border: none;
+            border-radius: 12px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: var(--shadow-md), 0 0 0 0 rgba(128, 90, 213, 0.2);
+            margin-top: 10px;
+            position: relative;
+            overflow: hidden;
+            font-family: 'DM Sans', sans-serif;
+        }
+        
+        .primary-button:hover, .primary-button:focus {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-lg), 0 0 0 4px rgba(128, 90, 213, 0.2);
+        }
+        
+        .primary-button:active {
+            transform: translateY(0);
+        }
+        
+        .primary-button::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transform: translateX(-100%);
+        }
+        
+        .primary-button:hover::after {
+            animation: button-shine 1.5s infinite;
+        }
+        
+        @keyframes button-shine {
+            to {
+                transform: translateX(100%);
+            }
+        }
+        
+        .btn-loader {
+            display: none;
+            width: 24px;
+            height: 24px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            animation: loader-spin 0.8s linear infinite;
+            box-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+        }
+        
+        @keyframes loader-spin {
+            0% {
+                transform: translate(-50%, -50%) rotate(0deg);
+            }
+            100% {
+                transform: translate(-50%, -50%) rotate(360deg);
+            }
+        }
+        
+        .primary-button.loading {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            cursor: not-allowed;
+        }
+        
+        .primary-button.loading .btn-text {
+            opacity: 0;
+            visibility: hidden;
+        }
+        
+        .primary-button.loading .btn-loader {
+            display: block;
+        }
+        
+        /* Terms text */
+        .terms-text {
+            margin-top: 30px;
+            font-size: 13px;
+            color: var(--text-medium);
+            text-align: center;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: slide-up 0.8s forwards 0.4s;
+        }
+        
+        .terms-text a {
+            color: var(--primary);
+            text-decoration: none;
+        }
+        
+        .terms-text a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Toast Message */
+        .toast-message {
+            position: fixed;
+            bottom: 0;
+            left: 50%;
+            transform: translate(-50%, 100%);
+            background-color: white;
+            border-radius: 12px 12px 0 0;
+            padding: 16px 24px;
+            box-shadow: var(--shadow-lg);
+            display: flex;
+            align-items: center;
+            z-index: 9999;
+            transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+            min-width: 300px;
+            max-width: 90%;
+        }
+        
+        .toast-message.show {
+            transform: translate(-50%, 0);
+        }
+        
+        .toast-content {
+            display: flex;
+            align-items: center;
+            width: 100%;
+        }
+        
+        .toast-icon {
+            font-size: 24px;
+            margin-right: 12px;
+        }
+        
+        .toast-icon.success {
+            color: var(--success);
+        }
+        
+        .toast-icon.error {
+            color: var(--error);
+        }
+        
+        .toast-text {
+            font-size: 14px;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+        
+        /* Phone number verification */
+        .phone-verification {
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .phone-verification.show {
+            display: block;
+        }
+        
+        .verification-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-dark);
+            margin-bottom: 15px;
+            text-align: center;
+        }
+        
+        .otp-inputs {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        
+        .otp-input {
+            width: 50px;
+            height: 60px;
+            border-radius: 12px;
+            border: 2px solid rgba(0, 0, 0, 0.08);
+            background-color: rgba(0, 0, 0, 0.02);
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            color: var(--text-dark);
+            padding: 0;
+            transition: border-color 0.3s, background-color 0.3s, box-shadow 0.3s;
+        }
+        
+        .otp-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            background-color: white;
+            box-shadow: 0 0 0 4px rgba(128, 90, 213, 0.1);
+        }
+        
+        .resend-text {
+            margin-top: 15px;
+            font-size: 14px;
+            color: var(--text-medium);
+            text-align: center;
+        }
+        
+        .resend-text a {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .resend-text a:hover {
+            text-decoration: underline;
+        }
+        
+        /* Responsive design */
+        @media (max-width: 460px) {
+            .auth-content {
+                padding: 30px 16px;
+            }
+            
+            .auth-logo {
+                margin-bottom: 30px;
+            }
+            
+            .logo-container {
+                width: 70px;
+                height: 70px;
+            }
+            
+            .logo-icon {
+                font-size: 30px;
+            }
+            
+            .brand-name {
+                font-size: 24px;
+            }
+            
+            .otp-input {
+                width: 45px;
+                height: 55px;
+                font-size: 20px;
+            }
+            
+            .primary-button {
+                padding: 12px;
+            }
+            
+            input {
+                padding: 12px 16px 12px 44px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Geometric background elements -->
+        <div class="geometric-elements">
+            <div class="geo-element geo-element-1"></div>
+            <div class="geo-element geo-element-2"></div>
+            <div class="geo-element geo-element-3"></div>
+            <div class="geo-element geo-element-4"></div>
+            <div class="grid-pattern"></div>
+        </div>
+        
+        <!-- Auth content -->
+        <main class="auth-content">
+            <div class="auth-logo">
+                <div class="logo-container">
+                    <i class="logo-icon fa-solid fa-shopping-basket"></i>
+                </div>
+                <h1 class="brand-name">Grozily</h1>
+                <p class="brand-tagline">Fresh groceries at your doorstep</p>
+            </div>
+
+            <div class="tab-switch-container">
+                <div class="tab-switch">
+                    <div class="tab-slider"></div>
+                    <button id="login-toggle" class="tab-btn active">Login</button>
+                    <button id="signup-toggle" class="tab-btn">Sign Up</button>
+                </div>
+            </div>
+
+            <div class="auth-card">
+                <div id="login-form" class="auth-form">
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-envelope"></i>
+                        <input type="email" id="login-email" placeholder="Email Address" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-lock"></i>
+                        <input type="password" id="login-password" placeholder="Password" required>
+                        <i class="password-toggle fa-solid fa-eye"></i>
+                    </div>
+                    
+                    <button id="login-btn" class="primary-button">
+                        <span class="btn-text">Login</span>
+                        <span class="btn-loader"></span>
+                    </button>
+                    
+                    <div id="phone-login-section" class="phone-verification">
+                        <div class="verification-title">Enter the verification code sent to your phone</div>
+                        <div class="otp-inputs">
+                            <input type="text" class="otp-input" maxlength="1" id="otp-1">
+                            <input type="text" class="otp-input" maxlength="1" id="otp-2">
+                            <input type="text" class="otp-input" maxlength="1" id="otp-3">
+                            <input type="text" class="otp-input" maxlength="1" id="otp-4">
+                            <input type="text" class="otp-input" maxlength="1" id="otp-5">
+                            <input type="text" class="otp-input" maxlength="1" id="otp-6">
+                        </div>
+                        <button id="verify-otp-btn" class="primary-button">
+                            <span class="btn-text">Verify</span>
+                            <span class="btn-loader"></span>
+                        </button>
+                        <p class="resend-text">Didn't receive a code? <a href="#" id="resend-otp">Resend</a></p>
+                    </div>
+                </div>
+
+                <div id="signup-form" class="auth-form hidden">
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-user"></i>
+                        <input type="text" id="signup-name" placeholder="Full Name" required>
+                    </div>
+
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-envelope"></i>
+                        <input type="email" id="signup-email" placeholder="Email Address" required>
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-lock"></i>
+                        <input type="password" id="signup-password" placeholder="Password" required>
+                        <i class="password-toggle fa-solid fa-eye"></i>
+                    </div>
+                    
+                    <div class="input-group">
+                        <i class="input-icon fa-solid fa-lock"></i>
+                        <input type="password" id="signup-confirm-password" placeholder="Confirm Password" required>
+                        <i class="password-toggle fa-solid fa-eye"></i>
+                    </div>
+                    
+                    <button id="signup-btn" class="primary-button">
+                        <span class="btn-text">Create Account</span>
+                        <span class="btn-loader"></span>
+                    </button>
+                </div>
+            </div>
+
+            <p class="terms-text">
+                By continuing, you agree to Grozily's <a href="terms.html">Terms of Service</a> and <a href="privacy.html">Privacy Policy</a>
+            </p>
+        </main>
+    </div>
+
+    <!-- Message toast -->
+    <div id="toast-message" class="toast-message">
+        <div class="toast-content">
+            <i class="toast-icon fa-solid fa-check-circle success"></i>
+            <p class="toast-text">Message here</p>
+        </div>
+    </div>
+
+    <script src="login.js"></script>
+</body>
+</html> 

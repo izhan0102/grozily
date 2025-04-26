@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grozily</title>
+    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    
+    <style>
+        :root {
+            --primary: #805AD5;
+            --primary-dark: #6B46C1;
+            --secondary: #38B2AC;
+            --success: #10B981;
+            --error: #EF4444;
+            --bg-primary: #F8FAFC;
+            --bg-card: #FFFFFF;
+            --text-dark: #1A202C;
+            --text-medium: #4A5568;
+            --text-light: #A0AEC0;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body, html {
+            height: 100%;
+            font-family: 'DM Sans', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-dark);
+            overflow: hidden;
+        }
+        
+        /* Main container */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            background: linear-gradient(135deg, #F5F7FA 0%, #E4EDF9 100%);
+        }
+        
+        /* Background elements */
+        .geometric-elements {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: 0;
+        }
+        
+        .geo-element {
+            position: absolute;
+            border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            opacity: 0.1;
+        }
+        
+        .geo-element-1 {
+            width: 300px;
+            height: 300px;
+            background: var(--primary);
+            top: -150px;
+            left: -150px;
+            animation: morph 10s linear infinite alternate;
+        }
+        
+        .geo-element-2 {
+            width: 500px;
+            height: 500px;
+            background: var(--secondary);
+            bottom: -250px;
+            right: -250px;
+            animation: morph 15s linear infinite alternate-reverse;
+        }
+        
+        .geo-element-3 {
+            width: 200px;
+            height: 200px;
+            background: var(--primary-dark);
+            top: 30%;
+            right: -100px;
+            animation: morph 8s linear infinite alternate;
+        }
+        
+        .geo-element-4 {
+            width: 150px;
+            height: 150px;
+            background: var(--secondary);
+            bottom: 15%;
+            left: -75px;
+            animation: morph 12s linear infinite alternate-reverse;
+        }
+        
+        @keyframes morph {
+            0% {
+                border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            }
+            25% {
+                border-radius: 58% 42% 75% 25% / 76% 46% 54% 24%;
+            }
+            50% {
+                border-radius: 50% 50% 33% 67% / 55% 27% 73% 45%;
+            }
+            75% {
+                border-radius: 33% 67% 58% 42% / 63% 68% 32% 37%;
+            }
+            100% {
+                border-radius: 30% 70% 70% 30% / 30% 30% 70% 70%;
+            }
+        }
+        
+        /* Grid lines background */
+        .grid-pattern {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(to right, rgba(0,0,0,0.03) 1px, transparent 1px),
+                linear-gradient(to bottom, rgba(0,0,0,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+        }
+        
+        /* Login verification screen */
+        .login-verification {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100%;
+            padding: 20px;
+        }
+        
+        .verification-container {
+            width: 100%;
+            max-width: 400px;
+            overflow: hidden;
+            opacity: 0;
+            transform: translateY(30px);
+            animation: fadeUp 0.8s ease forwards;
+        }
+        
+        @keyframes fadeUp {
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .verification-content {
+            background: var(--bg-card);
+            border-radius: 16px;
+            padding: 40px 30px;
+            box-shadow: var(--shadow-lg);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .verification-content::before {
+            content: "";
+            position: absolute;
+            top: -10px;
+            left: -10px;
+            right: -10px;
+            height: 10px;
+            background: var(--primary);
+            transform-origin: center;
+            animation: loadingBar 5s forwards cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        @keyframes loadingBar {
+            to { transform: translateX(105%); }
+        }
+        
+        /* Logo and branding */
+        .logo-section {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .logo-wrapper {
+            position: relative;
+            display: inline-block;
+        }
+        
+        .logo-icon-wrapper {
+            width: 80px;
+            height: 80px;
+            background: var(--primary);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            transform: rotate(0deg);
+            box-shadow: var(--shadow-md);
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .logo-icon-wrapper.loading {
+            animation: logoSpin 3s infinite alternate cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .logo-icon-wrapper.success {
+            background: var(--success);
+            transform: rotate(0deg) scale(1.1);
+        }
+        
+        .logo-icon-wrapper.error {
+            background: var(--error);
+            transform: rotate(0deg) scale(1.1);
+        }
+        
+        @keyframes logoSpin {
+            0% { transform: rotate(-5deg) scale(1); }
+            50% { transform: rotate(5deg) scale(1.05); }
+            100% { transform: rotate(-5deg) scale(1); }
+        }
+        
+        .logo-icon {
+            font-size: 36px;
+            color: white;
+        }
+        
+        .brand-name {
+            font-size: 28px;
+            font-weight: 700;
+            margin: 0;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.5px;
+        }
+        
+        .brand-tagline {
+            margin-top: 5px;
+            color: var(--text-medium);
+            font-weight: 500;
+            font-size: 14px;
+        }
+        
+        /* Authentication status */
+        .auth-status {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .status-message {
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-dark);
+            margin-bottom: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 24px;
+        }
+        
+        .status-message.success {
+            color: var(--success);
+        }
+        
+        .status-message.error {
+            color: var(--error);
+        }
+        
+        /* Progress track */
+        .progress-track {
+            position: relative;
+            height: 60px;
+            width: 100%;
+        }
+        
+        .track-line {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.06);
+            border-radius: 2px;
+            transform: translateY(-50%);
+        }
+        
+        .track-progress {
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 0%;
+            height: 4px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            border-radius: 2px;
+            transform: translateY(-50%);
+            transition: width 0.2s ease;
+        }
+        
+        .track-cart {
+            position: absolute;
+            top: 50%;
+            left: 0%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            background: white;
+            border-radius: 50%;
+            box-shadow: var(--shadow-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: left 0.2s ease;
+            z-index: 2;
+        }
+        
+        .track-cart i {
+            color: var(--primary);
+            font-size: 18px;
+        }
+        
+        .track-marker {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, 0.1);
+            z-index: 1;
+        }
+        
+        .track-marker-start {
+            left: 0%;
+        }
+        
+        .track-marker-25 {
+            left: 25%;
+        }
+        
+        .track-marker-50 {
+            left: 50%;
+        }
+        
+        .track-marker-75 {
+            left: 75%;
+        }
+        
+        .track-marker-end {
+            left: 100%;
+        }
+        
+        .track-milestones {
+            position: absolute;
+            left: 0;
+            width: 100%;
+            top: 100%;
+            margin-top: 5px;
+            display: flex;
+            justify-content: space-between;
+            padding: 0 5px;
+        }
+        
+        .track-milestone {
+            font-size: 11px;
+            color: var(--text-medium);
+            opacity: 0.7;
+        }
+        
+        /* Redirect message */
+        .redirect-message {
+            text-align: center;
+            margin-top: 30px;
+            min-height: 20px;
+            font-size: 14px;
+            color: var(--text-medium);
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.5s, transform 0.5s;
+        }
+        
+        .redirect-message.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        
+        /* Cart items that appear when loading completes */
+        .cart-items {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 0;
+            overflow: hidden;
+            opacity: 0;
+            margin-top: 0;
+            transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .cart-items.show {
+            height: 50px;
+            opacity: 1;
+            margin-top: 15px;
+        }
+        
+        .cart-item {
+            width: 36px;
+            height: 36px;
+            border-radius: 12px;
+            background: rgba(0, 0, 0, 0.05);
+            margin: 0 5px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transform: translateY(20px);
+            opacity: 0;
+            transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1), 
+                        opacity 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        
+        .cart-items.show .cart-item {
+            transform: translateY(0);
+            opacity: 1;
+        }
+        
+        .cart-items.show .cart-item:nth-child(1) { transition-delay: 0.1s; }
+        .cart-items.show .cart-item:nth-child(2) { transition-delay: 0.2s; }
+        .cart-items.show .cart-item:nth-child(3) { transition-delay: 0.3s; }
+        .cart-items.show .cart-item:nth-child(4) { transition-delay: 0.4s; }
+        
+        .cart-item i {
+            font-size: 18px;
+            color: var(--primary);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Geometric background elements -->
+        <div class="geometric-elements">
+            <div class="geo-element geo-element-1"></div>
+            <div class="geo-element geo-element-2"></div>
+            <div class="geo-element geo-element-3"></div>
+            <div class="geo-element geo-element-4"></div>
+            <div class="grid-pattern"></div>
+        </div>
+        
+        <!-- Login verification screen -->
+        <div class="login-verification">
+            <div class="verification-container">
+                <div class="verification-content">
+                    <div class="logo-section">
+                        <div class="logo-wrapper">
+                            <div class="logo-icon-wrapper loading" id="logo-wrapper">
+                                <i class="fa-solid fa-shopping-basket logo-icon"></i>
+                            </div>
+                        </div>
+                        <h1 class="brand-name">Grozily</h1>
+                        <p class="brand-tagline">Grocery shopping made simple</p>
+                    </div>
+                    
+                    <div class="auth-status">
+                        <p class="status-message" id="status-message">Checking your account...</p>
+                    </div>
+                    
+                    <div class="progress-track">
+                        <div class="track-line"></div>
+                        <div class="track-progress" id="track-progress"></div>
+                        
+                        <div class="track-marker track-marker-start"></div>
+                        <div class="track-marker track-marker-25"></div>
+                        <div class="track-marker track-marker-50"></div>
+                        <div class="track-marker track-marker-75"></div>
+                        <div class="track-marker track-marker-end"></div>
+                        
+                        <div class="track-cart" id="track-cart">
+                            <i class="fa-solid fa-cart-shopping"></i>
+                        </div>
+                        
+                        <div class="track-milestones">
+                            <span class="track-milestone">Start</span>
+                            <span class="track-milestone">Verifying</span>
+                            <span class="track-milestone">Checking</span>
+                            <span class="track-milestone">Loading</span>
+                            <span class="track-milestone">Done</span>
+                        </div>
+                    </div>
+                    
+                    <div class="cart-items" id="cart-items">
+                        <div class="cart-item">
+                            <i class="fa-solid fa-apple-whole"></i>
+                        </div>
+                        <div class="cart-item">
+                            <i class="fa-solid fa-carrot"></i>
+                        </div>
+                        <div class="cart-item">
+                            <i class="fa-solid fa-bread-slice"></i>
+                        </div>
+                        <div class="cart-item">
+                            <i class="fa-solid fa-egg"></i>
+                        </div>
+                    </div>
+                    
+                    <p class="redirect-message" id="redirect-message"></p>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+            authDomain: "grozily2.firebaseapp.com",
+            databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+            projectId: "grozily2",
+            storageBucket: "grozily2.firebasestorage.app",
+            messagingSenderId: "665300145710",
+            appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+            measurementId: "G-83S7ZWXEB9"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        
+        // DOM elements
+        const logoWrapper = document.getElementById('logo-wrapper');
+        const statusMessage = document.getElementById('status-message');
+        const trackProgress = document.getElementById('track-progress');
+        const trackCart = document.getElementById('track-cart');
+        const redirectMessage = document.getElementById('redirect-message');
+        const cartItems = document.getElementById('cart-items');
+        
+        // Simulate loading progress for visual feedback
+        let progress = 0;
+        const loadingInterval = setInterval(() => {
+            progress += 2;
+            if (progress > 75) { // Stop at 75% and wait for auth
+                clearInterval(loadingInterval);
+            }
+            
+            updateProgress(progress);
+        }, 100);
+        
+        function updateProgress(value) {
+            trackProgress.style.width = `${value}%`;
+            trackCart.style.left = `${value}%`;
+        }
+        
+        function completeLoading(success) {
+            // Finish progress to 100%
+            updateProgress(100);
+            
+            // Remove loading animation from logo
+            logoWrapper.classList.remove('loading');
+            
+            // Show success/error state
+            if (success) {
+                logoWrapper.classList.add('success');
+                statusMessage.classList.add('success');
+                statusMessage.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right: 8px;"></i> Authentication successful!';
+                redirectMessage.textContent = 'Welcome back! Taking you to your dashboard...';
+            } else {
+                logoWrapper.classList.add('error');
+                statusMessage.classList.add('error');
+                statusMessage.innerHTML = '<i class="fa-solid fa-exclamation-circle" style="margin-right: 8px;"></i> Authentication required';
+                redirectMessage.textContent = 'Please log in to continue...';
+            }
+            
+            // Show redirect message
+            redirectMessage.classList.add('show');
+            
+            // Show cart items
+            cartItems.classList.add('show');
+        }
+        
+        // Check authentication state
+        let authCheckTimeout = setTimeout(() => {
+            // If auth check takes too long, redirect to login
+            clearInterval(loadingInterval);
+            completeLoading(false);
+            
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+        }, 8000); // 8 second timeout for better user experience
+        
+        auth.onAuthStateChanged(user => {
+            clearTimeout(authCheckTimeout);
+            clearInterval(loadingInterval);
+            
+            if (user) {
+                // User is logged in
+                completeLoading(true);
+                
+                // Redirect to home page after a short delay
+                setTimeout(() => {
+                    window.location.href = 'home.html';
+                }, 2000);
+            } else {
+                // User is not logged in
+                completeLoading(false);
+                
+                // Redirect to login page after a short delay
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            }
+        });
+    </script>
+</body>
+</html> 

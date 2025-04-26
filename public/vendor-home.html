@@ -1,0 +1,1272 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Dashboard - Grozily</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            -webkit-tap-highlight-color: transparent; /* Remove blue tap highlights */
+        }
+
+        body {
+            background-color: #F5F7FA;
+            color: #2D3748;
+            min-height: 100vh;
+        }
+
+        /* Mobile-first App Layout */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .app-header {
+            background-color: #805AD5;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .vendor-info {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .vendor-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #6B46C1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .vendor-details {
+            line-height: 1.3;
+        }
+
+        .store-name {
+            font-weight: bold;
+            font-size: 16px;
+        }
+
+        .vendor-name {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .header-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .header-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
+        /* Welcome Banner */
+        .welcome-banner {
+            background-color: white;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
+            background-image: linear-gradient(to right, #805AD5, #6B46C1);
+            color: white;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .welcome-banner::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 100px;
+            height: 100px;
+            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='50' cy='50' r='40' stroke='rgba(255,255,255,0.1)' stroke-width='20'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: center;
+            opacity: 0.3;
+        }
+
+        .welcome-text h2 {
+            font-size: 22px;
+            margin-bottom: 8px;
+        }
+
+        .welcome-text p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+
+        /* Stats Section */
+        .stats-section {
+            margin-bottom: 25px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .section-title i {
+            color: #805AD5;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+        }
+
+        .stat-card {
+            background-color: white;
+            border-radius: 15px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-3px);
+        }
+
+        .stat-card.large {
+            grid-column: span 2;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 22px;
+        }
+
+        .stat-icon.purple {
+            background-color: #805AD5;
+        }
+
+        .stat-icon.blue {
+            background-color: #4299E1;
+        }
+
+        .stat-icon.green {
+            background-color: #48BB78;
+        }
+
+        .stat-icon.orange {
+            background-color: #ED8936;
+        }
+
+        .stat-info {
+            flex: 1;
+        }
+
+        .stat-title {
+            color: #718096;
+            font-size: 14px;
+            margin-top: 10px;
+        }
+
+        .stat-value {
+            font-size: 22px;
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .stat-card.large .stat-title {
+            margin-top: 0;
+        }
+
+        /* Quick Actions */
+        .quick-actions {
+            margin-bottom: 25px;
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+        }
+
+        .action-card {
+            background-color: white;
+            border-radius: 15px;
+            padding: 15px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            transition: all 0.2s;
+            cursor: pointer;
+        }
+
+        .action-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 10px;
+            color: white;
+            font-size: 20px;
+        }
+
+        .action-title {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        /* Recent Activity */
+        .recent-activity {
+            margin-bottom: 25px;
+        }
+
+        .activity-list {
+            background-color: white;
+            border-radius: 15px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+        }
+
+        .activity-item {
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            border-bottom: 1px solid #EDF2F7;
+        }
+
+        .activity-item:last-child {
+            border-bottom: none;
+        }
+
+        .activity-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .activity-details {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .activity-time {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            display: flex;
+            background-color: white;
+            border-top: 1px solid #EDF2F7;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0;
+            color: #718096;
+            text-decoration: none;
+            font-size: 12px;
+            transition: color 0.2s;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .nav-item.active {
+            color: #805AD5;
+        }
+
+        /* Floating Action Button */
+        .fab {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: #805AD5;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            box-shadow: 0 4px 10px rgba(128, 90, 213, 0.4);
+            cursor: pointer;
+            z-index: 90;
+            transition: all 0.2s;
+        }
+
+        .fab:hover {
+            transform: scale(1.1);
+            box-shadow: 0 6px 15px rgba(128, 90, 213, 0.5);
+        }
+
+        /* Loader */
+        .loader-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            display: none;
+        }
+
+        .loader {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(128, 90, 213, 0.2);
+            border-radius: 50%;
+            border-top-color: #805AD5;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            .stats-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+
+            .actions-grid {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        /* Profile Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 500px;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px;
+            border-bottom: 1px solid #EDF2F7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            background-color: white;
+            z-index: 1;
+            border-radius: 15px 15px 0 0;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2D3748;
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #718096;
+            cursor: pointer;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: background-color 0.2s;
+        }
+
+        .modal-close:hover {
+            background-color: #F7FAFC;
+            color: #E53E3E;
+        }
+
+        .modal-body {
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #4A5568;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+            font-size: 14px;
+            transition: all 0.3s;
+            background-color: white;
+        }
+
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #805AD5;
+            box-shadow: 0 0 0 3px rgba(128, 90, 213, 0.2);
+        }
+
+        .form-row {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+        }
+
+        .form-row .form-group {
+            flex: 1;
+            min-width: 120px; /* Minimum width to prevent too narrow fields */
+        }
+
+        .days-selection {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 8px;
+        }
+
+        .day-label {
+            padding: 8px 12px;
+            background-color: #EDF2F7;
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            user-select: none;
+            transition: all 0.2s;
+        }
+
+        .day-label.selected {
+            background-color: #805AD5;
+            color: white;
+        }
+
+        .day-checkbox {
+            display: none;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            border-top: 1px solid #EDF2F7;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            bottom: 0;
+            background-color: white;
+            border-radius: 0 0 15px 15px;
+            flex-wrap: wrap; /* Allow wrapping on small screens */
+            gap: 10px;
+        }
+
+        .modal-footer > div {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap; /* Allow button wrapping */
+        }
+
+        .btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap; /* Prevent button text from wrapping */
+        }
+
+        .btn-primary {
+            background-color: #805AD5;
+            color: white;
+            border: none;
+        }
+
+        .btn-primary:hover {
+            background-color: #6B46C1;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary {
+            background-color: white;
+            color: #4A5568;
+            border: 1px solid #E2E8F0;
+        }
+
+        .btn-secondary:hover {
+            background-color: #F7FAFC;
+        }
+
+        .btn-danger {
+            background-color: #F56565;
+            color: white;
+            border: none;
+        }
+
+        .btn-danger:hover {
+            background-color: #E53E3E;
+        }
+
+        /* Responsive adjustments for modal */
+        @media (max-width: 480px) {
+            .modal-footer {
+                flex-direction: column-reverse;
+                align-items: stretch;
+            }
+            
+            .modal-footer > div {
+                justify-content: center;
+            }
+            
+            .btn {
+                flex: 1;
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- App Header -->
+        <div class="app-header">
+            <div class="vendor-info">
+                <div class="vendor-avatar" id="vendor-initial">V</div>
+                <div class="vendor-details">
+                    <div class="store-name" id="store-name">Loading...</div>
+                    <div class="vendor-name" id="vendor-name">Loading...</div>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button class="header-btn" id="notifications-btn">
+                    <i class="fas fa-bell"></i>
+                </button>
+                <button class="header-btn" id="profile-btn">
+                    <i class="fas fa-user"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Welcome Banner -->
+            <div class="welcome-banner">
+                <div class="welcome-text">
+                    <h2>Welcome Back!</h2>
+                    <p id="last-login">Last login: Loading...</p>
+                </div>
+            </div>
+
+            <!-- Stats Section -->
+            <div class="stats-section">
+                <h2 class="section-title">
+                    <i class="fas fa-chart-line"></i>
+                    Store Statistics
+                </h2>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-box"></i>
+                        </div>
+                        <div class="stat-title">Products</div>
+                        <div class="stat-value" id="total-products">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-shopping-cart"></i>
+                        </div>
+                        <div class="stat-title">Orders</div>
+                        <div class="stat-value" id="total-orders">0</div>
+                    </div>
+                    <div class="stat-card large">
+                        <div class="stat-icon green">
+                            <i class="fas fa-rupee-sign"></i>
+                        </div>
+                        <div class="stat-info">
+                            <div class="stat-title">Total Revenue</div>
+                            <div class="stat-value" id="total-revenue">₹0</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="quick-actions">
+                <h2 class="section-title">
+                    <i class="fas fa-bolt"></i>
+                    Quick Actions
+                </h2>
+                <div class="actions-grid">
+                    <div class="action-card" id="action-add-product">
+                        <div class="action-icon" style="background-color: #805AD5;">
+                            <i class="fas fa-plus"></i>
+                        </div>
+                        <div class="action-title">Add Product</div>
+                    </div>
+                    <div class="action-card" id="action-orders">
+                        <div class="action-icon" style="background-color: #4299E1;">
+                            <i class="fas fa-list-alt"></i>
+                        </div>
+                        <div class="action-title">View Orders</div>
+                    </div>
+                    <div class="action-card" id="action-profile">
+                        <div class="action-icon" style="background-color: #48BB78;">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="action-title">My Profile</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Recent Activity -->
+            <div class="recent-activity">
+                <h2 class="section-title">
+                    <i class="fas fa-history"></i>
+                    Recent Activity
+                </h2>
+                <div class="activity-list" id="activity-list">
+                    <div class="activity-item">
+                        <div class="activity-icon" style="background-color: #805AD5;">
+                            <i class="fas fa-sign-in-alt"></i>
+                        </div>
+                        <div class="activity-details">
+                            <div class="activity-title">Account Login</div>
+                            <div class="activity-time" id="login-time">Just now</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Action Button -->
+        <div class="fab" id="add-product-fab">
+            <i class="fas fa-plus"></i>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <a href="#" class="nav-item active">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="products.html" class="nav-item">
+                <i class="fas fa-box"></i>
+                <span>Products</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Orders</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Profile Modal -->
+    <div class="modal-overlay" id="profile-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Vendor Profile</h3>
+                <button class="modal-close" id="profile-modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="profile-form">
+                    <div class="form-group">
+                        <label for="owner-name">Owner Name</label>
+                        <input type="text" id="owner-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="shop-name">Shop Name</label>
+                        <input type="text" id="shop-name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="shop-category">Shop Category</label>
+                        <select id="shop-category" required>
+                            <option value="">Select a category</option>
+                            <option value="Grocery">Grocery</option>
+                            <option value="Fruits & Vegetables">Fruits & Vegetables</option>
+                            <option value="Meat & Fish">Meat & Fish</option>
+                            <option value="Bakery">Bakery</option>
+                            <option value="Dairy & Eggs">Dairy & Eggs</option>
+                            <option value="Snacks">Snacks</option>
+                            <option value="Beverages">Beverages</option>
+                            <option value="Personal Care">Personal Care</option>
+                            <option value="Household">Household</option>
+                            <option value="Pharmacy">Pharmacy</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="location">Location</label>
+                            <input type="text" id="location" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="pin-code">PIN Code</label>
+                            <input type="text" id="pin-code" pattern="[0-9]{6}" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="opening-time">Opening Time</label>
+                            <input type="time" id="opening-time" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="closing-time">Closing Time</label>
+                            <input type="time" id="closing-time" required>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Open Days</label>
+                        <div class="days-selection">
+                            <input type="checkbox" id="monday" class="day-checkbox">
+                            <label for="monday" class="day-label">Monday</label>
+                            
+                            <input type="checkbox" id="tuesday" class="day-checkbox">
+                            <label for="tuesday" class="day-label">Tuesday</label>
+                            
+                            <input type="checkbox" id="wednesday" class="day-checkbox">
+                            <label for="wednesday" class="day-label">Wednesday</label>
+                            
+                            <input type="checkbox" id="thursday" class="day-checkbox">
+                            <label for="thursday" class="day-label">Thursday</label>
+                            
+                            <input type="checkbox" id="friday" class="day-checkbox">
+                            <label for="friday" class="day-label">Friday</label>
+                            
+                            <input type="checkbox" id="saturday" class="day-checkbox">
+                            <label for="saturday" class="day-label">Saturday</label>
+                            
+                            <input type="checkbox" id="sunday" class="day-checkbox">
+                            <label for="sunday" class="day-label">Sunday</label>
+                        </div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <div class="left-buttons">
+                    <button class="btn btn-danger" id="delete-account-btn">
+                        <i class="fas fa-trash"></i>
+                        Delete Account
+                    </button>
+                </div>
+                <div class="right-buttons">
+                    <button class="btn btn-secondary" id="logout-btn">
+                        <i class="fas fa-sign-out-alt"></i>
+                        Logout
+                    </button>
+                    <button class="btn btn-primary" id="save-profile-btn">
+                        <i class="fas fa-save"></i>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loader -->
+    <div class="loader-container" id="loader">
+        <div class="loader"></div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+            authDomain: "grozily2.firebaseapp.com",
+            databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+            projectId: "grozily2",
+            storageBucket: "grozily2.firebasestorage.app",
+            messagingSenderId: "665300145710",
+            appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+            measurementId: "G-83S7ZWXEB9"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // DOM Elements
+        const loader = document.getElementById('loader');
+        const vendorInitial = document.getElementById('vendor-initial');
+        const storeName = document.getElementById('store-name');
+        const vendorName = document.getElementById('vendor-name');
+        const lastLogin = document.getElementById('last-login');
+        const totalProducts = document.getElementById('total-products');
+        const totalOrders = document.getElementById('total-orders');
+        const totalRevenue = document.getElementById('total-revenue');
+        const activityList = document.getElementById('activity-list');
+        const loginTime = document.getElementById('login-time');
+        const logoutBtn = document.getElementById('logout-btn');
+        
+        // Profile Modal Elements
+        const profileBtn = document.getElementById('profile-btn');
+        const profileModal = document.getElementById('profile-modal');
+        const profileModalClose = document.getElementById('profile-modal-close');
+        const profileForm = document.getElementById('profile-form');
+        const saveProfileBtn = document.getElementById('save-profile-btn');
+        const deleteAccountBtn = document.getElementById('delete-account-btn');
+        const dayLabels = document.querySelectorAll('.day-label');
+
+        // Current vendor data
+        let currentUser = null;
+        let currentVendorData = null;
+
+        // Show/Hide Loader
+        function showLoader() {
+            loader.style.display = 'flex';
+        }
+
+        function hideLoader() {
+            loader.style.display = 'none';
+        }
+
+        // Format currency
+        function formatCurrency(amount) {
+            return '₹' + parseFloat(amount).toLocaleString('en-IN');
+        }
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleString('en-IN', {
+                day: 'numeric',
+                month: 'short',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Get time ago
+        function timeAgo(dateString) {
+            const date = new Date(dateString);
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            let interval = Math.floor(seconds / 31536000);
+            if (interval > 1) return interval + ' years ago';
+            
+            interval = Math.floor(seconds / 2592000);
+            if (interval > 1) return interval + ' months ago';
+            
+            interval = Math.floor(seconds / 86400);
+            if (interval > 1) return interval + ' days ago';
+            
+            interval = Math.floor(seconds / 3600);
+            if (interval > 1) return interval + ' hours ago';
+            
+            interval = Math.floor(seconds / 60);
+            if (interval > 1) return interval + ' minutes ago';
+            
+            if(seconds < 10) return 'just now';
+            
+            return Math.floor(seconds) + ' seconds ago';
+        }
+
+        // Check authentication state
+        showLoader();
+        firebase.auth().onAuthStateChanged((user) => {
+            if (!user) {
+                // Not logged in, redirect to login
+                window.location.href = 'vendor-login.html';
+                return;
+            }
+
+            currentUser = user;
+
+            // Verify if the user is a vendor
+            firebase.database().ref(`vendors/${user.uid}`).once('value')
+                .then((snapshot) => {
+                    if (!snapshot.exists()) {
+                        // Not a vendor, sign out and redirect
+                        firebase.auth().signOut();
+                        window.location.href = 'vendor-login.html';
+                        return;
+                    }
+
+                    // Load vendor data
+                    const vendor = snapshot.val();
+                    currentVendorData = vendor;
+                    
+                    storeName.textContent = vendor.storeName || 'My Store';
+                    vendorName.textContent = vendor.name || 'Vendor';
+                    
+                    // Set vendor initial
+                    if (vendor.name) {
+                        vendorInitial.textContent = vendor.name.charAt(0).toUpperCase();
+                    }
+                    
+                    // Format last login date
+                    const lastLoginTime = new Date(user.metadata.lastSignInTime);
+                    lastLogin.textContent = `Last login: ${formatDate(lastLoginTime)}`;
+                    loginTime.textContent = timeAgo(lastLoginTime);
+                    
+                    // Fill profile form
+                    fillProfileForm(vendor);
+
+                    // Load dashboard data
+                    loadDashboardData(user.uid);
+                    
+                    hideLoader();
+                })
+                .catch((error) => {
+                    console.error('Error loading vendor data:', error);
+                    alert('Error loading vendor data: ' + error.message);
+                    hideLoader();
+                });
+        });
+
+        // Fill profile form with vendor data
+        function fillProfileForm(vendor) {
+            document.getElementById('owner-name').value = vendor.name || '';
+            document.getElementById('shop-name').value = vendor.storeName || '';
+            document.getElementById('location').value = vendor.location || '';
+            document.getElementById('pin-code').value = vendor.pinCode || '';
+            document.getElementById('shop-category').value = vendor.shopCategory || '';
+            document.getElementById('opening-time').value = vendor.openingTime || '09:00';
+            document.getElementById('closing-time').value = vendor.closingTime || '18:00';
+            
+            // Handle open days
+            const openDays = vendor.openDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+            dayLabels.forEach(label => {
+                const day = label.textContent;
+                const checkbox = document.getElementById(day.toLowerCase());
+                if (checkbox && openDays.includes(day)) {
+                    checkbox.checked = true;
+                    label.classList.add('selected');
+                } else {
+                    checkbox.checked = false;
+                    label.classList.remove('selected');
+                }
+            });
+        }
+
+        // Load dashboard data
+        function loadDashboardData(vendorId) {
+            // Get products count
+            firebase.database().ref('products').orderByChild('vendorId').equalTo(vendorId).once('value')
+                .then((snapshot) => {
+                    const productsCount = snapshot.exists() ? snapshot.numChildren() : 0;
+                    totalProducts.textContent = productsCount;
+                    
+                    // After getting products, get orders
+                    return firebase.database().ref('orders').orderByChild('vendorId').equalTo(vendorId).once('value');
+                })
+                .then((ordersSnapshot) => {
+                    // Calculate orders count and total revenue
+                    let ordersCount = 0;
+                    let revenue = 0;
+                    
+                    if (ordersSnapshot.exists()) {
+                        ordersSnapshot.forEach((orderSnapshot) => {
+                            const order = orderSnapshot.val();
+                            ordersCount++;
+                            if (order.totalAmount) {
+                                revenue += parseFloat(order.totalAmount);
+                            }
+                        });
+                    }
+                    
+                    totalOrders.textContent = ordersCount;
+                    totalRevenue.textContent = formatCurrency(revenue);
+                    
+                    // Get recent activities
+                    loadRecentActivities(vendorId);
+                })
+                .catch((error) => {
+                    console.error('Error loading dashboard data:', error);
+                });
+        }
+
+        // Load recent activities
+        function loadRecentActivities(vendorId) {
+            // This is a placeholder for actual activity data
+            // In a real app, you would fetch activities from the database
+            
+            // For now, we'll just show the login activity that we already have
+        }
+
+        // Handle profile button click
+        profileBtn.addEventListener('click', () => {
+            profileModal.classList.add('show');
+        });
+
+        // Close profile modal
+        profileModalClose.addEventListener('click', () => {
+            profileModal.classList.remove('show');
+        });
+
+        // Close modal when clicking outside
+        profileModal.addEventListener('click', (e) => {
+            if (e.target === profileModal) {
+                profileModal.classList.remove('show');
+            }
+        });
+
+        // Toggle day selection
+        dayLabels.forEach(label => {
+            label.addEventListener('click', () => {
+                const checkbox = document.getElementById(label.getAttribute('for'));
+                checkbox.checked = !checkbox.checked;
+                if (checkbox.checked) {
+                    label.classList.add('selected');
+                } else {
+                    label.classList.remove('selected');
+                }
+            });
+        });
+
+        // Save profile changes
+        saveProfileBtn.addEventListener('click', () => {
+            if (!profileForm.checkValidity()) {
+                // Trigger form validation
+                const submitEvent = new Event('submit', { cancelable: true });
+                profileForm.dispatchEvent(submitEvent);
+                return;
+            }
+            
+            showLoader();
+            
+            // Get updated profile data
+            const updatedProfile = {
+                name: document.getElementById('owner-name').value,
+                storeName: document.getElementById('shop-name').value,
+                location: document.getElementById('location').value,
+                pinCode: document.getElementById('pin-code').value,
+                shopCategory: document.getElementById('shop-category').value,
+                openingTime: document.getElementById('opening-time').value,
+                closingTime: document.getElementById('closing-time').value,
+                openDays: getSelectedDays(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            // Update in Firebase
+            firebase.database().ref(`vendors/${currentUser.uid}`).update(updatedProfile)
+                .then(() => {
+                    // Update current data
+                    currentVendorData = { ...currentVendorData, ...updatedProfile };
+                    
+                    // Update UI
+                    storeName.textContent = updatedProfile.storeName;
+                    vendorName.textContent = updatedProfile.name;
+                    vendorInitial.textContent = updatedProfile.name.charAt(0).toUpperCase();
+                    
+                    // Show success message and close modal
+                    alert('Profile updated successfully!');
+                    profileModal.classList.remove('show');
+                    hideLoader();
+                })
+                .catch((error) => {
+                    console.error('Error updating profile:', error);
+                    alert('Error updating profile: ' + error.message);
+                    hideLoader();
+                });
+        });
+
+        // Get selected days
+        function getSelectedDays() {
+            const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+            return days.filter(day => document.getElementById(day).checked)
+                .map(day => day.charAt(0).toUpperCase() + day.slice(1));
+        }
+
+        // Handle delete account button
+        deleteAccountBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
+                showLoader();
+                
+                // Delete vendor data first
+                firebase.database().ref(`vendors/${currentUser.uid}`).remove()
+                    .then(() => {
+                        // Then delete auth account
+                        return currentUser.delete();
+                    })
+                    .then(() => {
+                        // Redirect to login page
+                        window.location.href = 'vendor-login.html';
+                    })
+                    .catch((error) => {
+                        console.error('Error deleting account:', error);
+                        alert('Error deleting account: ' + error.message);
+                        hideLoader();
+                    });
+            }
+        });
+
+        // Handle logout
+        logoutBtn.addEventListener('click', () => {
+            showLoader();
+            firebase.auth().signOut()
+                .then(() => {
+                    window.location.href = 'vendor-login.html';
+                })
+                .catch((error) => {
+                    console.error('Error signing out:', error);
+                    hideLoader();
+                    alert('Error signing out: ' + error.message);
+                });
+        });
+
+        // Action buttons
+        document.getElementById('add-product-fab').addEventListener('click', () => {
+            window.location.href = 'add-product.html';
+        });
+
+        document.getElementById('action-add-product').addEventListener('click', () => {
+            window.location.href = 'add-product.html';
+        });
+
+        document.getElementById('action-orders').addEventListener('click', () => {
+            alert('Orders page coming soon!');
+        });
+
+        document.getElementById('action-profile').addEventListener('click', () => {
+            alert('Profile page coming soon!');
+        });
+
+        document.getElementById('notifications-btn').addEventListener('click', () => {
+            alert('Notifications coming soon!');
+        });
+
+        // Bottom nav
+        document.querySelectorAll('.nav-item').forEach(item => {
+            item.addEventListener('click', function(e) {
+                if (!this.classList.contains('active') && !this.getAttribute('href').includes('products.html')) {
+                    e.preventDefault();
+                    alert('This section will be available soon!');
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

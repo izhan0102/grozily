@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grozily - Profile</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="home.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Loading overlay script -->
+    <script src="loader.js" defer></script>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+</head>
+<body>
+    <div class="app-container profile-page">
+        <header class="app-header">
+            <div class="header-content">
+                <div class="header-top">
+                    <div class="header-left">
+                        <button id="back-btn" class="icon-button">
+                            <i class="fa-solid fa-arrow-left"></i>
+                        </button>
+                        <h1>Profile</h1>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <main class="app-content">
+            <div class="profile-card">
+                <div class="profile-header">
+                    <div class="profile-avatar">
+                        <i class="fa-solid fa-user"></i>
+                    </div>
+                    <h2 id="user-name">Loading...</h2>
+                </div>
+
+                <div class="profile-info">
+                    <div class="profile-section">
+                        <h3>Contact Information</h3>
+                        <div class="info-item">
+                            <i class="fa-solid fa-envelope"></i>
+                            <div class="info-content">
+                                <span class="info-label">Email</span>
+                                <span id="user-email" class="info-value">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa-solid fa-phone"></i>
+                            <div class="info-content">
+                                <span class="info-label">Phone</span>
+                                <span id="user-phone" class="info-value">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="profile-section">
+                        <h3>Delivery Address</h3>
+                        <div class="info-item">
+                            <i class="fa-solid fa-home"></i>
+                            <div class="info-content">
+                                <span class="info-label">House/Flat</span>
+                                <span id="user-house" class="info-value">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa-solid fa-map"></i>
+                            <div class="info-content">
+                                <span class="info-label">Area</span>
+                                <span id="user-area" class="info-value">Loading...</span>
+                            </div>
+                        </div>
+                        <div id="landmark-container" class="info-item hidden">
+                            <i class="fa-solid fa-location-dot"></i>
+                            <div class="info-content">
+                                <span class="info-label">Landmark</span>
+                                <span id="user-landmark" class="info-value"></span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa-solid fa-road"></i>
+                            <div class="info-content">
+                                <span class="info-label">Street Address</span>
+                                <span id="user-address" class="info-value">Loading...</span>
+                            </div>
+                        </div>
+                        <div class="info-item">
+                            <i class="fa-solid fa-location-pin"></i>
+                            <div class="info-content">
+                                <span class="info-label">PIN Code</span>
+                                <span id="user-pincode" class="info-value">Loading...</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast Message -->
+    <div id="toast-message" class="toast-message">
+        <div class="toast-content">
+            <i class="toast-icon fa-solid fa-check-circle success"></i>
+            <p class="toast-text">Message here</p>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+            authDomain: "grozily2.firebaseapp.com",
+            databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+            projectId: "grozily2",
+            storageBucket: "grozily2.firebasestorage.app",
+            messagingSenderId: "665300145710",
+            appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+            measurementId: "G-83S7ZWXEB9"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // DOM Elements
+        const userName = document.getElementById('user-name');
+        const userEmail = document.getElementById('user-email');
+        const userPhone = document.getElementById('user-phone');
+        const userHouse = document.getElementById('user-house');
+        const userArea = document.getElementById('user-area');
+        const userLandmark = document.getElementById('user-landmark');
+        const landmarkContainer = document.getElementById('landmark-container');
+        const userAddress = document.getElementById('user-address');
+        const userPinCode = document.getElementById('user-pincode');
+        const backBtn = document.getElementById('back-btn');
+        const toastMessage = document.getElementById('toast-message');
+        const toastText = document.querySelector('.toast-text');
+        const toastIcon = document.querySelector('.toast-icon');
+
+        // Check authentication and load user data
+        auth.onAuthStateChanged(user => {
+            if (!user) {
+                window.location.href = 'login.html';
+            } else {
+                loadUserData(user);
+            }
+        });
+
+        // Load user details
+        async function loadUserData(user) {
+            try {
+                // Set basic info
+                userName.textContent = user.displayName || 'User';
+                userEmail.textContent = user.email || 'Not provided';
+                
+                // Get user details from database
+                const userRef = database.ref('users/' + user.uid);
+                const snapshot = await userRef.once('value');
+                
+                if (snapshot.exists() && snapshot.val().details) {
+                    const details = snapshot.val().details;
+                    
+                    // Update displayed info
+                    if (details.fullName) userName.textContent = details.fullName;
+                    if (details.phoneNumber) userPhone.textContent = '+91 ' + details.phoneNumber;
+                    else userPhone.textContent = 'Not provided';
+                    
+                    if (details.houseNumber) userHouse.textContent = details.houseNumber;
+                    else userHouse.textContent = 'Not provided';
+                    
+                    if (details.area) userArea.textContent = details.area;
+                    else userArea.textContent = 'Not provided';
+                    
+                    if (details.landmark && details.landmark.trim() !== '') {
+                        userLandmark.textContent = details.landmark;
+                        landmarkContainer.classList.remove('hidden');
+                    } else {
+                        landmarkContainer.classList.add('hidden');
+                    }
+                    
+                    if (details.address) userAddress.textContent = details.address;
+                    else userAddress.textContent = 'Not provided';
+                    
+                    if (details.pinCode) userPinCode.textContent = details.pinCode;
+                    else userPinCode.textContent = 'Not provided';
+                } else {
+                    showToast('Profile not complete', 'info');
+                }
+            } catch (error) {
+                console.error('Error loading user data:', error);
+                showToast('Failed to load profile data', 'error');
+            }
+        }
+
+        // Back button
+        backBtn.addEventListener('click', () => {
+            window.location.href = 'home.html';
+        });
+
+        // Toast timer reference
+        let toastTimer;
+
+        // Show toast message
+        function showToast(message, type = 'success') {
+            // Clear any existing toast timer
+            if (toastTimer) {
+                clearTimeout(toastTimer);
+                toastMessage.classList.remove('show');
+                setTimeout(() => {
+                    displayToast();
+                }, 100);
+            } else {
+                displayToast();
+            }
+            
+            function displayToast() {
+                toastText.textContent = message;
+                
+                // Set icon based on type
+                if (type === 'error') {
+                    toastIcon.className = 'toast-icon fa-solid fa-exclamation-circle error';
+                } else if (type === 'info') {
+                    toastIcon.className = 'toast-icon fa-solid fa-info-circle info';
+                } else {
+                    toastIcon.className = 'toast-icon fa-solid fa-check-circle success';
+                }
+                
+                // Show toast
+                toastMessage.classList.add('show');
+                
+                // Hide after 3 seconds
+                toastTimer = setTimeout(() => {
+                    toastMessage.classList.remove('show');
+                    toastTimer = null;
+                }, 3000);
+            }
+        }
+    </script>
+</body>
+</html> 

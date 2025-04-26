@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Details - Grozily Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #4a5568;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+
+        .page-header {
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .page-title {
+            color: #2D3748;
+            font-size: 24px;
+        }
+
+        .vendor-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .vendor-avatar {
+            width: 60px;
+            height: 60px;
+            background-color: #805AD5;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        .vendor-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .vendor-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: #2D3748;
+        }
+
+        .vendor-store {
+            color: #718096;
+            font-size: 14px;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 300px 1fr;
+            gap: 30px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .profile-card, .products-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        .card-title {
+            font-size: 18px;
+            color: #2D3748;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #e2e8f0;
+            padding-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .card-title i {
+            color: #805AD5;
+        }
+
+        .profile-item {
+            margin-bottom: 15px;
+        }
+
+        .profile-label {
+            font-size: 14px;
+            color: #718096;
+            margin-bottom: 5px;
+        }
+
+        .profile-value {
+            font-size: 16px;
+            color: #2D3748;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-badge.active {
+            background-color: #C6F6D5;
+            color: #2F855A;
+        }
+
+        .status-badge.inactive {
+            background-color: #FED7D7;
+            color: #C53030;
+        }
+
+        /* Product section styles */
+        .products-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .products-count {
+            background-color: #805AD5;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        .products-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .product-card {
+            background-color: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            position: relative;
+            border: 1px solid #e2e8f0;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 180px;
+            object-fit: cover;
+        }
+
+        .product-details {
+            padding: 15px;
+        }
+
+        .product-name {
+            font-weight: 600;
+            font-size: 16px;
+            margin-bottom: 5px;
+            color: #2D3748;
+        }
+
+        .product-category {
+            font-size: 12px;
+            color: #718096;
+            margin-bottom: 10px;
+            display: inline-block;
+            background-color: #EDF2F7;
+            padding: 2px 8px;
+            border-radius: 5px;
+        }
+
+        .product-price {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .discounted-price {
+            font-weight: 600;
+            color: #2D3748;
+            font-size: 18px;
+        }
+
+        .original-price {
+            color: #A0AEC0;
+            text-decoration: line-through;
+            font-size: 14px;
+        }
+
+        .discount-percent {
+            background-color: #FEB2B2;
+            color: #9B2C2C;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 5px;
+            font-weight: 500;
+        }
+
+        .product-actions {
+            display: flex;
+            gap: 8px;
+            margin-top: 15px;
+            justify-content: flex-end;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        .action-btn.edit {
+            color: #4299e1;
+        }
+
+        .action-btn.delete {
+            color: #f56565;
+        }
+
+        .empty-products {
+            text-align: center;
+            padding: 30px 20px;
+            background-color: #f8f9fa;
+            border-radius: 8px;
+            color: #718096;
+        }
+
+        .loader {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(0, 0, 0, 0.1);
+            border-left-color: #805AD5;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* Confirmation Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 400px;
+            overflow: hidden;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            transform: translateY(20px);
+            transition: transform 0.3s;
+        }
+
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+
+        .modal-header {
+            padding: 20px;
+            text-align: center;
+            border-bottom: 1px solid #EDF2F7;
+        }
+
+        .modal-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #2D3748;
+        }
+
+        .modal-body {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .modal-message {
+            font-size: 14px;
+            color: #4A5568;
+            margin-bottom: 10px;
+        }
+
+        .modal-product {
+            font-weight: 600;
+            color: #2D3748;
+        }
+
+        .modal-footer {
+            padding: 15px 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            border-top: 1px solid #EDF2F7;
+        }
+
+        .modal-btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: none;
+        }
+
+        .cancel-btn {
+            background-color: #EDF2F7;
+            color: #4A5568;
+        }
+
+        .cancel-btn:hover {
+            background-color: #E2E8F0;
+        }
+
+        .confirm-btn {
+            background-color: #F56565;
+            color: white;
+        }
+
+        .confirm-btn:hover {
+            background-color: #E53E3E;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 4px;
+            color: white;
+            font-size: 14px;
+            z-index: 1000;
+            display: none;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .toast.success {
+            background-color: #48BB78;
+        }
+
+        .toast.error {
+            background-color: #F56565;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="vendors.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back to Vendors
+        </a>
+
+        <div class="page-header">
+            <div class="vendor-header">
+                <div class="vendor-avatar" id="vendor-initial">V</div>
+                <div class="vendor-info">
+                    <div class="vendor-name" id="vendor-name">Loading...</div>
+                    <div class="vendor-store" id="store-name">Loading...</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <!-- Profile Section -->
+            <div class="profile-card">
+                <h2 class="card-title">
+                    <i class="fas fa-user-circle"></i>
+                    Vendor Profile
+                </h2>
+
+                <div class="profile-items" id="profile-details">
+                    <div class="loader">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Products Section -->
+            <div class="products-card">
+                <div class="products-header">
+                    <h2 class="card-title">
+                        <i class="fas fa-box"></i>
+                        Products
+                        <span class="products-count" id="products-count">0</span>
+                    </h2>
+                </div>
+
+                <div id="products-container" class="products-container">
+                    <div class="loader">
+                        <div class="spinner"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 class="modal-title">Delete Product</h3>
+            </div>
+            <div class="modal-body">
+                <p class="modal-message">Are you sure you want to delete:</p>
+                <p class="modal-product" id="delete-product-name">Product Name</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" id="cancel-delete-btn">Cancel</button>
+                <button class="modal-btn confirm-btn" id="confirm-delete-btn">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Message -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+            authDomain: "grozily2.firebaseapp.com",
+            databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+            projectId: "grozily2",
+            storageBucket: "grozily2.appspot.com",
+            messagingSenderId: "665300145710",
+            appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+            measurementId: "G-83S7ZWXEB9"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // DOM Elements
+        const vendorInitial = document.getElementById('vendor-initial');
+        const vendorName = document.getElementById('vendor-name');
+        const storeName = document.getElementById('store-name');
+        const profileDetails = document.getElementById('profile-details');
+        const productsContainer = document.getElementById('products-container');
+        const productsCount = document.getElementById('products-count');
+        const deleteModal = document.getElementById('delete-modal');
+        const deleteProductName = document.getElementById('delete-product-name');
+        const cancelDeleteBtn = document.getElementById('cancel-delete-btn');
+        const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
+        const toast = document.getElementById('toast');
+
+        // Global variables
+        let currentVendorId = null;
+        let currentProductId = null;
+
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            return date.toLocaleDateString('en-US', { 
+                year: 'numeric', 
+                month: 'long', 
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Format currency
+        function formatCurrency(price) {
+            return '₹' + parseFloat(price).toLocaleString('en-IN');
+        }
+
+        // Calculate discount percentage
+        function calculateDiscount(original, discounted) {
+            const discount = ((original - discounted) / original) * 100;
+            return Math.round(discount);
+        }
+
+        // Show toast message
+        function showToast(message, type) {
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.style.display = 'block';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // Get vendor ID from URL
+        function getVendorIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+
+        // Load vendor details
+        function loadVendorDetails(vendorId) {
+            const vendorRef = firebase.database().ref(`vendors/${vendorId}`);
+            
+            vendorRef.once('value').then((snapshot) => {
+                if (!snapshot.exists()) {
+                    showToast('Vendor not found', 'error');
+                    setTimeout(() => {
+                        window.location.href = 'vendors.html';
+                    }, 2000);
+                    return;
+                }
+                
+                const vendor = snapshot.val();
+                
+                // Update header details
+                vendorName.textContent = vendor.name || 'Unknown';
+                storeName.textContent = vendor.storeName || 'Unknown Store';
+                vendorInitial.textContent = (vendor.name && vendor.name.charAt(0).toUpperCase()) || 'V';
+                
+                // Update profile details
+                profileDetails.innerHTML = `
+                    <div class="profile-item">
+                        <div class="profile-label">Status</div>
+                        <div class="profile-value">
+                            <span class="status-badge ${(vendor.status || 'active').toLowerCase()}">${vendor.status || 'Active'}</span>
+                        </div>
+                    </div>
+                    <div class="profile-item">
+                        <div class="profile-label">Email</div>
+                        <div class="profile-value">${vendor.email || 'Not provided'}</div>
+                    </div>
+                    <div class="profile-item">
+                        <div class="profile-label">Phone</div>
+                        <div class="profile-value">${vendor.phone || 'Not provided'}</div>
+                    </div>
+                    <div class="profile-item">
+                        <div class="profile-label">Location</div>
+                        <div class="profile-value">${vendor.location || 'Not provided'}</div>
+                    </div>
+                    ${vendor.pinCode ? `
+                    <div class="profile-item">
+                        <div class="profile-label">PIN Code</div>
+                        <div class="profile-value">${vendor.pinCode}</div>
+                    </div>` : ''}
+                    ${vendor.shopCategory ? `
+                    <div class="profile-item">
+                        <div class="profile-label">Category</div>
+                        <div class="profile-value">${vendor.shopCategory}</div>
+                    </div>` : ''}
+                    ${vendor.openingTime && vendor.closingTime ? `
+                    <div class="profile-item">
+                        <div class="profile-label">Business Hours</div>
+                        <div class="profile-value">${vendor.openingTime} - ${vendor.closingTime}</div>
+                    </div>` : ''}
+                    ${vendor.openDays && vendor.openDays.length ? `
+                    <div class="profile-item">
+                        <div class="profile-label">Open Days</div>
+                        <div class="profile-value">${vendor.openDays.join(', ')}</div>
+                    </div>` : ''}
+                    <div class="profile-item">
+                        <div class="profile-label">Registered On</div>
+                        <div class="profile-value">${vendor.createdAt ? formatDate(vendor.createdAt) : 'Unknown'}</div>
+                    </div>
+                    ${vendor.updatedAt ? `
+                    <div class="profile-item">
+                        <div class="profile-label">Last Updated</div>
+                        <div class="profile-value">${formatDate(vendor.updatedAt)}</div>
+                    </div>` : ''}
+                `;
+                
+                // Load vendor products
+                loadVendorProducts(vendorId);
+            }).catch((error) => {
+                console.error('Error loading vendor details:', error);
+                showToast('Error loading vendor details', 'error');
+            });
+        }
+
+        // Load vendor products
+        function loadVendorProducts(vendorId) {
+            const productsRef = firebase.database().ref('vendor_products').child(vendorId);
+            
+            productsRef.once('value').then((snapshot) => {
+                if (!snapshot.exists() || snapshot.numChildren() === 0) {
+                    productsContainer.innerHTML = `
+                        <div class="empty-products">
+                            <i class="fas fa-box-open" style="font-size: 48px; color: #CBD5E0; margin-bottom: 15px;"></i>
+                            <p>No products found for this vendor</p>
+                        </div>
+                    `;
+                    productsCount.textContent = '0';
+                    return;
+                }
+                
+                const products = [];
+                snapshot.forEach((productSnapshot) => {
+                    const productId = productSnapshot.key;
+                    const product = productSnapshot.val();
+                    products.push({ ...product, id: productId });
+                });
+                
+                // Update products count
+                productsCount.textContent = products.length;
+                
+                // Sort products by creation date (newest first)
+                products.sort((a, b) => {
+                    const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+                    const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+                    return dateB - dateA;
+                });
+                
+                // Render products
+                productsContainer.innerHTML = '';
+                products.forEach(product => {
+                    const discountPercent = calculateDiscount(product.originalPrice, product.discountedPrice);
+                    
+                    const productCard = document.createElement('div');
+                    productCard.className = 'product-card';
+                    productCard.innerHTML = `
+                        <img src="${product.imageURL || 'https://via.placeholder.com/300x200?text=No+Image'}" alt="${product.name}" class="product-image" onerror="this.src='https://via.placeholder.com/300x200?text=No+Image'">
+                        <div class="product-details">
+                            <h3 class="product-name">${product.name}</h3>
+                            <span class="product-category">${product.category || 'Uncategorized'}</span>
+                            <div class="product-price">
+                                <span class="discounted-price">${formatCurrency(product.discountedPrice)}</span>
+                                <span class="original-price">${formatCurrency(product.originalPrice)}</span>
+                                <span class="discount-percent">${discountPercent}% OFF</span>
+                            </div>
+                            <div class="product-actions">
+                                <button class="action-btn edit" onclick="editProduct('${product.id}')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn delete" onclick="showDeleteModal('${product.id}', '${product.name}')" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    `;
+                    
+                    productsContainer.appendChild(productCard);
+                });
+            }).catch((error) => {
+                console.error('Error loading vendor products:', error);
+                showToast('Error loading vendor products', 'error');
+            });
+        }
+
+        // Edit product
+        function editProduct(productId) {
+            window.location.href = `edit-product.html?id=${productId}&vendor=${currentVendorId}`;
+        }
+
+        // Show delete confirmation modal
+        function showDeleteModal(productId, productName) {
+            currentProductId = productId;
+            deleteProductName.textContent = productName;
+            deleteModal.classList.add('show');
+        }
+
+        // Delete product
+        function deleteProduct(productId) {
+            const updates = {};
+            updates[`/products/${productId}`] = null;
+            updates[`/vendor_products/${currentVendorId}/${productId}`] = null;
+            
+            firebase.database().ref().update(updates)
+                .then(() => {
+                    showToast('Product deleted successfully', 'success');
+                    loadVendorProducts(currentVendorId);
+                })
+                .catch((error) => {
+                    console.error('Error deleting product:', error);
+                    showToast('Error deleting product: ' + error.message, 'error');
+                });
+        }
+
+        // Event Listeners
+        cancelDeleteBtn.addEventListener('click', () => {
+            deleteModal.classList.remove('show');
+            currentProductId = null;
+        });
+
+        confirmDeleteBtn.addEventListener('click', () => {
+            if (currentProductId) {
+                deleteModal.classList.remove('show');
+                deleteProduct(currentProductId);
+                currentProductId = null;
+            }
+        });
+
+        // Close modal when clicking outside
+        deleteModal.addEventListener('click', (e) => {
+            if (e.target === deleteModal) {
+                deleteModal.classList.remove('show');
+                currentProductId = null;
+            }
+        });
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            currentVendorId = getVendorIdFromUrl();
+            
+            if (!currentVendorId) {
+                showToast('No vendor ID specified', 'error');
+                setTimeout(() => {
+                    window.location.href = 'vendors.html';
+                }, 2000);
+                return;
+            }
+            
+            loadVendorDetails(currentVendorId);
+        });
+    </script>
+</body>
+</html> 

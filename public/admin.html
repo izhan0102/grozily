@@ -1,0 +1,1621 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grozily Admin Panel</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        
+        body {
+            background-color: #f8f9fa;
+            color: #333;
+        }
+        
+        /* Admin Layout */
+        .admin-layout {
+            display: flex;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            width: 250px;
+            background-color: #2D3748;
+            color: #E2E8F0;
+            position: fixed;
+            height: 100vh;
+            overflow-y: auto;
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 1px solid #4A5568;
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: white;
+            text-decoration: none;
+        }
+        
+        .logo i {
+            font-size: 24px;
+            color: #805AD5;
+        }
+        
+        .logo-text {
+            font-size: 18px;
+            font-weight: bold;
+        }
+        
+        .sidebar-menu {
+            padding: 20px 0;
+        }
+        
+        .menu-category {
+            color: #A0AEC0;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            padding: 15px 20px 10px;
+        }
+        
+        .menu-item {
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #CBD5E0;
+            text-decoration: none;
+            transition: all 0.2s ease;
+            cursor: pointer;
+        }
+        
+        .menu-item:hover, .menu-item.active {
+            background-color: #4A5568;
+            color: white;
+        }
+        
+        .menu-item i {
+            width: 20px;
+            text-align: center;
+        }
+        
+        .sidebar-footer {
+            padding: 20px;
+            border-top: 1px solid #4A5568;
+            position: sticky;
+            bottom: 0;
+            background-color: #2D3748;
+        }
+        
+        .sidebar-footer .menu-item {
+            padding: 10px;
+            border-radius: 4px;
+        }
+        
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            margin-left: 250px;
+            padding: 0;
+            transition: all 0.3s ease;
+        }
+        
+        .main-header {
+            background-color: white;
+            border-bottom: 1px solid #E2E8F0;
+            padding: 15px 30px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+        }
+        
+        .page-title {
+            font-size: 22px;
+            font-weight: 600;
+            color: #2D3748;
+        }
+        
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .search-global {
+            position: relative;
+        }
+        
+        .search-global input {
+            padding: 8px 12px 8px 35px;
+            border: 1px solid #E2E8F0;
+            border-radius: 20px;
+            width: 220px;
+            transition: all 0.3s ease;
+        }
+        
+        .search-global input:focus {
+            width: 280px;
+            border-color: #805AD5;
+            outline: none;
+        }
+        
+        .search-global i {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #A0AEC0;
+        }
+        
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px 30px;
+        }
+
+        /* User profile menu */
+        .user-profile {
+            position: relative;
+        }
+        
+        .profile-toggle {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            padding: 5px;
+            border-radius: 20px;
+            transition: all 0.2s ease;
+        }
+        
+        .profile-toggle:hover {
+            background-color: #F7FAFC;
+        }
+        
+        .profile-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background-color: #805AD5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        
+        .profile-menu {
+            position: absolute;
+            top: 45px;
+            right: 0;
+            background-color: white;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            min-width: 180px;
+            opacity: 0;
+            visibility: hidden;
+            transform: translateY(10px);
+            transition: all 0.3s ease;
+            z-index: 100;
+        }
+        
+        .profile-menu.show {
+            opacity: 1;
+            visibility: visible;
+            transform: translateY(0);
+        }
+        
+        .profile-menu-header {
+            padding: 15px;
+            border-bottom: 1px solid #E2E8F0;
+        }
+        
+        .profile-name {
+            font-weight: 600;
+            color: #2D3748;
+            margin-bottom: 5px;
+        }
+        
+        .profile-role {
+            font-size: 12px;
+            color: #718096;
+        }
+        
+        .profile-menu-items {
+            padding: 10px 0;
+        }
+        
+        .profile-item {
+            padding: 10px 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #4A5568;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .profile-item:hover {
+            background-color: #F7FAFC;
+            color: #805AD5;
+        }
+        
+        .profile-item i {
+            width: 16px;
+            text-align: center;
+        }
+        
+        .profile-divider {
+            height: 1px;
+            background-color: #E2E8F0;
+            margin: 5px 0;
+        }
+        
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 0;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 30px;
+        }
+        
+        .admin-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #805AD5;
+        }
+        
+        .admin-logout {
+            padding: 8px 16px;
+            background-color: #f44336;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .admin-panel {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        
+        .panel-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .user-search {
+            padding: 8px 12px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            width: 250px;
+        }
+        
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        
+        .users-table th, .users-table td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        
+        .users-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+        }
+        
+        .users-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .users-table tr:hover {
+            background-color: #f5f5f5;
+        }
+        
+        .user-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        
+        .edit-btn {
+            color: #4299e1;
+        }
+        
+        .delete-btn {
+            color: #f56565;
+        }
+        
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+            padding: 30px;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        
+        .login-title {
+            font-size: 24px;
+            font-weight: bold;
+            color: #805AD5;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .form-group label {
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .form-group input {
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        
+        .login-btn {
+            padding: 12px;
+            background-color: #805AD5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+        
+        .login-error {
+            color: #f56565;
+            font-size: 14px;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease infinite;
+            margin-right: 10px;
+            display: none;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .pagination {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        .page-btn {
+            padding: 8px 12px;
+            background-color: #f8f9fa;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .page-btn.active {
+            background-color: #805AD5;
+            color: white;
+            border-color: #805AD5;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 4px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            z-index: 1000;
+        }
+        
+        .toast.show {
+            opacity: 1;
+        }
+        
+        .toast.success {
+            background-color: #48bb78;
+        }
+        
+        .toast.error {
+            background-color: #f56565;
+        }
+        
+        .toast.info {
+            background-color: #4299e1;
+        }
+        
+        /* User Details Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1001;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+        
+        .modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .modal-content {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 20px rgba(0, 0, 0, 0.2);
+            width: 90%;
+            max-width: 600px;
+            max-height: 90%;
+            overflow-y: auto;
+            padding: 0;
+            transform: translateY(-20px);
+            transition: transform 0.3s;
+        }
+        
+        .modal-overlay.show .modal-content {
+            transform: translateY(0);
+        }
+        
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px;
+            border-bottom: 1px solid #e0e0e0;
+            background-color: #f8f9fa;
+            border-radius: 8px 8px 0 0;
+        }
+        
+        .modal-title {
+            font-size: 20px;
+            font-weight: 600;
+            color: #805AD5;
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 20px;
+            color: #718096;
+            cursor: pointer;
+        }
+        
+        .modal-body {
+            padding: 20px;
+        }
+        
+        .user-detail-form {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .form-field {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        
+        .form-field label {
+            font-weight: 600;
+            font-size: 14px;
+            color: #4A5568;
+        }
+        
+        .form-field input {
+            padding: 10px;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+        }
+        
+        .user-address-section {
+            grid-column: span 2;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .user-address-section h3 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            color: #4A5568;
+        }
+        
+        .user-metadata {
+            grid-column: span 2;
+            margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            color: #718096;
+        }
+        
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            padding: 15px 20px;
+            border-top: 1px solid #e0e0e0;
+            background-color: #f8f9fa;
+            border-radius: 0 0 8px 8px;
+        }
+        
+        .modal-btn {
+            padding: 10px 16px;
+            border-radius: 4px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        
+        .btn-cancel {
+            background-color: #e2e8f0;
+            color: #4A5568;
+        }
+        
+        .btn-save {
+            background-color: #805AD5;
+            color: white;
+        }
+        
+        .users-count {
+            background-color: #805AD5;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        
+        /* Stats Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .stat-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.15);
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            font-size: 24px;
+            color: white;
+        }
+        
+        .stat-icon.purple {
+            background-color: #805AD5;
+        }
+        
+        .stat-icon.blue {
+            background-color: #4299e1;
+        }
+        
+        .stat-icon.green {
+            background-color: #48bb78;
+        }
+        
+        .stat-number {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2D3748;
+        }
+        
+        .stat-label {
+            font-size: 14px;
+            color: #718096;
+            font-weight: 500;
+        }
+    </style>
+</head>
+<body>
+    <!-- Admin Login Section -->
+    <div id="admin-login" class="login-container">
+        <h1 class="login-title">Admin Login</h1>
+        <form id="login-form" class="login-form">
+            <div class="form-group">
+                <label for="email">Username</label>
+                <input type="text" id="email" required>
+            </div>
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" required>
+            </div>
+            <button type="submit" class="login-btn">
+                <span id="login-spinner" class="spinner"></span>
+                Login
+            </button>
+        </form>
+        <p id="login-error" class="login-error"></p>
+    </div>
+
+    <!-- Admin Dashboard Section -->
+    <div id="admin-dashboard" class="admin-layout" style="display: none;">
+        <!-- Sidebar -->
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <a href="#" class="logo">
+                    <i class="fas fa-shopping-basket"></i>
+                    <span class="logo-text">Grozily Admin</span>
+                </a>
+            </div>
+            
+            <div class="sidebar-menu">
+                <div class="menu-category">Dashboard</div>
+                <a href="#" class="menu-item active" id="overview-tab">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Overview</span>
+                </a>
+                
+                <div class="menu-category">Management</div>
+                <a href="#" class="menu-item" id="users-tab">
+                    <i class="fas fa-users"></i>
+                    <span>Users</span>
+                </a>
+                <a href="vendors.html" class="menu-item">
+                    <i class="fas fa-store"></i>
+                    <span>Vendors</span>
+                </a>
+            </div>
+            
+            <div class="sidebar-footer">
+                <div id="sidebar-logout" class="menu-item">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="main-header">
+                <h1 class="page-title">Dashboard</h1>
+                
+                <div class="header-actions">
+                    <div class="user-profile">
+                        <div class="profile-toggle" id="profile-toggle">
+                            <div class="profile-avatar">A</div>
+                            <i class="fas fa-chevron-down"></i>
+                        </div>
+                        
+                        <div class="profile-menu" id="profile-menu">
+                            <div class="profile-menu-header">
+                                <div class="profile-name">Admin User</div>
+                                <div class="profile-role">Administrator</div>
+                            </div>
+                            <div class="profile-menu-items">
+                                <div class="profile-item" id="header-logout">
+                                    <i class="fas fa-sign-out-alt"></i>
+                                    <span>Logout</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="admin-container">
+                <!-- Stats Section -->
+                <div class="stats-container">
+                    <div class="stat-card">
+                        <div class="stat-icon purple">
+                            <i class="fas fa-users"></i>
+                        </div>
+                        <div class="stat-number" id="total-users">0</div>
+                        <div class="stat-label">Total Users</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon blue">
+                            <i class="fas fa-user-plus"></i>
+                        </div>
+                        <div class="stat-number" id="today-users">0</div>
+                        <div class="stat-label">Registered Today</div>
+                    </div>
+                    
+                    <div class="stat-card">
+                        <div class="stat-icon green">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="stat-number" id="month-users">0</div>
+                        <div class="stat-label">Registered This Month</div>
+                    </div>
+                </div>
+                
+                <div class="admin-panel">
+                    <div class="panel-header">
+                        <h2 class="panel-title">Registered Users <span id="users-count" class="users-count">0</span></h2>
+                        <input type="text" id="user-search" class="user-search" placeholder="Search users...">
+                    </div>
+                    
+                    <table class="users-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Phone</th>
+                                <th>Email</th>
+                                <th>Join Date</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="users-table-body">
+                            <!-- Users will be populated here via JavaScript -->
+                        </tbody>
+                    </table>
+                    
+                    <div id="pagination" class="pagination">
+                        <!-- Pagination will be generated here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Toast Message -->
+    <div id="toast" class="toast">
+        <i id="toast-icon" class="fas"></i>
+        <span id="toast-message"></span>
+    </div>
+    
+    <!-- User Details Modal -->
+    <div id="user-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">User Details</h2>
+                <button id="modal-close" class="modal-close">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="modal-body">
+                <form id="user-detail-form" class="user-detail-form">
+                    <div class="form-field">
+                        <label for="edit-name">Full Name</label>
+                        <input type="text" id="edit-name">
+                    </div>
+                    <div class="form-field">
+                        <label for="edit-phone">Phone Number</label>
+                        <input type="text" id="edit-phone">
+                    </div>
+                    <div class="form-field">
+                        <label for="edit-email">Email</label>
+                        <input type="email" id="edit-email">
+                    </div>
+                    <div class="form-field">
+                        <label for="edit-pincode">PIN Code</label>
+                        <input type="text" id="edit-pincode">
+                    </div>
+                    
+                    <div class="user-address-section">
+                        <h3>Address Information</h3>
+                        <div class="form-field">
+                            <label for="edit-house">House/Flat Number</label>
+                            <input type="text" id="edit-house">
+                        </div>
+                        <div class="form-field">
+                            <label for="edit-area">Area</label>
+                            <input type="text" id="edit-area">
+                        </div>
+                        <div class="form-field">
+                            <label for="edit-landmark">Landmark</label>
+                            <input type="text" id="edit-landmark">
+                        </div>
+                        <div class="form-field">
+                            <label for="edit-address">Full Address</label>
+                            <input type="text" id="edit-address">
+                        </div>
+                    </div>
+                    
+                    <div class="user-metadata">
+                        <span id="user-created">Created: N/A</span>
+                        <span id="user-updated">Last Updated: N/A</span>
+                    </div>
+                    
+                    <!-- Hidden input for user ID -->
+                    <input type="hidden" id="edit-user-id">
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button id="modal-cancel" class="modal-btn btn-cancel">Cancel</button>
+                <button id="modal-save" class="modal-btn btn-save">Save Changes</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-firestore.js"></script>
+    
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+            authDomain: "grozily2.firebaseapp.com",
+            databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+            projectId: "grozily2",
+            storageBucket: "grozily2.firebasestorage.app",
+            messagingSenderId: "665300145710",
+            appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+            measurementId: "G-83S7ZWXEB9"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // DOM Elements
+        const adminLogin = document.getElementById('admin-login');
+        const adminDashboard = document.getElementById('admin-dashboard');
+        const loginForm = document.getElementById('login-form');
+        const loginError = document.getElementById('login-error');
+        const loginSpinner = document.getElementById('login-spinner');
+        const logoutBtn = document.getElementById('logout-btn');
+        const usersTableBody = document.getElementById('users-table-body');
+        const userSearch = document.getElementById('user-search');
+        const paginationElement = document.getElementById('pagination');
+        const toast = document.getElementById('toast');
+        const toastIcon = document.getElementById('toast-icon');
+        const toastMessage = document.getElementById('toast-message');
+        
+        // Constants
+        const ADMIN_USERNAME = 'admin';
+        const ADMIN_PASSWORD = 'admin123';
+        const USERS_PER_PAGE = 10;
+        
+        // Global variables
+        let allUsers = [];
+        let filteredUsers = [];
+        let currentPage = 1;
+        
+        // Check if user is already logged in
+        const isLoggedIn = localStorage.getItem('adminLoggedIn') === 'true';
+        if (isLoggedIn) {
+            showAdminDashboard();
+            loadUsers();
+        } else {
+            showLoginForm();
+        }
+        
+        // Login form submission
+        loginForm.addEventListener('submit', e => {
+            e.preventDefault();
+            const username = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            
+            loginSpinner.style.display = 'inline-block';
+            
+            // Simple credential check
+            if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                localStorage.setItem('adminLoggedIn', 'true');
+                showAdminDashboard();
+                loadUsers();
+            } else {
+                showError('Invalid username or password');
+            }
+            
+            loginSpinner.style.display = 'none';
+        });
+        
+        // Logout button handlers (both sidebar and dropdown)
+        const sidebarLogout = document.getElementById('sidebar-logout');
+        const headerLogout = document.getElementById('header-logout');
+        
+        sidebarLogout.addEventListener('click', logout);
+        headerLogout.addEventListener('click', logout);
+        
+        function logout() {
+            localStorage.removeItem('adminLoggedIn');
+            showLoginForm();
+        }
+        
+        // Profile dropdown toggle
+        const profileToggle = document.getElementById('profile-toggle');
+        const profileMenu = document.getElementById('profile-menu');
+        
+        profileToggle.addEventListener('click', () => {
+            profileMenu.classList.toggle('show');
+        });
+        
+        // Close profile menu when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!profileToggle.contains(e.target) && !profileMenu.contains(e.target)) {
+                profileMenu.classList.remove('show');
+            }
+        });
+        
+        // Global search functionality
+        const globalSearchInput = document.querySelector('.search-global input');
+        if (globalSearchInput) {
+            globalSearchInput.addEventListener('keyup', (e) => {
+                // Implement global search when Enter key is pressed
+                if (e.key === 'Enter') {
+                    const searchTerm = globalSearchInput.value.trim().toLowerCase();
+                    if (searchTerm) {
+                        // Transfer the search term to the user search input
+                        document.getElementById('user-search').value = searchTerm;
+                        
+                        // Trigger the user search
+                        const inputEvent = new Event('input', { bubbles: true });
+                        document.getElementById('user-search').dispatchEvent(inputEvent);
+                        
+                        // Scroll to the users table
+                        document.querySelector('.admin-panel').scrollIntoView({
+                            behavior: 'smooth'
+                        });
+                        
+                        // Highlight the search box briefly
+                        const userSearch = document.getElementById('user-search');
+                        userSearch.style.boxShadow = '0 0 0 2px #805AD5';
+                        setTimeout(() => {
+                            userSearch.style.boxShadow = '';
+                        }, 1500);
+                    }
+                }
+            });
+        }
+        
+        // User search functionality
+        userSearch.addEventListener('input', () => {
+            const searchTerm = userSearch.value.toLowerCase();
+            
+            if (searchTerm) {
+                filteredUsers = allUsers.filter(user => {
+                    return (
+                        (user.name && user.name.toLowerCase().includes(searchTerm)) ||
+                        (user.phone && user.phone.includes(searchTerm)) ||
+                        (user.email && user.email.toLowerCase().includes(searchTerm))
+                    );
+                });
+            } else {
+                filteredUsers = [...allUsers];
+            }
+            
+            currentPage = 1;
+            displayUsers();
+            setupPagination();
+        });
+        
+        // Load users from Firebase
+        function loadUsers() {
+            showToast('Loading users...', 'info');
+            
+            console.log('Connecting to Firebase database:', firebaseConfig.databaseURL);
+            
+            // Based on user-details.js, the users are stored at 'users/{uid}'
+            firebase.database().ref('users').once('value')
+                .then(snapshot => {
+                    console.log('Users data found:', snapshot.exists());
+                    
+                    if (!snapshot.exists()) {
+                        throw new Error('No users found in database');
+                    }
+                    
+                    allUsers = [];
+                    snapshot.forEach(userSnapshot => {
+                        const userId = userSnapshot.key;
+                        const userData = userSnapshot.val();
+                        
+                        // For user details structure
+                        let userInfo = {
+                            id: userId,
+                            createdAt: userData.createdAt || new Date().toISOString(),
+                            updatedAt: userData.updatedAt || userData.createdAt || new Date().toISOString(),
+                            // Store the original data for editing
+                            originalData: userData
+                        };
+                        
+                        // Extract user details if available
+                        if (userData.details) {
+                            userInfo.name = userData.details.fullName || 'N/A';
+                            userInfo.phone = userData.details.phoneNumber || 'N/A';
+                            userInfo.email = userData.email || 'N/A';
+                            userInfo.pinCode = userData.details.pinCode || 'N/A';
+                            userInfo.houseNumber = userData.details.houseNumber || 'N/A';
+                            userInfo.area = userData.details.area || 'N/A';
+                            userInfo.landmark = userData.details.landmark || 'N/A';
+                            userInfo.address = userData.details.address || 'N/A';
+                            userInfo.updatedAt = userData.details.updatedAt || userInfo.updatedAt;
+                        } else {
+                            // Handle case where user might not have details
+                            userInfo.name = userData.displayName || userData.fullName || 'N/A';
+                            userInfo.phone = userData.phoneNumber || 'N/A';
+                            userInfo.email = userData.email || 'N/A';
+                        }
+                        
+                        console.log('Processed user:', userInfo);
+                        allUsers.push(userInfo);
+                    });
+                    
+                    if (allUsers.length === 0) {
+                        throw new Error('No user data found');
+                    }
+                    
+                    // Update the users count
+                    document.getElementById('users-count').textContent = allUsers.length;
+                    
+                    // Update statistics
+                    updateUserStats();
+                    
+                    allUsers.sort((a, b) => {
+                        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+                        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+                        return dateB - dateA; // Sort by newest first
+                    });
+                    
+                    filteredUsers = [...allUsers];
+                    displayUsers();
+                    setupPagination();
+                    showToast(`${allUsers.length} users loaded successfully`, 'success');
+                })
+                .catch(error => {
+                    console.error('Error loading users:', error);
+                    showToast('Error: ' + error.message, 'error');
+                    
+                    // Show empty state instead of sample data
+                    allUsers = [];
+                    filteredUsers = [];
+                    
+                    // Update the users count
+                    document.getElementById('users-count').textContent = 0;
+                    
+                    // Update statistics
+                    updateUserStats();
+                    
+                    displayUsers();
+                    setupPagination();
+                });
+        }
+        
+        // Display users in the table
+        function displayUsers() {
+            usersTableBody.innerHTML = '';
+            
+            const startIndex = (currentPage - 1) * USERS_PER_PAGE;
+            const endIndex = startIndex + USERS_PER_PAGE;
+            const usersToDisplay = filteredUsers.slice(startIndex, endIndex);
+            
+            if (usersToDisplay.length === 0) {
+                const noUsersRow = document.createElement('tr');
+                noUsersRow.innerHTML = `
+                    <td colspan="5" style="text-align: center;">No users found</td>
+                `;
+                usersTableBody.appendChild(noUsersRow);
+                return;
+            }
+            
+            usersToDisplay.forEach(user => {
+                const row = document.createElement('tr');
+                
+                // Format date
+                const joinDate = user.createdAt 
+                    ? new Date(user.createdAt).toLocaleDateString() 
+                    : 'N/A';
+                
+                row.innerHTML = `
+                    <td>${user.name || 'N/A'}</td>
+                    <td>${user.phone || 'N/A'}</td>
+                    <td>${user.email || 'N/A'}</td>
+                    <td>${joinDate}</td>
+                    <td class="user-actions">
+                        <button class="action-btn edit-btn" data-id="${user.id}" title="Edit User">
+                            <i class="fas fa-edit"></i>
+                        </button>
+                        <button class="action-btn view-btn" data-id="${user.id}" title="View Details">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                        <button class="action-btn delete-btn" data-id="${user.id}" title="Delete User">
+                            <i class="fas fa-trash-alt"></i>
+                        </button>
+                    </td>
+                `;
+                
+                usersTableBody.appendChild(row);
+            });
+            
+            // Add event listeners to action buttons
+            document.querySelectorAll('.edit-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const userId = btn.getAttribute('data-id');
+                    openUserModal(userId, true); // true for edit mode
+                });
+            });
+            
+            document.querySelectorAll('.view-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const userId = btn.getAttribute('data-id');
+                    openUserModal(userId, false); // false for view-only mode
+                });
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const userId = btn.getAttribute('data-id');
+                    if (confirm('Are you sure you want to delete this user?')) {
+                        deleteUser(userId);
+                    }
+                });
+            });
+        }
+        
+        // Delete user
+        function deleteUser(userId) {
+            showToast('Deleting user...', 'info');
+            
+            firebase.database().ref(`users/${userId}`).remove()
+                .then(() => {
+                    showToast('User deleted successfully', 'success');
+                    
+                    // Remove user from arrays
+                    allUsers = allUsers.filter(user => user.id !== userId);
+                    filteredUsers = filteredUsers.filter(user => user.id !== userId);
+                    
+                    // Refresh display
+                    displayUsers();
+                    setupPagination();
+                })
+                .catch(error => {
+                    console.error('Error deleting user:', error);
+                    showToast('Error deleting user: ' + error.message, 'error');
+                });
+        }
+        
+        // Setup pagination
+        function setupPagination() {
+            paginationElement.innerHTML = '';
+            
+            const totalPages = Math.ceil(filteredUsers.length / USERS_PER_PAGE);
+            
+            if (totalPages <= 1) {
+                return;
+            }
+            
+            // Previous button
+            const prevBtn = document.createElement('button');
+            prevBtn.className = 'page-btn';
+            prevBtn.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevBtn.addEventListener('click', () => {
+                if (currentPage > 1) {
+                    currentPage--;
+                    displayUsers();
+                    setupPagination();
+                }
+            });
+            paginationElement.appendChild(prevBtn);
+            
+            // Page buttons
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.addEventListener('click', () => {
+                    currentPage = i;
+                    displayUsers();
+                    setupPagination();
+                });
+                paginationElement.appendChild(pageBtn);
+            }
+            
+            // Next button
+            const nextBtn = document.createElement('button');
+            nextBtn.className = 'page-btn';
+            nextBtn.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextBtn.addEventListener('click', () => {
+                if (currentPage < totalPages) {
+                    currentPage++;
+                    displayUsers();
+                    setupPagination();
+                }
+            });
+            paginationElement.appendChild(nextBtn);
+        }
+        
+        // Show login form
+        function showLoginForm() {
+            adminLogin.style.display = 'block';
+            adminDashboard.style.display = 'none';
+            loginError.style.display = 'none';
+            
+            // Clear form
+            document.getElementById('email').value = '';
+            document.getElementById('password').value = '';
+        }
+        
+        // Show admin dashboard
+        function showAdminDashboard() {
+            adminLogin.style.display = 'none';
+            adminDashboard.style.display = 'block';
+        }
+        
+        // Show login error
+        function showError(message) {
+            loginError.textContent = message;
+            loginError.style.display = 'block';
+        }
+        
+        // Show toast message
+        function showToast(message, type = 'info') {
+            // Set icon based on type
+            if (type === 'success') {
+                toastIcon.className = 'fas fa-check-circle';
+            } else if (type === 'error') {
+                toastIcon.className = 'fas fa-exclamation-circle';
+            } else {
+                toastIcon.className = 'fas fa-info-circle';
+            }
+            
+            // Set message and type
+            toastMessage.textContent = message;
+            toast.className = `toast ${type}`;
+            
+            // Show toast
+            toast.classList.add('show');
+            
+            // Hide after 3 seconds
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Update user statistics
+        function updateUserStats() {
+            const totalUsersElement = document.getElementById('total-users');
+            const todayUsersElement = document.getElementById('today-users');
+            const monthUsersElement = document.getElementById('month-users');
+            
+            // Total users
+            const totalUsers = allUsers.length;
+            totalUsersElement.textContent = totalUsers;
+            
+            // Get today's date (at midnight)
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            
+            // Get first day of current month
+            const firstDayOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+            
+            // Count users registered today
+            const usersToday = allUsers.filter(user => {
+                if (!user.createdAt) return false;
+                const createdDate = new Date(user.createdAt);
+                return createdDate >= today;
+            }).length;
+            
+            todayUsersElement.textContent = usersToday;
+            
+            // Count users registered this month
+            const usersThisMonth = allUsers.filter(user => {
+                if (!user.createdAt) return false;
+                const createdDate = new Date(user.createdAt);
+                return createdDate >= firstDayOfMonth;
+            }).length;
+            
+            monthUsersElement.textContent = usersThisMonth;
+            
+            // Add animations
+            animateValue(totalUsersElement, 0, totalUsers, 1000);
+            animateValue(todayUsersElement, 0, usersToday, 1000);
+            animateValue(monthUsersElement, 0, usersThisMonth, 1000);
+        }
+        
+        // Animate counter
+        function animateValue(element, start, end, duration) {
+            // Store the original end value
+            element.setAttribute('data-end', end);
+            
+            let startTimestamp = null;
+            const step = (timestamp) => {
+                if (!startTimestamp) startTimestamp = timestamp;
+                const progress = Math.min((timestamp - startTimestamp) / duration, 1);
+                const value = Math.floor(progress * (end - start) + start);
+                element.textContent = value;
+                if (progress < 1) {
+                    window.requestAnimationFrame(step);
+                } else {
+                    element.textContent = element.getAttribute('data-end');
+                }
+            };
+            window.requestAnimationFrame(step);
+        }
+        
+        // User Modal Functions
+        const userModal = document.getElementById('user-modal');
+        const modalClose = document.getElementById('modal-close');
+        const modalCancel = document.getElementById('modal-cancel');
+        const modalSave = document.getElementById('modal-save');
+        const userDetailForm = document.getElementById('user-detail-form');
+        
+        // Form fields
+        const editName = document.getElementById('edit-name');
+        const editPhone = document.getElementById('edit-phone');
+        const editEmail = document.getElementById('edit-email');
+        const editPincode = document.getElementById('edit-pincode');
+        const editHouse = document.getElementById('edit-house');
+        const editArea = document.getElementById('edit-area');
+        const editLandmark = document.getElementById('edit-landmark');
+        const editAddress = document.getElementById('edit-address');
+        const editUserId = document.getElementById('edit-user-id');
+        const userCreated = document.getElementById('user-created');
+        const userUpdated = document.getElementById('user-updated');
+        
+        // Close modal events
+        modalClose.addEventListener('click', closeUserModal);
+        modalCancel.addEventListener('click', closeUserModal);
+        userModal.addEventListener('click', (e) => {
+            if (e.target === userModal) {
+                closeUserModal();
+            }
+        });
+        
+        // Save user changes
+        modalSave.addEventListener('click', saveUserChanges);
+        
+        // Open user modal
+        function openUserModal(userId, editMode = true) {
+            const user = allUsers.find(u => u.id === userId);
+            
+            if (!user) {
+                showToast('User not found', 'error');
+                return;
+            }
+            
+            // Populate the form with user data
+            editName.value = user.name !== 'N/A' ? user.name : '';
+            editPhone.value = user.phone !== 'N/A' ? user.phone : '';
+            editEmail.value = user.email !== 'N/A' ? user.email : '';
+            editPincode.value = user.pinCode !== 'N/A' ? user.pinCode : '';
+            editHouse.value = user.houseNumber !== 'N/A' ? user.houseNumber : '';
+            editArea.value = user.area !== 'N/A' ? user.area : '';
+            editLandmark.value = user.landmark !== 'N/A' ? user.landmark : '';
+            editAddress.value = user.address !== 'N/A' ? user.address : '';
+            editUserId.value = userId;
+            
+            // Set created/updated dates
+            if (user.createdAt) {
+                const createdDate = new Date(user.createdAt).toLocaleString();
+                userCreated.textContent = `Created: ${createdDate}`;
+            } else {
+                userCreated.textContent = 'Created: N/A';
+            }
+            
+            if (user.updatedAt) {
+                const updatedDate = new Date(user.updatedAt).toLocaleString();
+                userUpdated.textContent = `Last Updated: ${updatedDate}`;
+            } else {
+                userUpdated.textContent = 'Last Updated: N/A';
+            }
+            
+            // Set form fields readonly if in view-only mode
+            const formFields = userDetailForm.querySelectorAll('input[type="text"], input[type="email"]');
+            formFields.forEach(field => {
+                field.readOnly = !editMode;
+            });
+            
+            // Show/hide save button based on mode
+            modalSave.style.display = editMode ? 'block' : 'none';
+            
+            // Show the modal
+            userModal.classList.add('show');
+        }
+        
+        // Close user modal
+        function closeUserModal() {
+            userModal.classList.remove('show');
+        }
+        
+        // Save user changes
+        function saveUserChanges() {
+            const userId = editUserId.value;
+            
+            if (!userId) {
+                showToast('User ID is missing', 'error');
+                return;
+            }
+            
+            // Basic validation
+            if (!editName.value || !editPhone.value) {
+                showToast('Name and phone are required fields', 'error');
+                return;
+            }
+            
+            // Get the user's original data
+            const user = allUsers.find(u => u.id === userId);
+            if (!user || !user.originalData) {
+                showToast('Cannot find original user data', 'error');
+                return;
+            }
+            
+            // Create updated user data
+            const updatedData = { ...user.originalData };
+            
+            // Create or update the details object
+            if (!updatedData.details) {
+                updatedData.details = {};
+            }
+            
+            // Update details with form values
+            updatedData.details.fullName = editName.value;
+            updatedData.details.phoneNumber = editPhone.value;
+            updatedData.details.pinCode = editPincode.value;
+            updatedData.details.houseNumber = editHouse.value;
+            updatedData.details.area = editArea.value;
+            updatedData.details.landmark = editLandmark.value;
+            updatedData.details.address = editAddress.value;
+            updatedData.details.updatedAt = new Date().toISOString();
+            
+            // Update the email if available (not in the details object)
+            if (editEmail.value) {
+                updatedData.email = editEmail.value;
+            }
+            
+            // Update user in Firebase
+            showToast('Saving user data...', 'info');
+            
+            firebase.database().ref(`users/${userId}`).update(updatedData)
+                .then(() => {
+                    showToast('User data saved successfully', 'success');
+                    
+                    // Update user in local array
+                    const index = allUsers.findIndex(u => u.id === userId);
+                    if (index !== -1) {
+                        allUsers[index].name = editName.value;
+                        allUsers[index].phone = editPhone.value;
+                        allUsers[index].email = editEmail.value;
+                        allUsers[index].pinCode = editPincode.value;
+                        allUsers[index].houseNumber = editHouse.value;
+                        allUsers[index].area = editArea.value;
+                        allUsers[index].landmark = editLandmark.value;
+                        allUsers[index].address = editAddress.value;
+                        allUsers[index].updatedAt = new Date().toISOString();
+                        allUsers[index].originalData = updatedData;
+                    }
+                    
+                    // Update filtered users as well
+                    const filteredIndex = filteredUsers.findIndex(u => u.id === userId);
+                    if (filteredIndex !== -1) {
+                        filteredUsers[filteredIndex] = { ...allUsers[index] };
+                    }
+                    
+                    // Refresh the display
+                    displayUsers();
+                    closeUserModal();
+                })
+                .catch(error => {
+                    console.error('Error saving user data:', error);
+                    showToast(`Error: ${error.message}`, 'error');
+                });
+        }
+        
+        // Add tab navigation functionality
+        const overviewTab = document.getElementById('overview-tab');
+        const usersTab = document.getElementById('users-tab');
+        
+        overviewTab.addEventListener('click', (e) => {
+            e.preventDefault();
+            overviewTab.classList.add('active');
+            usersTab.classList.remove('active');
+            
+            // Already on the overview page, just scroll to top
+            window.scrollTo({
+                top: 0,
+                behavior: 'smooth'
+            });
+        });
+        
+        usersTab.addEventListener('click', (e) => {
+            e.preventDefault();
+            usersTab.classList.add('active');
+            overviewTab.classList.remove('active');
+            
+            // Scroll to users table
+            document.querySelector('.admin-panel').scrollIntoView({
+                behavior: 'smooth'
+            });
+        });
+    </script>
+    
+    <!-- Load the loader script -->
+    <script src="loader.js" defer></script>
+</body>
+</html> 

@@ -1,0 +1,826 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vendor Management - Grozily Admin</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background-color: white;
+            padding: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 30px;
+        }
+
+        .header h1 {
+            color: #2D3748;
+            font-size: 24px;
+        }
+
+        .vendor-panel {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .add-vendor-btn {
+            background-color: #805AD5;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .vendors-table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .vendors-table th,
+        .vendors-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .vendors-table th {
+            background-color: #f8f9fa;
+            font-weight: 600;
+            color: #4a5568;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #4a5568;
+            text-decoration: none;
+            margin-bottom: 20px;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+        }
+
+        .modal.show {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .modal-content {
+            background-color: white;
+            padding: 30px;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 500px;
+            position: relative;
+        }
+
+        .modal-header {
+            margin-bottom: 20px;
+        }
+
+        .modal-title {
+            font-size: 20px;
+            color: #2D3748;
+            margin-bottom: 5px;
+        }
+
+        .modal-subtitle {
+            font-size: 14px;
+            color: #718096;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #4A5568;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #E2E8F0;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #805AD5;
+        }
+
+        .modal-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-top: 30px;
+        }
+
+        .cancel-btn {
+            padding: 10px 20px;
+            border: 1px solid #E2E8F0;
+            background-color: white;
+            color: #4A5568;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .create-btn {
+            padding: 10px 20px;
+            background-color: #805AD5;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        .error-message {
+            color: #E53E3E;
+            font-size: 14px;
+            margin-top: 5px;
+            display: none;
+        }
+
+        /* Toast Styles */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            padding: 12px 24px;
+            border-radius: 4px;
+            color: white;
+            font-size: 14px;
+            z-index: 1000;
+            display: none;
+        }
+
+        .toast.success {
+            background-color: #48BB78;
+        }
+
+        .toast.error {
+            background-color: #F56565;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 4px;
+            border-radius: 4px;
+            transition: background-color 0.2s;
+        }
+
+        .action-btn:hover {
+            background-color: #f0f0f0;
+        }
+
+        .action-btn.edit {
+            color: #4299e1;
+        }
+
+        .action-btn.activate {
+            color: #48bb78;
+        }
+
+        .action-btn.deactivate {
+            color: #ed8936;
+        }
+
+        .action-btn.delete {
+            color: #f56565;
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+
+        .status-badge.active {
+            background-color: #C6F6D5;
+            color: #2F855A;
+        }
+
+        .status-badge.inactive {
+            background-color: #FED7D7;
+            color: #C53030;
+        }
+
+        /* Stats Section Styles */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+        }
+
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            font-size: 24px;
+            color: white;
+        }
+
+        .stat-icon.purple {
+            background-color: #805AD5;
+        }
+
+        .stat-icon.blue {
+            background-color: #4299E1;
+        }
+
+        .stat-icon.green {
+            background-color: #48BB78;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: bold;
+            margin-bottom: 5px;
+            color: #2D3748;
+        }
+
+        .stat-label {
+            font-size: 14px;
+            color: #718096;
+        }
+
+        /* Add styles for view button */
+        .action-btn.view {
+            color: #805AD5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="admin.html" class="back-btn">
+            <i class="fas fa-arrow-left"></i>
+            Back to Dashboard
+        </a>
+
+        <div class="header">
+            <h1>Vendor Management</h1>
+        </div>
+
+        <!-- Stats Section -->
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-icon purple">
+                    <i class="fas fa-store"></i>
+                </div>
+                <div class="stat-number" id="total-vendors">0</div>
+                <div class="stat-label">Total Vendors</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon blue">
+                    <i class="fas fa-store-alt"></i>
+                </div>
+                <div class="stat-number" id="active-vendors">0</div>
+                <div class="stat-label">Active Vendors</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-icon green">
+                    <i class="fas fa-calendar-alt"></i>
+                </div>
+                <div class="stat-number" id="month-vendors">0</div>
+                <div class="stat-label">New This Month</div>
+            </div>
+        </div>
+
+        <div class="vendor-panel">
+            <div class="panel-header">
+                <h2>Registered Vendors</h2>
+                <button class="add-vendor-btn" id="addVendorBtn">
+                    <i class="fas fa-plus"></i>
+                    Add New Vendor
+                </button>
+            </div>
+
+            <table class="vendors-table">
+                <thead>
+                    <tr>
+                        <th>Vendor Name</th>
+                        <th>Store Name</th>
+                        <th>Contact</th>
+                        <th>Location</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="vendors-table-body">
+                    <tr>
+                        <td colspan="6" style="text-align: center;">No vendors registered yet</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Add Vendor Modal -->
+    <div class="modal" id="addVendorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Create Vendor Account</h2>
+                <p class="modal-subtitle">Enter vendor details to create a new account</p>
+            </div>
+            <form id="addVendorForm">
+                <div class="form-group">
+                    <label for="vendorName">Vendor Name</label>
+                    <input type="text" id="vendorName" required>
+                </div>
+                <div class="form-group">
+                    <label for="storeName">Store Name</label>
+                    <input type="text" id="storeName" required>
+                </div>
+                <div class="form-group">
+                    <label for="vendorEmail">Email</label>
+                    <input type="email" id="vendorEmail" required>
+                    <div class="error-message" id="emailError"></div>
+                </div>
+                <div class="form-group">
+                    <label for="vendorPassword">Password</label>
+                    <input type="password" id="vendorPassword" required>
+                    <div class="error-message" id="passwordError"></div>
+                </div>
+                <div class="form-group">
+                    <label for="vendorPhone">Phone Number</label>
+                    <input type="tel" id="vendorPhone" required>
+                </div>
+                <div class="form-group">
+                    <label for="vendorLocation">Location</label>
+                    <input type="text" id="vendorLocation" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="cancel-btn" id="cancelBtn">Cancel</button>
+                    <button type="submit" class="create-btn">Create Account</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Add Edit Vendor Modal -->
+    <div class="modal" id="editVendorModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 class="modal-title">Edit Vendor</h2>
+                <p class="modal-subtitle">Update vendor information</p>
+            </div>
+            <form id="editVendorForm">
+                <div class="form-group">
+                    <label for="editVendorName">Vendor Name</label>
+                    <input type="text" id="editVendorName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editStoreName">Store Name</label>
+                    <input type="text" id="editStoreName" required>
+                </div>
+                <div class="form-group">
+                    <label for="editVendorEmail">Email</label>
+                    <input type="email" id="editVendorEmail" required readonly>
+                </div>
+                <div class="form-group">
+                    <label for="editVendorPhone">Phone Number</label>
+                    <input type="tel" id="editVendorPhone" required>
+                </div>
+                <div class="form-group">
+                    <label for="editVendorLocation">Location</label>
+                    <input type="text" id="editVendorLocation" required>
+                </div>
+                <input type="hidden" id="editVendorId">
+                <div class="modal-actions">
+                    <button type="button" class="cancel-btn" id="editCancelBtn">Cancel</button>
+                    <button type="submit" class="create-btn">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Message -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+            authDomain: "grozily2.firebaseapp.com",
+            databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+            projectId: "grozily2",
+            storageBucket: "grozily2.firebasestorage.app",
+            messagingSenderId: "665300145710",
+            appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+            measurementId: "G-83S7ZWXEB9"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+
+        // DOM Elements
+        const addVendorBtn = document.getElementById('addVendorBtn');
+        const addVendorModal = document.getElementById('addVendorModal');
+        const addVendorForm = document.getElementById('addVendorForm');
+        const cancelBtn = document.getElementById('cancelBtn');
+        const toast = document.getElementById('toast');
+
+        // Show/Hide Modal
+        addVendorBtn.addEventListener('click', () => {
+            addVendorModal.classList.add('show');
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            addVendorModal.classList.remove('show');
+            addVendorForm.reset();
+        });
+
+        // Close modal when clicking outside
+        addVendorModal.addEventListener('click', (e) => {
+            if (e.target === addVendorModal) {
+                addVendorModal.classList.remove('show');
+                addVendorForm.reset();
+            }
+        });
+
+        // Show Toast Message
+        function showToast(message, type) {
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.style.display = 'block';
+            
+            setTimeout(() => {
+                toast.style.display = 'none';
+            }, 3000);
+        }
+
+        // Handle Form Submission
+        addVendorForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const vendorData = {
+                name: document.getElementById('vendorName').value,
+                storeName: document.getElementById('storeName').value,
+                email: document.getElementById('vendorEmail').value,
+                phone: document.getElementById('vendorPhone').value,
+                location: document.getElementById('vendorLocation').value,
+                status: 'Active',
+                createdAt: new Date().toISOString()
+            };
+
+            const password = document.getElementById('vendorPassword').value;
+
+            try {
+                // Create authentication account
+                const userCredential = await firebase.auth().createUserWithEmailAndPassword(vendorData.email, password);
+                const vendorId = userCredential.user.uid;
+
+                // Store vendor data in the 'vendors' node
+                await firebase.database().ref(`vendors/${vendorId}`).set(vendorData);
+
+                showToast('Vendor account created successfully!', 'success');
+                addVendorModal.classList.remove('show');
+                addVendorForm.reset();
+
+                // Refresh vendor list (we'll implement this later)
+                loadVendors();
+            } catch (error) {
+                console.error('Error creating vendor:', error);
+                showToast(error.message, 'error');
+            }
+        });
+
+        // Add this to your JavaScript section, before the loadVendors function
+        function updateVendorStats(vendors) {
+            const totalVendors = document.getElementById('total-vendors');
+            const activeVendors = document.getElementById('active-vendors');
+            const monthVendors = document.getElementById('month-vendors');
+
+            // Get current date and first day of current month
+            const now = new Date();
+            const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+            // Calculate stats
+            const stats = {
+                total: 0,
+                active: 0,
+                thisMonth: 0
+            };
+
+            vendors.forEach(vendor => {
+                stats.total++;
+                
+                if (vendor.status === 'Active') {
+                    stats.active++;
+                }
+
+                const createdAt = new Date(vendor.createdAt);
+                if (createdAt >= firstDayOfMonth) {
+                    stats.thisMonth++;
+                }
+            });
+
+            // Animate the numbers
+            animateNumber(totalVendors, stats.total);
+            animateNumber(activeVendors, stats.active);
+            animateNumber(monthVendors, stats.thisMonth);
+        }
+
+        function animateNumber(element, target) {
+            const duration = 1000; // Animation duration in milliseconds
+            const start = parseInt(element.textContent);
+            const range = target - start;
+            const startTime = performance.now();
+
+            function updateNumber(currentTime) {
+                const elapsed = currentTime - startTime;
+                const progress = Math.min(elapsed / duration, 1);
+
+                const current = Math.floor(start + (range * progress));
+                element.textContent = current;
+
+                if (progress < 1) {
+                    requestAnimationFrame(updateNumber);
+                }
+            }
+
+            requestAnimationFrame(updateNumber);
+        }
+
+        // Modify your loadVendors function to include stats update
+        function loadVendors() {
+            const vendorsTableBody = document.getElementById('vendors-table-body');
+            const vendorsRef = firebase.database().ref('vendors');
+            
+            vendorsRef.on('value', (snapshot) => {
+                vendorsTableBody.innerHTML = '';
+                
+                if (!snapshot.exists()) {
+                    vendorsTableBody.innerHTML = `
+                        <tr>
+                            <td colspan="6" style="text-align: center;">No vendors registered yet</td>
+                        </tr>`;
+                    updateVendorStats([]); // Update stats with empty array
+                    return;
+                }
+                
+                const vendors = [];
+                snapshot.forEach((vendorSnapshot) => {
+                    const vendorId = vendorSnapshot.key;
+                    const vendor = vendorSnapshot.val();
+                    vendors.push({ ...vendor, id: vendorId });
+                    
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${vendor.name || 'N/A'}</td>
+                        <td>${vendor.storeName || 'N/A'}</td>
+                        <td>
+                            <div>${vendor.phone || 'N/A'}</div>
+                            <div style="font-size: 12px; color: #718096;">${vendor.email || 'N/A'}</div>
+                        </td>
+                        <td>${vendor.location || 'N/A'}</td>
+                        <td>
+                            <span class="status-badge ${vendor.status.toLowerCase()}">${vendor.status}</span>
+                        </td>
+                        <td>
+                            <div class="action-buttons">
+                                <button class="action-btn view" onclick="viewVendor('${vendorId}')" title="View Details">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                                <button class="action-btn edit" onclick="editVendor('${vendorId}')" title="Edit">
+                                    <i class="fas fa-edit"></i>
+                                </button>
+                                <button class="action-btn ${vendor.status === 'Active' ? 'deactivate' : 'activate'}" 
+                                    onclick="toggleVendorStatus('${vendorId}', '${vendor.status}')" 
+                                    title="${vendor.status === 'Active' ? 'Deactivate' : 'Activate'}">
+                                    <i class="fas fa-${vendor.status === 'Active' ? 'ban' : 'check'}"></i>
+                                </button>
+                                <button class="action-btn delete" onclick="deleteVendor('${vendorId}')" title="Delete">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </div>
+                        </td>
+                    `;
+                    
+                    vendorsTableBody.appendChild(row);
+                });
+
+                // Update stats with vendors array
+                updateVendorStats(vendors);
+            });
+        }
+
+        // Toggle vendor status
+        async function toggleVendorStatus(vendorId, currentStatus) {
+            try {
+                const newStatus = currentStatus === 'Active' ? 'Inactive' : 'Active';
+                await firebase.database().ref(`vendors/${vendorId}`).update({
+                    status: newStatus
+                });
+                showToast(`Vendor ${newStatus.toLowerCase()}d successfully`, 'success');
+            } catch (error) {
+                console.error('Error updating vendor status:', error);
+                showToast(error.message, 'error');
+            }
+        }
+
+        // Edit vendor functionality
+        const editVendorModal = document.getElementById('editVendorModal');
+        const editVendorForm = document.getElementById('editVendorForm');
+        const editCancelBtn = document.getElementById('editCancelBtn');
+
+        // Show edit modal with vendor data
+        function editVendor(vendorId) {
+            const vendorRef = firebase.database().ref(`vendors/${vendorId}`);
+            
+            vendorRef.once('value').then((snapshot) => {
+                const vendor = snapshot.val();
+                
+                // Populate form fields
+                document.getElementById('editVendorName').value = vendor.name || '';
+                document.getElementById('editStoreName').value = vendor.storeName || '';
+                document.getElementById('editVendorEmail').value = vendor.email || '';
+                document.getElementById('editVendorPhone').value = vendor.phone || '';
+                document.getElementById('editVendorLocation').value = vendor.location || '';
+                document.getElementById('editVendorId').value = vendorId;
+                
+                // Show modal
+                editVendorModal.classList.add('show');
+            }).catch((error) => {
+                console.error('Error fetching vendor details:', error);
+                showToast('Error loading vendor details', 'error');
+            });
+        }
+
+        // Handle edit form submission
+        editVendorForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const vendorId = document.getElementById('editVendorId').value;
+            
+            const updatedData = {
+                name: document.getElementById('editVendorName').value,
+                storeName: document.getElementById('editStoreName').value,
+                phone: document.getElementById('editVendorPhone').value,
+                location: document.getElementById('editVendorLocation').value,
+                updatedAt: new Date().toISOString()
+            };
+            
+            try {
+                await firebase.database().ref(`vendors/${vendorId}`).update(updatedData);
+                showToast('Vendor updated successfully', 'success');
+                editVendorModal.classList.remove('show');
+                editVendorForm.reset();
+            } catch (error) {
+                console.error('Error updating vendor:', error);
+                showToast(error.message, 'error');
+            }
+        });
+
+        // Close edit modal
+        editCancelBtn.addEventListener('click', () => {
+            editVendorModal.classList.remove('show');
+            editVendorForm.reset();
+        });
+
+        // Close edit modal when clicking outside
+        editVendorModal.addEventListener('click', (e) => {
+            if (e.target === editVendorModal) {
+                editVendorModal.classList.remove('show');
+                editVendorForm.reset();
+            }
+        });
+
+        // Improved delete vendor function
+        async function deleteVendor(vendorId) {
+            const vendorRef = firebase.database().ref(`vendors/${vendorId}`);
+            
+            try {
+                // Get vendor details first
+                const snapshot = await vendorRef.once('value');
+                const vendor = snapshot.val();
+                
+                if (!confirm(`Are you sure you want to delete vendor "${vendor.name}" (${vendor.storeName})?\nThis action cannot be undone.`)) {
+                    return;
+                }
+
+                // Delete from authentication
+                try {
+                    // Note: Deleting auth user requires admin SDK on backend
+                    // For now, we'll just delete from database
+                    console.log('Auth user would be deleted here if using Admin SDK');
+                } catch (authError) {
+                    console.error('Error deleting auth user:', authError);
+                }
+
+                // Delete from database
+                await vendorRef.remove();
+                showToast('Vendor deleted successfully', 'success');
+            } catch (error) {
+                console.error('Error deleting vendor:', error);
+                showToast('Error deleting vendor: ' + error.message, 'error');
+            }
+        }
+
+        // Add loading state to buttons
+        function setLoading(button, isLoading) {
+            if (isLoading) {
+                button.disabled = true;
+                button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading...';
+            } else {
+                button.disabled = false;
+                button.innerHTML = button.getAttribute('data-original-text');
+            }
+        }
+
+        // Save original button text
+        document.querySelectorAll('button').forEach(button => {
+            button.setAttribute('data-original-text', button.innerHTML);
+        });
+
+        // Load vendors when page loads
+        document.addEventListener('DOMContentLoaded', loadVendors);
+
+        // View vendor function
+        function viewVendor(vendorId) {
+            window.location.href = `vendor-detail.html?id=${vendorId}`;
+        }
+    </script>
+</body>
+</html> 
