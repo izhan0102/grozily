@@ -282,10 +282,10 @@ function initSearchBar() {
     cyclePlaceholders();
     placeholderInterval = setInterval(cyclePlaceholders, 3000);
     
-    // Stop cycling when user focuses on input
-    searchInput.addEventListener('focus', () => {
-        clearInterval(placeholderInterval);
-        // Redirect to explore page when search input is focused
+    // Redirect to explore when search input is clicked
+    searchInput.addEventListener('click', (e) => {
+        e.preventDefault();
+        showLoading();
         window.location.href = 'explore.html';
     });
     
@@ -298,14 +298,11 @@ function initSearchBar() {
         }
     });
     
-    // Search functionality
-    searchButton.addEventListener('click', () => {
+    // Search button functionality
+    searchButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        showLoading();
         window.location.href = 'explore.html';
-    });
-    searchInput.addEventListener('keypress', (e) => {
-        if (e.key === 'Enter') {
-            window.location.href = 'explore.html';
-        }
     });
 }
 
