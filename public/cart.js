@@ -713,7 +713,7 @@ function proceedToCheckout() {
         setTimeout(() => {
             window.location.href = 'orders.html';
         }, 1500);
-    }, 2000);
+        }, 2000);
 }
 
 // Show toast message
@@ -770,12 +770,26 @@ toastMessage.addEventListener('click', () => {
 
 // Helper function to set button loading state
 function setButtonLoading(button, isLoading) {
+    const buttonText = button.querySelector('.btn-text');
+    const buttonLoader = button.querySelector('.btn-loader');
+    
     if (isLoading) {
         button.classList.add('loading');
         button.disabled = true;
+        
+        if (buttonText) buttonText.style.opacity = '0.7';
+        if (buttonLoader) {
+            buttonLoader.style.display = 'block';
+            // Adjust positioning based on the new layout
+            buttonLoader.style.position = 'absolute';
+            buttonLoader.style.right = '15%';
+        }
     } else {
         button.classList.remove('loading');
         button.disabled = false;
+        
+        if (buttonText) buttonText.style.opacity = '1';
+        if (buttonLoader) buttonLoader.style.display = 'none';
     }
 }
 
@@ -908,7 +922,7 @@ function hideLocationModal() {
 function initializeMap() {
     try {
         // Small delay to ensure the modal is visible and the map container is rendered
-        setTimeout(() => {
+    setTimeout(() => {
             try {
                 // Check if the map element exists
                 const mapElement = document.getElementById('location-map');
