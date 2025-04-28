@@ -1,0 +1,853 @@
+// Firebase configuration
+const firebaseConfig = {
+    apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+    authDomain: "grozily2.firebaseapp.com",
+    databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+    projectId: "grozily2",
+    storageBucket: "grozily2.firebasestorage.app",
+    messagingSenderId: "665300145710",
+    appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+    measurementId: "G-83S7ZWXEB9"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const auth = firebase.auth();
+const database = firebase.database();
+const storage = firebase.storage();
+
+// DOM Elements
+const backBtn = document.getElementById('back-btn');
+const searchInput = document.getElementById('search-input');
+const searchBtn = document.getElementById('search-btn');
+const clearSearchBtn = document.getElementById('clear-search-btn');
+const searchContainer = document.querySelector('.search-container');
+const searchSuggestions = document.getElementById('search-suggestions');
+const suggestionsList = document.getElementById('suggestions-list');
+const closeSuggestionsBtn = document.getElementById('close-suggestions-btn');
+const productSearchResults = document.getElementById('product-search-results');
+const storeSearchResults = document.getElementById('store-search-results');
+const productResultsContainer = document.getElementById('product-results-container');
+const storeResultsContainer = document.getElementById('store-results-container');
+const productResultCount = document.getElementById('product-result-count');
+const storeResultCount = document.getElementById('store-result-count');
+const exploreTabs = document.querySelector('.explore-tabs');
+
+// Tab Elements
+const productsTab = document.getElementById('products-tab');
+const storesTab = document.getElementById('stores-tab');
+const tabIndicator = document.querySelector('.tab-indicator');
+const productsContent = document.getElementById('products-content');
+const storesContent = document.getElementById('stores-content');
+const productsTabCount = productsTab.querySelector('.count');
+const storesTabCount = storesTab.querySelector('.count');
+
+// Product Elements
+const topProducts = document.getElementById('top-products');
+const topProductItems = document.querySelector('.top-product-items');
+const productsLoading = document.getElementById('products-loading');
+const productsNoResults = document.getElementById('products-no-results');
+
+// Store Elements
+const topStores = document.getElementById('top-stores');
+const topStoreItems = document.querySelector('.top-store-items');
+const storesLoading = document.getElementById('stores-loading');
+const storesNoResults = document.getElementById('stores-no-results');
+
+// Toast Message
+const toastMessage = document.getElementById('toast-message');
+const toastText = document.querySelector('.toast-text');
+const toastIcon = document.querySelector('.toast-icon');
+
+// User data
+let currentUser = null;
+let currentTab = 'products';
+let searchQuery = '';
+let allProducts = [];
+let allStores = [];
+let searchResults = {
+    products: [],
+    stores: []
+};
+let isDataLoaded = false;
+let lastSearchTerm = '';
+
+// Initialize page
+document.addEventListener('DOMContentLoaded', () => {
+    // Initial page animation
+    document.body.classList.add('page-loaded');
+    
+    // Check if user is authenticated
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            currentUser = user;
+            
+            // Load all data first
+            loadAllData().then(() => {
+                // Setup event listeners after data is loaded
+                setupEventListeners();
+                
+                // Show top products and stores
+                displayTopProducts();
+                displayTopStores();
+                
+                // Hide loading indicator if present
+                if (window.hideLoading) {
+                    window.hideLoading();
+                }
+            });
+        } else {
+            // Redirect to login page
+            window.location.href = 'login.html';
+        }
+    });
+});
+
+// Function to load all data at once
+function loadAllData() {
+    // Show loading indicator
+    if (window.showLoading) {
+        window.showLoading();
+    }
+    
+    console.log("Loading all data...");
+    
+    // Only load data once
+    if (isDataLoaded) {
+        return Promise.resolve();
+    }
+    
+    return Promise.all([
+        // Get all products
+        database.ref('products').once('value'),
+        // Get all stores/vendors
+        database.ref('vendors').once('value')
+    ])
+    .then(([productsSnapshot, vendorsSnapshot]) => {
+        // Process products
+        allProducts = [];
+        if (productsSnapshot.exists()) {
+            productsSnapshot.forEach(childSnapshot => {
+                const product = childSnapshot.val();
+                product.id = childSnapshot.key;
+                allProducts.push(product);
+            });
+        }
+        
+        // Process stores
+        allStores = [];
+        if (vendorsSnapshot.exists()) {
+            vendorsSnapshot.forEach(childSnapshot => {
+                const store = childSnapshot.val();
+                store.id = childSnapshot.key;
+                store.storeName = store.storeName || store.name; // Normalize store name field
+                allStores.push(store);
+            });
+        }
+        
+        console.log(`Loaded ${allProducts.length} products and ${allStores.length} stores`);
+        isDataLoaded = true;
+        
+        // Also link products to their vendors
+        linkProductsToVendors();
+        
+        return true;
+    })
+    .catch(error => {
+        console.error("Error loading data:", error);
+        if (window.hideLoading) {
+            window.hideLoading();
+        }
+        showToast("Failed to load data. Please try refreshing.", "error");
+        throw error;
+    });
+}
+
+// Link products to their vendor data
+function linkProductsToVendors() {
+    allProducts.forEach(product => {
+        if (product.vendorId) {
+            const vendor = allStores.find(v => v.id === product.vendorId);
+            if (vendor) {
+                product.vendorName = vendor.storeName || vendor.name;
+                product.vendorLocation = vendor.address?.area || vendor.location;
+            }
+        }
+    });
+}
+
+// Set up event listeners
+function setupEventListeners() {
+    // Back button
+    backBtn.addEventListener('click', () => {
+        window.location.href = 'home.html';
+    });
+    
+    // Search input
+    searchInput.addEventListener('focus', () => {
+        searchContainer.classList.add('focused');
+        showSearchSuggestions();
+    });
+    
+    searchInput.addEventListener('blur', (e) => {
+        // Don't blur if clicking on suggestions
+        if (e.relatedTarget && e.relatedTarget.closest('.search-suggestions')) {
+            searchInput.focus();
+            return;
+        }
+        
+        // Only remove focus if not clicking on suggestions
+        setTimeout(() => {
+            searchContainer.classList.remove('focused');
+            hideSearchSuggestions();
+        }, 200);
+    });
+    
+    searchInput.addEventListener('input', () => {
+        const query = searchInput.value.trim();
+        
+        // Show/hide clear button
+        if (query) {
+            clearSearchBtn.classList.add('visible');
+        } else {
+            clearSearchBtn.classList.remove('visible');
+            resetSearch();
+            return;
+        }
+        
+        // Show suggestions panel
+        showSearchSuggestions();
+        
+        // Perform search immediately with each keystroke
+        performInstantSearch(query);
+    });
+    
+    searchInput.addEventListener('keyup', (e) => {
+        if (e.key === 'Enter' && searchInput.value.trim()) {
+            executeSearch(searchInput.value.trim());
+        }
+    });
+    
+    // Search button
+    searchBtn.addEventListener('click', () => {
+        if (searchInput.value.trim()) {
+            executeSearch(searchInput.value.trim());
+        }
+    });
+    
+    // Clear search button
+    clearSearchBtn.addEventListener('click', () => {
+        searchInput.value = '';
+        clearSearchBtn.classList.remove('visible');
+        resetSearch();
+    });
+    
+    // Close suggestions button
+    closeSuggestionsBtn.addEventListener('click', () => {
+        hideSearchSuggestions();
+    });
+    
+    // Tab navigation
+    productsTab.addEventListener('click', () => {
+        switchTab('products');
+    });
+    
+    storesTab.addEventListener('click', () => {
+        switchTab('stores');
+    });
+}
+
+// Switch between tabs
+function switchTab(tab) {
+    // Update active tab
+    if (tab === 'products') {
+        productsTab.classList.add('active');
+        storesTab.classList.remove('active');
+        productsContent.classList.add('active');
+        storesContent.classList.remove('active');
+        tabIndicator.style.transform = 'translateX(0)';
+    } else {
+        productsTab.classList.remove('active');
+        storesTab.classList.add('active');
+        productsContent.classList.remove('active');
+        storesContent.classList.add('active');
+        tabIndicator.style.transform = 'translateX(100%)';
+    }
+    
+    currentTab = tab;
+}
+
+// Display top products 
+function displayTopProducts() {
+    // Clear container first
+    topProductItems.innerHTML = '';
+    
+    // Sort by popularity or other criteria
+    const sortedProducts = [...allProducts].sort((a, b) => {
+        // Sort by popularity (if available) or by name
+        const aPopularity = a.popularity || 0;
+        const bPopularity = b.popularity || 0;
+        
+        if (bPopularity === aPopularity) {
+            // If popularity is the same, sort alphabetically by name
+            return (a.name || '').localeCompare(b.name || '');
+        }
+        
+        return bPopularity - aPopularity;
+    });
+    
+    // Display top 8 products
+    const productsToShow = sortedProducts.slice(0, 8);
+    productsToShow.forEach(product => {
+        renderProductItem(product, topProductItems);
+    });
+}
+
+// Display top stores
+function displayTopStores() {
+    // Clear container first
+    topStoreItems.innerHTML = '';
+    
+    // Sort by rating or other criteria
+    const sortedStores = [...allStores].sort((a, b) => {
+        // Sort by rating (if available) or by name
+        const aRating = a.rating || 0;
+        const bRating = b.rating || 0;
+        
+        if (bRating === aRating) {
+            // If rating is the same, sort alphabetically by name
+            return (a.storeName || '').localeCompare(b.storeName || '');
+        }
+        
+        return bRating - aRating;
+    });
+    
+    // Display top 6 stores
+    const storesToShow = sortedStores.slice(0, 6);
+    storesToShow.forEach(store => {
+        renderStoreItem(store, topStoreItems);
+    });
+}
+
+// Perform instant search for real-time suggestions
+function performInstantSearch(query) {
+    if (!query) {
+        suggestionsList.innerHTML = '<div class="suggestion-placeholder">Type to search products and stores</div>';
+        return;
+    }
+    
+    // Don't repeat searches for the same term
+    if (query === lastSearchTerm) return;
+    lastSearchTerm = query;
+    
+    // Show loading indicator in suggestions
+    suggestionsList.innerHTML = '<div class="suggestion-loading"><i class="fa-solid fa-spinner fa-spin"></i> Searching...</div>';
+    
+    // Search products and stores using the data we already loaded
+    const lowerQuery = query.toLowerCase();
+    
+    // Search products
+    const matchingProducts = allProducts.filter(product => {
+        // Match by name, category, or description
+        const name = (product.name || '').toLowerCase();
+        const category = (product.category || '').toLowerCase();
+        const description = (product.description || '').toLowerCase();
+        
+        return name.includes(lowerQuery) || 
+               category.includes(lowerQuery) || 
+               description.includes(lowerQuery);
+    });
+    
+    // Search stores
+    const matchingStores = allStores.filter(store => {
+        // Match by name or location
+        const name = (store.storeName || '').toLowerCase();
+        const location = (store.address?.area || store.location || '').toLowerCase();
+        
+        return name.includes(lowerQuery) || location.includes(lowerQuery);
+    });
+    
+    // Update the UI with search results
+    updateSearchSuggestions(query, matchingProducts, matchingStores);
+}
+
+// Update search suggestions with mixed results
+function updateSearchSuggestions(query, products, stores) {
+    // Clear suggestions list
+    suggestionsList.innerHTML = '';
+    
+    // Create combined results array with type indicators
+    const combinedResults = [
+        ...products.map(product => ({ 
+            id: product.id, 
+            name: product.name, 
+            type: 'product', 
+            data: product,
+            category: product.category
+        })),
+        ...stores.map(store => ({ 
+            id: store.id, 
+            name: store.storeName, 
+            type: 'store', 
+            data: store,
+            location: store.address?.area || store.location
+        }))
+    ];
+    
+    // Sort combined results by relevance to query
+    const lowerQuery = query.toLowerCase();
+    combinedResults.sort((a, b) => {
+        const aName = (a.name || '').toLowerCase();
+        const bName = (b.name || '').toLowerCase();
+        
+        // Exact match first
+        if (aName === lowerQuery && bName !== lowerQuery) return -1;
+        if (bName === lowerQuery && aName !== lowerQuery) return 1;
+        
+        // Starts with query next
+        if (aName.startsWith(lowerQuery) && !bName.startsWith(lowerQuery)) return -1;
+        if (bName.startsWith(lowerQuery) && !aName.startsWith(lowerQuery)) return 1;
+        
+        // Contains query next
+        if (aName.includes(lowerQuery) && !bName.includes(lowerQuery)) return -1;
+        if (bName.includes(lowerQuery) && !aName.includes(lowerQuery)) return 1;
+        
+        // Alphabetical for the rest
+        return aName.localeCompare(bName);
+    });
+    
+    // Show results
+    if (combinedResults.length === 0) {
+        // No results found
+        const noResultsItem = document.createElement('div');
+        noResultsItem.className = 'suggestion-no-results';
+        noResultsItem.innerHTML = `No results found for "${query}". <span class="search-all">Search anyway</span>`;
+        
+        // Add click handler for "Search anyway"
+        noResultsItem.querySelector('.search-all').addEventListener('click', () => {
+            executeSearch(query);
+        });
+        
+        suggestionsList.appendChild(noResultsItem);
+    } else {
+        // Create sections for products and stores
+        const maxToShow = 5; // Maximum items to show per category
+        
+        // Get products and stores
+        const productResults = combinedResults.filter(item => item.type === 'product').slice(0, maxToShow);
+        const storeResults = combinedResults.filter(item => item.type === 'store').slice(0, maxToShow);
+        
+        // Products section (if we have products)
+        if (productResults.length > 0) {
+            const productsHeader = document.createElement('div');
+            productsHeader.className = 'suggestion-category-header';
+            productsHeader.innerHTML = `<i class="fa-solid fa-box"></i> Products`;
+            suggestionsList.appendChild(productsHeader);
+            
+            // Add product items
+            productResults.forEach(result => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item product-suggestion';
+                
+                // Highlight matching text in the name
+                const highlightedName = highlightMatchingText(result.name, query);
+                
+                // Add category if available
+                const categoryText = result.category ? ` <span class="suggestion-category">${result.category}</span>` : '';
+                
+                item.innerHTML = `
+                    <i class="fa-solid fa-box product-icon"></i>
+                    <div class="suggestion-text-container">
+                        <span class="suggestion-text">${highlightedName}</span>
+                        ${categoryText}
+                    </div>
+                `;
+                
+                // Add click handler to navigate to product detail
+                item.addEventListener('click', () => {
+                    window.location.href = `product-detail.html?id=${result.id}`;
+                });
+                
+                suggestionsList.appendChild(item);
+            });
+            
+            // Add "See all products" if there are more
+            if (products.length > maxToShow) {
+                const seeAllProducts = document.createElement('div');
+                seeAllProducts.className = 'suggestion-see-more';
+                seeAllProducts.innerHTML = `<i class="fa-solid fa-angle-right"></i> See all ${products.length} products`;
+                
+                seeAllProducts.addEventListener('click', () => {
+                    executeSearch(query);
+                    switchTab('products');
+                });
+                
+                suggestionsList.appendChild(seeAllProducts);
+            }
+        }
+        
+        // Stores section (if we have stores)
+        if (storeResults.length > 0) {
+            const storesHeader = document.createElement('div');
+            storesHeader.className = 'suggestion-category-header';
+            storesHeader.innerHTML = `<i class="fa-solid fa-store"></i> Stores`;
+            suggestionsList.appendChild(storesHeader);
+            
+            // Add store items
+            storeResults.forEach(result => {
+                const item = document.createElement('div');
+                item.className = 'suggestion-item store-suggestion';
+                
+                // Highlight matching text in the name
+                const highlightedName = highlightMatchingText(result.name, query);
+                
+                // Add location if available
+                const locationText = result.location ? ` <span class="suggestion-location">${result.location}</span>` : '';
+                
+                item.innerHTML = `
+                    <i class="fa-solid fa-store store-icon"></i>
+                    <div class="suggestion-text-container">
+                        <span class="suggestion-text">${highlightedName}</span>
+                        ${locationText}
+                    </div>
+                `;
+                
+                // Add click handler to navigate to store detail
+                item.addEventListener('click', () => {
+                    window.location.href = `vendor-detail.html?id=${result.id}`;
+                });
+                
+                suggestionsList.appendChild(item);
+            });
+            
+            // Add "See all stores" if there are more
+            if (stores.length > maxToShow) {
+                const seeAllStores = document.createElement('div');
+                seeAllStores.className = 'suggestion-see-more';
+                seeAllStores.innerHTML = `<i class="fa-solid fa-angle-right"></i> See all ${stores.length} stores`;
+                
+                seeAllStores.addEventListener('click', () => {
+                    executeSearch(query);
+                    switchTab('stores');
+                });
+                
+                suggestionsList.appendChild(seeAllStores);
+            }
+        }
+        
+        // Add "See all results" option at the bottom
+        const seeAllItem = document.createElement('div');
+        seeAllItem.className = 'suggestion-see-all';
+        seeAllItem.innerHTML = `<i class="fa-solid fa-search"></i> See all results for "${query}"`;
+        seeAllItem.addEventListener('click', () => {
+            executeSearch(query);
+        });
+        suggestionsList.appendChild(seeAllItem);
+    }
+}
+
+// Highlight matching text in a string
+function highlightMatchingText(text, query) {
+    if (!text || !query) return text || '';
+    
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    
+    // If query not found in text, return text as is
+    if (!lowerText.includes(lowerQuery)) return text;
+    
+    // Find the index of the query in the text
+    const index = lowerText.indexOf(lowerQuery);
+    
+    // Extract the parts
+    const before = text.substring(0, index);
+    const match = text.substring(index, index + query.length);
+    const after = text.substring(index + query.length);
+    
+    // Return with highlighted part
+    return `${before}<span class="highlight">${match}</span>${after}`;
+}
+
+// Show search suggestions
+function showSearchSuggestions() {
+    searchSuggestions.classList.add('visible');
+}
+
+// Hide search suggestions
+function hideSearchSuggestions() {
+    searchSuggestions.classList.remove('visible');
+}
+
+// Execute full search (when user presses Enter or clicks "See all results")
+function executeSearch(query) {
+    if (!query) return;
+    
+    // Hide suggestions
+    hideSearchSuggestions();
+    
+    // Set search query
+    searchQuery = query;
+    
+    // Show loading UI
+    if (window.showLoading) {
+        window.showLoading();
+    }
+    
+    // Hide top sections and show search results sections
+    topProducts.style.display = 'none';
+    topStores.style.display = 'none';
+    productSearchResults.classList.remove('hidden');
+    storeSearchResults.classList.remove('hidden');
+    
+    // Search in loaded data
+    const lowerQuery = query.toLowerCase();
+    
+    // Search products
+    const matchingProducts = allProducts.filter(product => {
+        // Match by name, category, or description
+        const name = (product.name || '').toLowerCase();
+        const category = (product.category || '').toLowerCase();
+        const description = (product.description || '').toLowerCase();
+        
+        return name.includes(lowerQuery) || 
+               category.includes(lowerQuery) || 
+               description.includes(lowerQuery);
+    });
+    
+    // Search stores
+    const matchingStores = allStores.filter(store => {
+        // Match by name or location
+        const name = (store.storeName || '').toLowerCase();
+        const location = (store.address?.area || store.location || '').toLowerCase();
+        
+        return name.includes(lowerQuery) || location.includes(lowerQuery);
+    });
+    
+    // Store results for later reference
+    searchResults.products = matchingProducts;
+    searchResults.stores = matchingStores;
+    
+    // Update result counts
+    productsTabCount.textContent = matchingProducts.length;
+    storesTabCount.textContent = matchingStores.length;
+    
+    // Update product results
+    if (matchingProducts.length > 0) {
+        productResultCount.textContent = `${matchingProducts.length} result${matchingProducts.length !== 1 ? 's' : ''}`;
+        productResultsContainer.innerHTML = '';
+        matchingProducts.forEach(product => {
+            renderProductItem(product, productResultsContainer);
+        });
+    } else {
+        productResultsContainer.innerHTML = `
+            <div class="no-results">
+                <i class="fa-solid fa-search"></i>
+                <p>No products found for "${query}"</p>
+            </div>
+        `;
+    }
+    
+    // Update store results
+    if (matchingStores.length > 0) {
+        storeResultCount.textContent = `${matchingStores.length} result${matchingStores.length !== 1 ? 's' : ''}`;
+        storeResultsContainer.innerHTML = '';
+        matchingStores.forEach(store => {
+            renderStoreItem(store, storeResultsContainer);
+        });
+    } else {
+        storeResultsContainer.innerHTML = `
+            <div class="no-results">
+                <i class="fa-solid fa-search"></i>
+                <p>No stores found for "${query}"</p>
+            </div>
+        `;
+    }
+    
+    // If no results at all
+    if (matchingProducts.length === 0 && matchingStores.length === 0) {
+        productResultsContainer.innerHTML = `
+            <div class="no-results">
+                <i class="fa-solid fa-search"></i>
+                <p>No results found for "${query}"</p>
+                <p class="suggestion">Try a different search term or browse categories</p>
+            </div>
+        `;
+    }
+    
+    // Show appropriate tab based on results
+    if (matchingProducts.length > 0 && matchingStores.length === 0) {
+        switchTab('products');
+    } else if (matchingProducts.length === 0 && matchingStores.length > 0) {
+        switchTab('stores');
+    } else {
+        switchTab(currentTab); // Stay on current tab
+    }
+    
+    // Hide loading indicator
+    if (window.hideLoading) {
+        window.hideLoading();
+    }
+}
+
+// Reset search
+function resetSearch() {
+    searchQuery = '';
+    lastSearchTerm = '';
+    
+    // Reset tab counts
+    productsTabCount.textContent = '0';
+    storesTabCount.textContent = '0';
+    
+    // Show top products and stores again
+    topProducts.style.display = 'block';
+    topStores.style.display = 'block';
+    
+    // Hide search results
+    productSearchResults.classList.add('hidden');
+    storeSearchResults.classList.add('hidden');
+    
+    // Clear suggestions
+    if (suggestionsList) {
+        suggestionsList.innerHTML = '<div class="suggestion-placeholder">Type to search products and stores</div>';
+    }
+}
+
+// Show toast message
+function showToast(message, type = 'success') {
+    if (!toastMessage) return;
+    
+    toastText.textContent = message;
+    
+    if (type === 'error') {
+        toastMessage.classList.add('error');
+        toastIcon.classList.remove('fa-check-circle');
+        toastIcon.classList.add('fa-times-circle');
+    } else {
+        toastMessage.classList.remove('error');
+        toastIcon.classList.remove('fa-times-circle');
+        toastIcon.classList.add('fa-check-circle');
+    }
+    
+    toastMessage.classList.add('show');
+    
+    setTimeout(() => {
+        toastMessage.classList.remove('show');
+    }, 3000);
+}
+
+// Render a product item in the specified container
+function renderProductItem(product, container) {
+    const template = document.getElementById('product-item-template');
+    const productItem = document.importNode(template.content, true).querySelector('.product-item');
+    
+    // Set product details
+    const productImage = productItem.querySelector('.product-image img');
+    const productName = productItem.querySelector('.product-name');
+    const productVendor = productItem.querySelector('.product-vendor');
+    const productPrice = productItem.querySelector('.product-price');
+    const originalPrice = productItem.querySelector('.original-price');
+    const productWeight = productItem.querySelector('.product-weight');
+    
+    // Set image with fallback
+    if (product.image) {
+        productImage.src = product.image;
+    } else {
+        productImage.src = 'images/placeholder-product.png';
+    }
+    
+    productImage.alt = product.name;
+    
+    // Set text content
+    productName.textContent = product.name;
+    
+    // Set vendor name if available
+    if (product.vendorName) {
+        productVendor.textContent = product.vendorName;
+    } else if (product.vendorId) {
+        // Try to find vendor in allStores
+        const vendor = allStores.find(store => store.id === product.vendorId);
+        if (vendor) {
+            productVendor.textContent = vendor.storeName;
+        } else {
+            productVendor.textContent = 'Grozily Store';
+        }
+    } else {
+        productVendor.textContent = 'Grozily Store';
+    }
+    
+    // Set pricing
+    productPrice.textContent = formatPrice(product.price);
+    
+    // Set original price if there's a discount
+    if (product.originalPrice && product.originalPrice > product.price) {
+        originalPrice.textContent = formatPrice(product.originalPrice);
+        originalPrice.style.display = 'inline';
+    } else {
+        originalPrice.style.display = 'none';
+    }
+    
+    // Set weight/quantity
+    if (product.weight) {
+        productWeight.textContent = product.weight;
+    } else if (product.quantity) {
+        productWeight.textContent = product.quantity;
+    } else {
+        productWeight.style.display = 'none';
+    }
+    
+    // Add click handler to go to product detail
+    productItem.addEventListener('click', () => {
+        window.location.href = `product-detail.html?id=${product.id}`;
+    });
+    
+    // Add to container
+    container.appendChild(productItem);
+}
+
+// Render a store item in the specified container
+function renderStoreItem(store, container) {
+    const template = document.getElementById('store-item-template');
+    const storeItem = document.importNode(template.content, true).querySelector('.store-item');
+    
+    // Set store details
+    const storeIcon = storeItem.querySelector('.store-image i');
+    const storeName = storeItem.querySelector('.store-name');
+    const storeLocation = storeItem.querySelector('.store-location');
+    const ratingValue = storeItem.querySelector('.rating-value');
+    const reviewCount = storeItem.querySelector('.review-count');
+    
+    // Set name
+    storeName.textContent = store.storeName || store.name;
+    
+    // Set location
+    const location = store.address?.area || store.location || 'Location not available';
+    storeLocation.textContent = location;
+    
+    // Set rating if available
+    if (store.rating) {
+        ratingValue.textContent = parseFloat(store.rating).toFixed(1);
+        reviewCount.textContent = store.reviewCount ? `(${store.reviewCount})` : '';
+        storeItem.querySelector('.store-rating').style.display = 'flex';
+    } else {
+        storeItem.querySelector('.store-rating').style.display = 'none';
+    }
+    
+    // Add click handler
+    storeItem.addEventListener('click', () => {
+        window.location.href = `vendor-detail.html?id=${store.id}`;
+    });
+    
+    // Add to container
+    container.appendChild(storeItem);
+}
+
+// Format price
+function formatPrice(price) {
+    // Handle null or undefined
+    if (price === null || price === undefined) {
+        return '₹0';
+    }
+    
+    // Format as Indian Rupees
+    return '₹' + parseFloat(price).toFixed(2);
+} 

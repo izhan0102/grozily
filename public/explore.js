@@ -4,7 +4,7 @@ const firebaseConfig = {
     authDomain: "grozily2.firebaseapp.com",
     databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
     projectId: "grozily2",
-    storageBucket: "grozily2.firebasestorage.app",
+    storageBucket: "grozily2.appspot.com",
     messagingSenderId: "665300145710",
     appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
     measurementId: "G-83S7ZWXEB9"
@@ -25,6 +25,13 @@ const searchContainer = document.querySelector('.search-container');
 const searchSuggestions = document.getElementById('search-suggestions');
 const suggestionsList = document.getElementById('suggestions-list');
 const closeSuggestionsBtn = document.getElementById('close-suggestions-btn');
+const productSearchResults = document.getElementById('product-search-results');
+const storeSearchResults = document.getElementById('store-search-results');
+const productResultsContainer = document.getElementById('product-results-container');
+const storeResultsContainer = document.getElementById('store-results-container');
+const productResultCount = document.getElementById('product-result-count');
+const storeResultCount = document.getElementById('store-result-count');
+const exploreTabs = document.querySelector('.explore-tabs');
 
 // Tab Elements
 const productsTab = document.getElementById('products-tab');
@@ -32,22 +39,18 @@ const storesTab = document.getElementById('stores-tab');
 const tabIndicator = document.querySelector('.tab-indicator');
 const productsContent = document.getElementById('products-content');
 const storesContent = document.getElementById('stores-content');
+const productsTabCount = productsTab.querySelector('.count');
+const storesTabCount = storesTab.querySelector('.count');
 
 // Product Elements
 const topProducts = document.getElementById('top-products');
 const topProductItems = document.querySelector('.top-product-items');
-const productSearchResults = document.getElementById('product-search-results');
-const productResultCount = document.getElementById('product-result-count');
-const productResultsContainer = document.getElementById('product-results-container');
 const productsLoading = document.getElementById('products-loading');
 const productsNoResults = document.getElementById('products-no-results');
 
 // Store Elements
 const topStores = document.getElementById('top-stores');
 const topStoreItems = document.querySelector('.top-store-items');
-const storeSearchResults = document.getElementById('store-search-results');
-const storeResultCount = document.getElementById('store-result-count');
-const storeResultsContainer = document.getElementById('store-results-container');
 const storesLoading = document.getElementById('stores-loading');
 const storesNoResults = document.getElementById('stores-no-results');
 
@@ -56,33 +59,164 @@ const toastMessage = document.getElementById('toast-message');
 const toastText = document.querySelector('.toast-text');
 const toastIcon = document.querySelector('.toast-icon');
 
-// User data
+// Global Data Cache
+let allProducts = [];
+let allStores = [];
 let currentUser = null;
 let currentTab = 'products';
 let searchQuery = '';
-let searchTimeout = null;
-let cachedProducts = {};
-let cachedStores = {};
+let isDataLoaded = false;
+let searchTimeout = null; // For debouncing search
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', () => {
+    console.log("DOM content loaded, initializing explore page...");
+    
     // Initial page animation
     document.body.classList.add('page-loaded');
     
     // Set up event listeners
     setupEventListeners();
     
-    // Check if user is authenticated
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            currentUser = user;
-            loadInitialData();
-        } else {
-            // Redirect to login page
-            window.location.href = 'login.html';
-        }
-    });
+    // Initialize app (with or without authentication)
+    initializeApp();
 });
+
+// Main initialization function
+function initializeApp() {
+    console.log("Initializing app...");
+    
+    // Show loading indicator
+    if (window.showLoading) window.showLoading();
+    
+    // Load all product and store data for faster search
+    loadAllData().then(() => {
+        // Display top products and stores
+        displayTopProducts();
+        displayTopStores();
+        
+        // Hide loading indicator
+        if (window.hideLoading) window.hideLoading();
+    }).catch(error => {
+        console.error('Error initializing app:', error);
+        if (window.hideLoading) window.hideLoading();
+        showToast('Failed to load data. Please refresh the page.', 'error');
+    });
+}
+
+// Load all products and stores data from both paths
+function loadAllData() {
+    // Return early if data is already loaded
+    if (isDataLoaded) return Promise.resolve();
+    
+    console.log('Loading all data...');
+    allProducts = []; // Reset arrays to avoid duplicates
+    allStores = [];
+    
+    // Load products and stores in parallel
+    return Promise.all([
+        // Get products from main products path
+        database.ref('products').once('value'),
+        // Get vendors data
+        database.ref('vendors').once('value')
+    ])
+    .then(([productsSnapshot, vendorsSnapshot]) => {
+        // Process vendors first so we can use them for products
+        const vendors = {};
+        
+        if (vendorsSnapshot.exists()) {
+            vendorsSnapshot.forEach(vendorSnapshot => {
+                const vendorData = vendorSnapshot.val();
+                const vendorId = vendorSnapshot.key;
+                
+                // Store in our vendors object and allStores array
+                vendors[vendorId] = vendorData;
+                
+                // Add to allStores
+                allStores.push({
+                    id: vendorId,
+                    storeName: vendorData.storeName || vendorData.name || 'Unknown',
+                    address: vendorData.address || {},
+                    location: vendorData.location || '',
+                    rating: vendorData.rating || 0,
+                    reviewCount: vendorData.reviewCount || 0,
+                    ...vendorData
+                });
+            });
+        }
+        
+        console.log(`Loaded ${allStores.length} stores`);
+        
+        // Process products from main products path
+        if (productsSnapshot.exists()) {
+            productsSnapshot.forEach(productSnapshot => {
+                const productData = productSnapshot.val();
+                const productId = productSnapshot.key;
+                
+                // Skip if this product is already in our array
+                if (allProducts.some(p => p.id === productId)) {
+                    return;
+                }
+                
+                // Add vendor information if available
+                if (productData.vendorId && vendors[productData.vendorId]) {
+                    const vendorData = vendors[productData.vendorId];
+                    productData.vendorName = vendorData.storeName || vendorData.name || 'Unknown';
+                }
+                
+                // Add to our products array
+                allProducts.push({
+                    id: productId,
+                    ...productData,
+                    price: productData.discountedPrice || productData.price || 0,
+                    originalPrice: productData.originalPrice || 0
+                });
+            });
+        }
+        
+        // Now load products from vendor_products path (many stores store products here)
+        const vendorProductPromises = Object.keys(vendors).map(vendorId => {
+            return database.ref(`vendor_products/${vendorId}`).once('value')
+                .then(vendorProductsSnapshot => {
+                    if (vendorProductsSnapshot.exists()) {
+                        vendorProductsSnapshot.forEach(productSnapshot => {
+                            const productData = productSnapshot.val();
+                            const productId = productSnapshot.key;
+                            
+                            // Skip if this product is already in our array
+                            if (allProducts.some(p => p.id === productId)) {
+                                return;
+                            }
+                            
+                            // Add vendor information
+                            const vendorData = vendors[vendorId];
+                            productData.vendorId = vendorId;
+                            productData.vendorName = vendorData.storeName || vendorData.name || 'Unknown';
+                            
+                            // Add to our products array
+                            allProducts.push({
+                                id: productId,
+                                ...productData,
+                                price: productData.discountedPrice || productData.price || 0,
+                                originalPrice: productData.originalPrice || 0
+                            });
+                        });
+                    }
+                })
+                .catch(error => {
+                    console.error(`Error loading products for vendor ${vendorId}:`, error);
+                });
+        });
+        
+        // Wait for all vendor product loads to complete
+        return Promise.all(vendorProductPromises);
+    })
+    .then(() => {
+        console.log(`Loaded ${allProducts.length} products total`);
+        isDataLoaded = true;
+        return true;
+    });
+}
 
 // Set up event listeners
 function setupEventListeners() {
@@ -111,6 +245,7 @@ function setupEventListeners() {
         }, 200);
     });
     
+    // Handle search input - show results in real-time with each keystroke
     searchInput.addEventListener('input', () => {
         const query = searchInput.value.trim();
         
@@ -119,29 +254,45 @@ function setupEventListeners() {
             clearSearchBtn.classList.add('visible');
         } else {
             clearSearchBtn.classList.remove('visible');
+            resetSearch();
+            return;
         }
         
-        // Debounce search
-        clearTimeout(searchTimeout);
+        // Show suggestions panel
+        showSearchSuggestions();
+        
+        // Clear previous timeout
+        if (searchTimeout) {
+            clearTimeout(searchTimeout);
+        }
+        
+        // Show loading indicator in suggestions
+        suggestionsList.innerHTML = '<div class="suggestion-loading"><i class="fa-solid fa-spinner fa-spin"></i> Searching...</div>';
+        
+        // Debounce search to avoid too many searches when typing fast
         searchTimeout = setTimeout(() => {
-            if (query.length >= 2) {
-                updateSearchSuggestions(query);
-            } else {
-                suggestionsList.innerHTML = '';
+            // Perform real-time search for suggestions
+            performRealTimeSearch(query);
+            
+            // Also perform full search results in real-time
+            if (query.length > 0) {
+                // Perform the full search without showing loading indicator
+                performFullSearch(query, false);
             }
-        }, 300);
+        }, 300); // 300ms debounce time
     });
     
+    // Enter key to execute full search
     searchInput.addEventListener('keyup', (e) => {
         if (e.key === 'Enter' && searchInput.value.trim()) {
-            executeSearch(searchInput.value.trim());
+            executeFullSearch(searchInput.value.trim());
         }
     });
     
     // Search button
     searchBtn.addEventListener('click', () => {
         if (searchInput.value.trim()) {
-            executeSearch(searchInput.value.trim());
+            executeFullSearch(searchInput.value.trim());
         }
     });
     
@@ -167,6 +318,433 @@ function setupEventListeners() {
     });
 }
 
+// Display top products 
+function displayTopProducts() {
+    console.log("Displaying top products...");
+    
+    // Clear container
+    topProductItems.innerHTML = '';
+    
+    // Check if we have products
+    if (allProducts.length === 0) {
+        topProductItems.innerHTML = '<div class="empty-message">No products available</div>';
+        return;
+    }
+    
+    // Sort products by popularity, featured status, or other criteria
+    const sortedProducts = [...allProducts].sort((a, b) => {
+        // Priority: 1. Featured, 2. Popularity, 3. Name
+        if (a.featured && !b.featured) return -1;
+        if (!a.featured && b.featured) return 1;
+        
+        const aPopularity = a.popularity || 0;
+        const bPopularity = b.popularity || 0;
+        
+        if (bPopularity !== aPopularity) {
+            return bPopularity - aPopularity;
+        }
+        
+        return (a.name || '').localeCompare(b.name || '');
+    });
+    
+    // Display top 8 products
+    const topProductsToShow = sortedProducts.slice(0, 8);
+    
+    // Render each product
+    topProductsToShow.forEach(product => {
+        renderProductItem(product, topProductItems);
+    });
+    
+    console.log(`Displayed ${topProductsToShow.length} top products`);
+}
+
+// Display top stores
+function displayTopStores() {
+    console.log("Displaying top stores...");
+    
+    // Clear container
+    topStoreItems.innerHTML = '';
+    
+    // Check if we have stores
+    if (allStores.length === 0) {
+        topStoreItems.innerHTML = '<div class="empty-message">No stores available</div>';
+        return;
+    }
+    
+    // Sort stores by rating, featured status, or other criteria
+    const sortedStores = [...allStores].sort((a, b) => {
+        // Priority: 1. Featured, 2. Rating, 3. Name
+        if (a.featured && !b.featured) return -1;
+        if (!a.featured && b.featured) return 1;
+        
+        const aRating = a.rating || 0;
+        const bRating = b.rating || 0;
+        
+        if (bRating !== aRating) {
+            return bRating - aRating;
+        }
+        
+        return (a.storeName || '').localeCompare(b.storeName || '');
+    });
+    
+    // Display top 6 stores
+    const topStoresToShow = sortedStores.slice(0, 6);
+    
+    // Render each store
+    topStoresToShow.forEach(store => {
+        renderStoreItem(store, topStoreItems);
+    });
+    
+    console.log(`Displayed ${topStoresToShow.length} top stores`);
+}
+
+// Perform real-time search as user types
+function performRealTimeSearch(query) {
+    // Show loading state if data is not yet loaded
+    if (!isDataLoaded) {
+        suggestionsList.innerHTML = '<div class="suggestion-loading"><i class="fa-solid fa-spinner fa-spin"></i> Loading data...</div>';
+        
+        // Load data first, then perform search
+        loadAllData().then(() => {
+            performRealTimeSearch(query);
+        });
+        return;
+    }
+    
+    // Show empty placeholder if query is empty
+    if (!query) {
+        suggestionsList.innerHTML = '<div class="suggestion-placeholder">Type to search products and stores</div>';
+        return;
+    }
+    
+    // Normalize query for search
+    const lowerQuery = query.toLowerCase();
+    
+    // Search through products
+    const matchingProducts = allProducts.filter(product => {
+        const name = (product.name || '').toLowerCase();
+        const category = (product.category || '').toLowerCase();
+        const description = (product.description || '').toLowerCase();
+        
+        return name.includes(lowerQuery) || 
+               category.includes(lowerQuery) || 
+               description.includes(lowerQuery);
+    });
+    
+    // Search through stores
+    const matchingStores = allStores.filter(store => {
+        const name = (store.storeName || '').toLowerCase();
+        const location = (store.address?.area || store.location || '').toLowerCase();
+        
+        return name.includes(lowerQuery) || location.includes(lowerQuery);
+    });
+    
+    console.log(`Found ${matchingProducts.length} products and ${matchingStores.length} stores matching "${query}"`);
+    
+    // Update UI with results
+    updateSearchSuggestions(query, matchingProducts, matchingStores);
+}
+
+// Update search suggestions with mixed results
+function updateSearchSuggestions(query, products, stores) {
+    // Clear suggestions list
+    suggestionsList.innerHTML = '';
+    
+    // Handle no results case
+    if (products.length === 0 && stores.length === 0) {
+        const noResultsItem = document.createElement('div');
+        noResultsItem.className = 'suggestion-no-results';
+        noResultsItem.innerHTML = `No results found for "${query}". <span class="search-all">Search anyway</span>`;
+        
+        // Add click handler for "Search anyway"
+        noResultsItem.querySelector('.search-all').addEventListener('click', () => {
+            executeFullSearch(query);
+        });
+        
+        suggestionsList.appendChild(noResultsItem);
+        return;
+    }
+    
+    // Limit to 5 items per category
+    const maxItemsPerCategory = 5;
+    const productResults = products.slice(0, maxItemsPerCategory);
+    const storeResults = stores.slice(0, maxItemsPerCategory);
+    
+    // Products section (if we have matches)
+    if (productResults.length > 0) {
+        // Add Products header
+        const productsHeader = document.createElement('div');
+        productsHeader.className = 'suggestion-category-header';
+        productsHeader.innerHTML = `<i class="fa-solid fa-box"></i> Products`;
+        suggestionsList.appendChild(productsHeader);
+        
+        // Add product items
+        productResults.forEach(product => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item product-suggestion';
+            
+            // Highlight the matching text
+            const highlightedName = highlightMatchingText(product.name, query);
+            
+            // Add category if available
+            const categoryText = product.category ? ` <span class="suggestion-category">${product.category}</span>` : '';
+            
+            item.innerHTML = `
+                <i class="fa-solid fa-box product-icon"></i>
+                <div class="suggestion-text-container">
+                    <span class="suggestion-text">${highlightedName}</span>
+                    ${categoryText}
+                </div>
+            `;
+            
+            // Add click handler
+            item.addEventListener('click', () => {
+                window.location.href = `product-detail.html?id=${product.id}`;
+            });
+            
+            suggestionsList.appendChild(item);
+        });
+        
+        // Add "See all products" if there are more
+        if (products.length > maxItemsPerCategory) {
+            const seeAllProducts = document.createElement('div');
+            seeAllProducts.className = 'suggestion-see-more';
+            seeAllProducts.innerHTML = `<i class="fa-solid fa-angle-right"></i> See all ${products.length} products`;
+            
+            seeAllProducts.addEventListener('click', () => {
+                executeFullSearch(query);
+                switchTab('products');
+            });
+            
+            suggestionsList.appendChild(seeAllProducts);
+        }
+    }
+    
+    // Stores section (if we have matches)
+    if (storeResults.length > 0) {
+        // Add Stores header
+        const storesHeader = document.createElement('div');
+        storesHeader.className = 'suggestion-category-header';
+        storesHeader.innerHTML = `<i class="fa-solid fa-store"></i> Stores`;
+        suggestionsList.appendChild(storesHeader);
+        
+        // Add store items
+        storeResults.forEach(store => {
+            const item = document.createElement('div');
+            item.className = 'suggestion-item store-suggestion';
+            
+            // Highlight the matching text
+            const highlightedName = highlightMatchingText(store.storeName, query);
+            
+            // Add location if available
+            const locationText = store.address?.area || store.location ? 
+                ` <span class="suggestion-location">${store.address?.area || store.location}</span>` : '';
+            
+            item.innerHTML = `
+                <i class="fa-solid fa-store store-icon"></i>
+                <div class="suggestion-text-container">
+                    <span class="suggestion-text">${highlightedName}</span>
+                    ${locationText}
+                </div>
+            `;
+            
+            // Add click handler
+            item.addEventListener('click', () => {
+                window.location.href = `vendor-detail.html?id=${store.id}`;
+            });
+            
+            suggestionsList.appendChild(item);
+        });
+        
+        // Add "See all stores" if there are more
+        if (stores.length > maxItemsPerCategory) {
+            const seeAllStores = document.createElement('div');
+            seeAllStores.className = 'suggestion-see-more';
+            seeAllStores.innerHTML = `<i class="fa-solid fa-angle-right"></i> See all ${stores.length} stores`;
+            
+            seeAllStores.addEventListener('click', () => {
+                executeFullSearch(query);
+                switchTab('stores');
+            });
+            
+            suggestionsList.appendChild(seeAllStores);
+        }
+    }
+    
+    // Add "See all results" option at the bottom
+    const seeAllItem = document.createElement('div');
+    seeAllItem.className = 'suggestion-see-all';
+    seeAllItem.innerHTML = `<i class="fa-solid fa-search"></i> See all results for "${query}"`;
+    seeAllItem.addEventListener('click', () => {
+        executeFullSearch(query);
+    });
+    suggestionsList.appendChild(seeAllItem);
+}
+
+// Highlight matching text in a string
+function highlightMatchingText(text, query) {
+    if (!text || !query) return text || '';
+    
+    const lowerText = text.toLowerCase();
+    const lowerQuery = query.toLowerCase();
+    
+    // If query not found in text, return text as is
+    if (!lowerText.includes(lowerQuery)) return text;
+    
+    // Find the index of the query in the text
+    const index = lowerText.indexOf(lowerQuery);
+    
+    // Extract the parts
+    const before = text.substring(0, index);
+    const match = text.substring(index, index + query.length);
+    const after = text.substring(index + query.length);
+    
+    // Return with highlighted part
+    return `${before}<span class="highlight">${match}</span>${after}`;
+}
+
+// Show search suggestions
+function showSearchSuggestions() {
+    searchSuggestions.classList.add('visible');
+}
+
+// Hide search suggestions
+function hideSearchSuggestions() {
+    searchSuggestions.classList.remove('visible');
+}
+
+// Execute full search (when user presses Enter or clicks "See all results")
+function executeFullSearch(query) {
+    if (!query) return;
+    
+    // Hide suggestions
+    hideSearchSuggestions();
+    
+    // Set search query
+    searchQuery = query;
+    
+    // Make sure data is loaded
+    if (!isDataLoaded) {
+        // Show loading indicator since this is a user-initiated action
+        if (window.showLoading) window.showLoading();
+        
+        loadAllData().then(() => {
+            performFullSearch(query, true);
+        }).catch(error => {
+            console.error('Error loading data:', error);
+            if (window.hideLoading) window.hideLoading();
+            showToast('Failed to load data. Please try again.', 'error');
+        });
+        return;
+    }
+    
+    // Perform the search with loading indicator
+    performFullSearch(query, true);
+}
+
+// Perform the full search and update the UI
+function performFullSearch(query, showLoading = true) {
+    console.log(`Performing full search for "${query}"...`);
+    
+    // Hide top sections
+    topProducts.style.display = 'none';
+    topStores.style.display = 'none';
+    
+    // Show search results sections
+    productSearchResults.classList.remove('hidden');
+    storeSearchResults.classList.remove('hidden');
+    
+    // Show loading indicator if requested
+    if (showLoading && window.showLoading) {
+        window.showLoading();
+    }
+    
+    // Search in loaded data
+    const lowerQuery = query.toLowerCase();
+    
+    // Search products
+    const matchingProducts = allProducts.filter(product => {
+        const name = (product.name || '').toLowerCase();
+        const category = (product.category || '').toLowerCase();
+        const description = (product.description || '').toLowerCase();
+        
+        return name.includes(lowerQuery) || 
+               category.includes(lowerQuery) || 
+               description.includes(lowerQuery);
+    });
+    
+    // Search stores
+    const matchingStores = allStores.filter(store => {
+        const name = (store.storeName || '').toLowerCase();
+        const location = (store.address?.area || store.location || '').toLowerCase();
+        
+        return name.includes(lowerQuery) || location.includes(lowerQuery);
+    });
+    
+    console.log(`Found ${matchingProducts.length} products and ${matchingStores.length} stores matching "${query}"`);
+    
+    // Update result counts
+    productsTabCount.textContent = matchingProducts.length;
+    storesTabCount.textContent = matchingStores.length;
+    
+    // Update product results
+    if (matchingProducts.length > 0) {
+        productResultCount.textContent = `${matchingProducts.length} result${matchingProducts.length !== 1 ? 's' : ''}`;
+        productResultsContainer.innerHTML = '';
+        matchingProducts.forEach(product => {
+            renderProductItem(product, productResultsContainer);
+        });
+    } else {
+        productResultsContainer.innerHTML = `
+            <div class="no-results">
+                <i class="fa-solid fa-search"></i>
+                <p>No products found for "${query}"</p>
+            </div>
+        `;
+    }
+    
+    // Update store results
+    if (matchingStores.length > 0) {
+        storeResultCount.textContent = `${matchingStores.length} result${matchingStores.length !== 1 ? 's' : ''}`;
+        storeResultsContainer.innerHTML = '';
+        matchingStores.forEach(store => {
+            renderStoreItem(store, storeResultsContainer);
+        });
+    } else {
+        storeResultsContainer.innerHTML = `
+            <div class="no-results">
+                <i class="fa-solid fa-search"></i>
+                <p>No stores found for "${query}"</p>
+            </div>
+        `;
+    }
+    
+    // If no results at all
+    if (matchingProducts.length === 0 && matchingStores.length === 0) {
+        productResultsContainer.innerHTML = `
+            <div class="no-results">
+                <i class="fa-solid fa-search"></i>
+                <p>No results found for "${query}"</p>
+                <p class="suggestion">Try a different search term or browse categories</p>
+            </div>
+        `;
+    }
+    
+    // Show appropriate tab based on results
+    if (matchingProducts.length > 0 && matchingStores.length === 0) {
+        switchTab('products');
+    } else if (matchingProducts.length === 0 && matchingStores.length > 0) {
+        switchTab('stores');
+    } else {
+        switchTab(currentTab); // Stay on current tab
+    }
+    
+    // Hide loading indicator if we showed it
+    if (showLoading && window.hideLoading) {
+        window.hideLoading();
+    }
+}
+
 // Switch between tabs
 function switchTab(tab) {
     // Update active tab
@@ -185,627 +763,184 @@ function switchTab(tab) {
     }
     
     currentTab = tab;
-    
-    // If we have an active search, refocus results
-    if (searchQuery) {
-        if (tab === 'products') {
-            productSearchResults.classList.remove('hidden');
-        } else {
-            storeSearchResults.classList.remove('hidden');
-        }
-    }
-}
-
-// Load initial data
-function loadInitialData() {
-    // Load top products and stores
-    loadTopProducts();
-    loadTopStores();
-}
-
-// Function to fetch vendor data (similar to home.js)
-function fetchVendorData(vendorId) {
-    return database.ref(`vendors/${vendorId}`).once('value')
-        .then(vendorSnapshot => {
-            if (vendorSnapshot.exists()) {
-                const vendor = vendorSnapshot.val();
-                return vendor.storeName || vendor.name || 'Unknown Vendor';
-            } else {
-                return 'Unknown Vendor';
-            }
-        })
-        .catch(error => {
-            console.error('Error fetching vendor:', error);
-            return 'Unknown Vendor';
-        });
-}
-
-// Function to fetch products and their vendor data
-function fetchProductsWithVendors(productRefs) {
-    const products = [];
-    const vendorPromises = [];
-
-    productRefs.forEach(productSnapshot => {
-        const product = productSnapshot.val();
-        product.id = productSnapshot.key;
-        if (product.vendorId) {
-            // Create a promise that resolves to the product object with vendorName added
-            const vendorPromise = fetchVendorData(product.vendorId)
-                .then(vendorName => {
-                    product.vendorName = vendorName;
-                    return product; // Return the product object
-                });
-            vendorPromises.push(vendorPromise);
-        } else {
-            product.vendorName = 'Unknown Vendor';
-            products.push(product); // Add products without vendorId directly
-        }
-    });
-
-    return Promise.all(vendorPromises)
-        .then(vendorProducts => {
-            // Combine products that needed vendor lookup with those that didn't
-            return [...products, ...vendorProducts];
-        });
-}
-
-// Load top products
-function loadTopProducts() {
-    // Show loading state
-    topProductItems.innerHTML = '<div class="loading-placeholder"></div>'.repeat(8);
-
-    database.ref('products')
-        .orderByChild('popularity') // Assuming 'popularity' field exists
-        .limitToLast(8)
-        .once('value')
-        .then(snapshot => {
-            topProductItems.innerHTML = '';
-
-            if (snapshot.exists()) {
-                return fetchProductsWithVendors(snapshot); // Fetch products with vendor names
-            } else {
-                topProducts.innerHTML = '<p class="no-data">No popular products found.</p>';
-                return []; // Return empty array if no products
-            }
-        })
-        .then(productsWithVendors => {
-            if (productsWithVendors.length > 0) {
-                 // Sort by popularity (highest first) - Ensure popularity field exists
-                const sortedProducts = productsWithVendors.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-
-                // Render top products
-                sortedProducts.forEach(product => {
-                    renderProductItem(product, topProductItems);
-                });
-            } else if (topProducts.innerHTML === '') { // Only update if not already showing "No popular products"
-                 topProducts.innerHTML = '<p class="no-data">No popular products available.</p>';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading top products:', error);
-            topProducts.innerHTML = '<p class="no-data">Error loading products.</p>';
-        });
-}
-
-// Load top stores
-function loadTopStores() {
-    // Show loading state
-    topStoreItems.innerHTML = '<div class="loading-placeholder"></div>'.repeat(5);
-
-    database.ref('vendors') // Changed path from 'stores' to 'vendors'
-        .orderByChild('rating') // Assuming 'rating' field exists in vendors
-        .limitToLast(5)
-        .once('value')
-        .then(snapshot => {
-            topStoreItems.innerHTML = '';
-
-            if (snapshot.exists()) {
-                const stores = [];
-                snapshot.forEach(childSnapshot => {
-                    stores.push({
-                        id: childSnapshot.key,
-                        ...childSnapshot.val()
-                    });
-                });
-
-                // Sort by rating (highest first)
-                const sortedStores = stores.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-
-                // Render top stores
-                sortedStores.forEach(store => {
-                    renderStoreItem(store, topStoreItems);
-                });
-            } else {
-                topStores.innerHTML = '<p class="no-data">No stores available.</p>';
-            }
-        })
-        .catch(error => {
-            console.error('Error loading top stores:', error);
-            topStores.innerHTML = '<p class="no-data">Error loading stores.</p>';
-        });
-}
-
-// Render a product item
-function renderProductItem(product, container) {
-    // Clone template
-    const template = document.getElementById('product-item-template');
-    if (!template) {
-        console.error("Template #product-item-template not found!");
-        return;
-    }
-    const productItem = document.importNode(template.content, true).querySelector('.product-item');
-
-    // Set product data
-    const productImage = productItem.querySelector('.product-image img');
-    const productName = productItem.querySelector('.product-name');
-    const productVendor = productItem.querySelector('.product-vendor'); // Get vendor element
-    const productPrice = productItem.querySelector('.product-price'); // Current price element
-    const originalPriceEl = productItem.querySelector('.original-price'); // Original price element
-    const productWeight = productItem.querySelector('.product-weight');
-
-    // Set image with error handling
-    productImage.src = product.imageURL || 'https://via.placeholder.com/150?text=No+Image';
-    productImage.alt = product.name;
-    productImage.onerror = function() {
-        this.onerror = null;
-        this.src = 'https://via.placeholder.com/150?text=No+Image';
-    };
-
-    productName.textContent = product.name || 'Unnamed Product';
-    productVendor.textContent = product.vendorName || 'Unknown Vendor'; // Set vendor name
-
-    // Set prices
-    const currentPrice = product.discountedPrice || product.price; // Use discounted if available
-    const originalPrice = product.originalPrice;
-
-    if (currentPrice) {
-        productPrice.textContent = `₹${formatPrice(currentPrice)}`;
-    } else {
-         productPrice.textContent = 'N/A';
-    }
-
-    if (originalPrice && originalPrice > currentPrice) {
-        originalPriceEl.textContent = `₹${formatPrice(originalPrice)}`;
-        originalPriceEl.style.display = 'inline'; // Show original price
-    } else {
-        originalPriceEl.style.display = 'none'; // Hide original price if no discount
-    }
-
-
-    if (product.weight && product.unit) {
-        productWeight.textContent = `${product.weight} ${product.unit}`;
-    } else {
-        productWeight.style.display = 'none'; // Hide weight if not available
-    }
-
-    // Add click event to navigate to product detail
-    productItem.addEventListener('click', () => {
-        // Make sure product detail page exists and uses query param 'id'
-        window.location.href = `product-detail.html?id=${product.id}`;
-    });
-
-    // Add to container
-    container.appendChild(productItem);
-}
-
-// Render a store item
-function renderStoreItem(store, container) {
-    // Clone template
-    const template = document.getElementById('store-item-template');
-    const storeItem = document.importNode(template.content, true).querySelector('.store-item');
-
-    // Set store data
-    const storeImage = storeItem.querySelector('.store-image');
-    const storeNameEl = storeItem.querySelector('.store-name');
-    const storeLocation = storeItem.querySelector('.store-location');
-    const ratingValue = storeItem.querySelector('.rating-value');
-    const reviewCount = storeItem.querySelector('.review-count');
-
-    // Replace image with icon
-    storeImage.innerHTML = '<i class="fa-solid fa-store"></i>';
-    
-    storeNameEl.textContent = store.storeName || store.name || 'Unknown Store';
-    storeLocation.textContent = store.address?.area || store.location || 'Unknown location';
-
-    const rating = store.rating || 0;
-    const reviews = store.reviewCount || 0;
-
-    ratingValue.textContent = rating.toFixed(1);
-    reviewCount.textContent = `(${reviews})`;
-
-    // Add click event to navigate to store detail
-    storeItem.addEventListener('click', () => {
-        window.location.href = `vendor-detail.html?id=${store.id}`;
-    });
-
-    // Add to container
-    container.appendChild(storeItem);
-}
-
-// Format price with commas for thousands
-function formatPrice(price) {
-    if (!price) return '0.00';
-    return parseFloat(price).toLocaleString('en-IN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
-}
-
-// Show search suggestions
-function showSearchSuggestions() {
-    const query = searchInput.value.trim();
-    
-    if (query.length < 2) {
-        // Show empty suggestions list
-        suggestionsList.innerHTML = '<div class="suggestion-placeholder">Type to search...</div>';
-    } else {
-        // Show search suggestions based on query
-        updateSearchSuggestions(query);
-    }
-    
-    searchSuggestions.classList.add('visible');
-}
-
-// Hide search suggestions
-function hideSearchSuggestions() {
-    searchSuggestions.classList.remove('visible');
-}
-
-// Update search suggestions based on query
-function updateSearchSuggestions(query) {
-    if (query.length < 2) return;
-    
-    // Clear suggestions list
-    suggestionsList.innerHTML = '';
-    
-    // Add loading indicator
-    const loadingItem = document.createElement('div');
-    loadingItem.className = 'suggestion-loading';
-    loadingItem.innerHTML = 'Searching...';
-    suggestionsList.appendChild(loadingItem);
-    
-    // Search in products
-    database.ref('products')
-        .orderByChild('name')
-        .startAt(query.toLowerCase())
-        .endAt(query.toLowerCase() + '\uf8ff')
-        .limitToFirst(3)
-        .once('value')
-        .then(snapshot => {
-            // Remove loading indicator
-            suggestionsList.innerHTML = '';
-            
-            const suggestions = new Set();
-            
-            if (snapshot.exists()) {
-                snapshot.forEach(childSnapshot => {
-                    const product = childSnapshot.val();
-                    suggestions.add(product.name);
-                });
-            }
-            
-            // Search in categories
-            return database.ref('categories')
-                .orderByChild('name')
-                .startAt(query.toLowerCase())
-                .endAt(query.toLowerCase() + '\uf8ff')
-                .limitToFirst(2)
-                .once('value')
-                .then(categorySnapshot => {
-                    if (categorySnapshot.exists()) {
-                        categorySnapshot.forEach(childSnapshot => {
-                            const category = childSnapshot.val();
-                            suggestions.add(category.name);
-                        });
-                    }
-                    
-                    // Render suggestions
-                    if (suggestions.size === 0) {
-                        // Add the search query itself as a suggestion
-                        const queryItem = createSuggestionItem(query);
-                        suggestionsList.appendChild(queryItem);
-                    } else {
-                        suggestions.forEach(suggestion => {
-                            const suggestionItem = createSuggestionItem(suggestion);
-                            suggestionsList.appendChild(suggestionItem);
-                        });
-                    }
-                });
-        })
-        .catch(error => {
-            console.error('Error fetching suggestions:', error);
-            suggestionsList.innerHTML = '';
-            const errorItem = document.createElement('div');
-            errorItem.className = 'suggestion-error';
-            errorItem.innerHTML = 'Error loading suggestions';
-            suggestionsList.appendChild(errorItem);
-        });
-}
-
-// Create a suggestion item
-function createSuggestionItem(text) {
-    const template = document.getElementById('suggestion-item-template');
-    const suggestionItem = document.importNode(template.content, true).querySelector('.suggestion-item');
-    
-    const suggestionText = suggestionItem.querySelector('.suggestion-text');
-    suggestionText.textContent = text;
-    
-    suggestionItem.addEventListener('click', () => {
-        searchInput.value = text;
-        executeSearch(text);
-    });
-    
-    return suggestionItem;
-}
-
-// Execute search
-function executeSearch(query) {
-    if (!query || query.length < 2) return;
-    
-    // Save search query
-    searchQuery = query;
-    
-    // Update UI
-    searchInput.blur();
-    hideSearchSuggestions();
-    clearSearchBtn.classList.add('visible');
-    
-    // Show search results sections, hide initial sections
-    topProducts.classList.add('hidden');
-    topStores.classList.add('hidden');
-    
-    // Search based on current tab
-    if (currentTab === 'products') {
-        searchProducts(query);
-    } else {
-        searchStores(query);
-    }
 }
 
 // Reset search
 function resetSearch() {
-    // Clear search query
     searchQuery = '';
     
-    // Show initial sections, hide search results sections
-    topProducts.classList.remove('hidden');
-    topStores.classList.remove('hidden');
+    // Reset tab counts
+    productsTabCount.textContent = '0';
+    storesTabCount.textContent = '0';
     
+    // Show top products and stores again
+    topProducts.style.display = 'block';
+    topStores.style.display = 'block';
+    
+    // Hide search results
     productSearchResults.classList.add('hidden');
     storeSearchResults.classList.add('hidden');
-    productsLoading.classList.add('hidden');
-    storesLoading.classList.add('hidden');
-    productsNoResults.classList.add('hidden');
-    storesNoResults.classList.add('hidden');
-}
-
-// Search products
-function searchProducts(query) {
-    // Show loading indicator
-    productSearchResults.classList.remove('hidden');
-    productsLoading.classList.remove('hidden');
-    productResultsContainer.innerHTML = '';
-    productResultCount.textContent = 'Searching...';
-    productsNoResults.classList.add('hidden');
-
-    // Clear cache for new search (optional, depends on desired behavior)
-    // delete cachedProducts[query];
-
-    // Check if we have cached results (might need adjustment if data can change)
-    // if (cachedProducts[query]) {
-    //     renderProductSearchResults(cachedProducts[query], query);
-    //     return;
-    // }
-
-    // Search in products
-    database.ref('products')
-        .once('value')
-        .then(snapshot => {
-            if (snapshot.exists()) {
-                const matchingProductsRefs = [];
-                const lowerQuery = query.toLowerCase();
-
-                snapshot.forEach(childSnapshot => {
-                    const product = childSnapshot.val();
-                    // Match by name, category, or description
-                    const name = (product.name || '').toLowerCase();
-                    const category = (product.category || '').toLowerCase();
-                    const description = (product.description || '').toLowerCase();
-
-                    if (name.includes(lowerQuery) ||
-                        category.includes(lowerQuery) ||
-                        description.includes(lowerQuery)) {
-                        matchingProductsRefs.push(childSnapshot); // Store the snapshot ref
-                    }
-                });
-
-                if (matchingProductsRefs.length > 0) {
-                    return fetchProductsWithVendors(matchingProductsRefs); // Fetch matches with vendor names
-                } else {
-                    return []; // No matches found
-                }
-
-            } else {
-                // No products exist at all in the database
-                return [];
-            }
-        })
-        .then(productsWithVendors => {
-             // Cache the results (optional)
-             // cachedProducts[query] = productsWithVendors;
-
-            // Render results
-            renderProductSearchResults(productsWithVendors, query);
-        })
-        .catch(error => {
-            console.error('Error searching products:', error);
-            productsLoading.classList.add('hidden');
-            productsNoResults.classList.remove('hidden');
-            productResultCount.textContent = 'Error searching';
-            showToast('Error searching products', 'error');
-        });
-}
-
-// Render product search results
-function renderProductSearchResults(products, query) {
-    // Hide loading indicator
-    productsLoading.classList.add('hidden');
     
-    if (products.length === 0) {
-        productsNoResults.classList.remove('hidden');
-        productResultCount.textContent = '0 results';
-        return;
+    // Clear suggestions
+    if (suggestionsList) {
+        suggestionsList.innerHTML = '<div class="suggestion-placeholder">Type to search products and stores</div>';
+    }
+}
+
+// Render a product item in the specified container
+function renderProductItem(product, container) {
+    console.log("Rendering product:", product.name);
+    
+    try {
+        const template = document.getElementById('product-item-template');
+        const productItem = document.importNode(template.content, true).querySelector('.product-item');
+        
+        // Set product details
+        const productImage = productItem.querySelector('.product-image img');
+        const productName = productItem.querySelector('.product-name');
+        const productVendor = productItem.querySelector('.product-vendor');
+        const productPrice = productItem.querySelector('.product-price');
+        const originalPrice = productItem.querySelector('.original-price');
+        const productWeight = productItem.querySelector('.product-weight');
+        
+        // Set image with fallback - check all possible image properties
+        const imageUrl = product.image || product.imageURL || product.imageUrl || product.imgUrl || 'images/placeholder-product.png';
+        productImage.src = imageUrl;
+        productImage.alt = product.name || 'Product Image';
+        
+        // Add error handler for images
+        productImage.onerror = function() {
+            this.src = 'images/placeholder-product.png';
+            this.onerror = null; // Prevent infinite loops
+        };
+        
+        // Set text content
+        productName.textContent = product.name || 'Unknown Product';
+        
+        // Set vendor name if available
+        if (product.vendorName) {
+            productVendor.textContent = product.vendorName;
+        } else if (product.vendorId) {
+            // Try to find vendor in allStores
+            const vendor = allStores.find(store => store.id === product.vendorId);
+            if (vendor) {
+                productVendor.textContent = vendor.storeName || vendor.name;
+            } else {
+                productVendor.textContent = 'Grozily Store';
+            }
+        } else {
+            productVendor.textContent = 'Grozily Store';
+        }
+        
+        // Set pricing - check all possible price properties
+        const price = product.discountedPrice || product.price || product.sellingPrice || 0;
+        productPrice.textContent = formatPrice(price);
+        
+        // Set original price if there's a discount
+        const origPrice = product.originalPrice || product.mrp || 0;
+        if (origPrice && origPrice > price) {
+            originalPrice.textContent = formatPrice(origPrice);
+            originalPrice.style.display = 'inline';
+        } else {
+            originalPrice.style.display = 'none';
+        }
+        
+        // Set weight/quantity
+        if (product.weight) {
+            productWeight.textContent = product.weight;
+        } else if (product.quantity) {
+            productWeight.textContent = product.quantity;
+        } else if (product.size) {
+            productWeight.textContent = product.size;
+        } else {
+            productWeight.style.display = 'none';
+        }
+        
+        // Add click handler to go to product detail
+        productItem.addEventListener('click', () => {
+            window.location.href = `product-detail.html?id=${product.id}`;
+        });
+        
+        // Add to container
+        container.appendChild(productItem);
+    } catch (error) {
+        console.error("Error rendering product:", error, product);
+    }
+}
+
+// Render a store item in the specified container
+function renderStoreItem(store, container) {
+    console.log("Rendering store:", store.storeName || store.name);
+    
+    try {
+        const template = document.getElementById('store-item-template');
+        const storeItem = document.importNode(template.content, true).querySelector('.store-item');
+        
+        // Set store details
+        const storeIcon = storeItem.querySelector('.store-image i');
+        const storeName = storeItem.querySelector('.store-name');
+        const storeLocation = storeItem.querySelector('.store-location');
+        const ratingValue = storeItem.querySelector('.rating-value');
+        const reviewCount = storeItem.querySelector('.review-count');
+        
+        // Set name
+        storeName.textContent = store.storeName || store.name || 'Unknown Store';
+        
+        // Set location
+        const location = store.address?.area || store.location || 'Location not available';
+        storeLocation.textContent = location;
+        
+        // Set rating if available
+        if (store.rating) {
+            ratingValue.textContent = parseFloat(store.rating).toFixed(1);
+            reviewCount.textContent = store.reviewCount ? `(${store.reviewCount})` : '';
+            storeItem.querySelector('.store-rating').style.display = 'flex';
+        } else {
+            storeItem.querySelector('.store-rating').style.display = 'none';
+        }
+        
+        // Add click handler
+        storeItem.addEventListener('click', () => {
+            window.location.href = `vendor-detail.html?id=${store.id}`;
+        });
+        
+        // Add to container
+        container.appendChild(storeItem);
+    } catch (error) {
+        console.error("Error rendering store:", error, store);
+    }
+}
+
+// Format price
+function formatPrice(price) {
+    // Handle null, undefined, or NaN
+    if (price === null || price === undefined || isNaN(price)) {
+        return '₹0.00';
     }
     
-    // Update result count
-    productResultCount.textContent = `${products.length} result${products.length !== 1 ? 's' : ''}`;
-    
-    // Clear results container
-    productResultsContainer.innerHTML = '';
-    
-    // Sort products by relevance (exact name match first)
-    const lowerQuery = query.toLowerCase();
-    products.sort((a, b) => {
-        const aName = (a.name || '').toLowerCase();
-        const bName = (b.name || '').toLowerCase();
-        
-        // Exact match first
-        if (aName === lowerQuery && bName !== lowerQuery) return -1;
-        if (bName === lowerQuery && aName !== lowerQuery) return 1;
-        
-        // Starts with query next
-        if (aName.startsWith(lowerQuery) && !bName.startsWith(lowerQuery)) return -1;
-        if (bName.startsWith(lowerQuery) && !aName.startsWith(lowerQuery)) return 1;
-        
-        // Then sort by name
-        return aName.localeCompare(bName);
-    });
-    
-    // Render products
-    products.forEach(product => {
-        renderProductItem(product, productResultsContainer);
-    });
-}
-
-// Search stores
-function searchStores(query) {
-    // Show loading indicator
-    storeSearchResults.classList.remove('hidden');
-    storesLoading.classList.remove('hidden');
-    storeResultsContainer.innerHTML = '';
-    storeResultCount.textContent = 'Searching...';
-    storesNoResults.classList.add('hidden');
-
-    // Clear cache for new search (optional)
-    // delete cachedStores[query];
-
-    // Check if we have cached results (optional)
-    // if (cachedStores[query]) {
-    //     renderStoreSearchResults(cachedStores[query], query);
-    //     return;
-    // }
-
-    // Search in vendors
-    database.ref('vendors') // Changed path from 'stores' to 'vendors'
-        .once('value')
-        .then(snapshot => {
-            if (snapshot.exists()) {
-                const stores = [];
-                const lowerQuery = query.toLowerCase();
-
-                snapshot.forEach(childSnapshot => {
-                    const store = {
-                        id: childSnapshot.key,
-                        ...childSnapshot.val()
-                    };
-
-                    // Match by name or location/area
-                    const name = (store.storeName || store.name || '').toLowerCase();
-                    const location = (store.address?.area || store.location || '').toLowerCase(); // Check both fields
-
-                    if (name.includes(lowerQuery) || location.includes(lowerQuery)) {
-                        stores.push(store);
-                    }
-                });
-
-                // Cache the results (optional)
-                // cachedStores[query] = stores;
-
-                // Render results
-                renderStoreSearchResults(stores, query);
-            } else {
-                // No stores exist
-                storesLoading.classList.add('hidden');
-                storesNoResults.classList.remove('hidden');
-                storeResultCount.textContent = '0 results';
-            }
-        })
-        .catch(error => {
-            console.error('Error searching stores:', error);
-            storesLoading.classList.add('hidden');
-            storesNoResults.classList.remove('hidden');
-            storeResultCount.textContent = 'Error searching';
-            showToast('Error searching stores', 'error');
-        });
-}
-
-// Render store search results
-function renderStoreSearchResults(stores, query) {
-    // Hide loading indicator
-    storesLoading.classList.add('hidden');
-    
-    if (stores.length === 0) {
-        storesNoResults.classList.remove('hidden');
-        storeResultCount.textContent = '0 results';
-        return;
-    }
-    
-    // Update result count
-    storeResultCount.textContent = `${stores.length} result${stores.length !== 1 ? 's' : ''}`;
-    
-    // Clear results container
-    storeResultsContainer.innerHTML = '';
-    
-    // Sort stores by relevance (exact name match first)
-    const lowerQuery = query.toLowerCase();
-    stores.sort((a, b) => {
-        const aName = (a.storeName || a.name || '').toLowerCase();
-        const bName = (b.storeName || b.name || '').toLowerCase();
-        
-        // Exact match first
-        if (aName === lowerQuery && bName !== lowerQuery) return -1;
-        if (bName === lowerQuery && aName !== lowerQuery) return 1;
-        
-        // Starts with query next
-        if (aName.startsWith(lowerQuery) && !bName.startsWith(lowerQuery)) return -1;
-        if (bName.startsWith(lowerQuery) && !aName.startsWith(lowerQuery)) return 1;
-        
-        // Then sort by rating
-        return (b.rating || 0) - (a.rating || 0);
-    });
-    
-    // Render stores
-    stores.forEach(store => {
-        renderStoreItem(store, storeResultsContainer);
-    });
+    // Parse as float and format as Indian Rupees
+    const numPrice = parseFloat(price);
+    return '₹' + numPrice.toFixed(2);
 }
 
 // Show toast message
 function showToast(message, type = 'success') {
+    if (!toastMessage) return;
+    
     toastText.textContent = message;
     
-    toastIcon.className = 'toast-icon fa-solid';
     if (type === 'error') {
-        toastIcon.classList.add('fa-times-circle');
         toastMessage.classList.add('error');
+        toastIcon.classList.remove('fa-check-circle');
+        toastIcon.classList.add('fa-times-circle');
     } else {
+        toastMessage.classList.remove('error');
+        toastIcon.classList.remove('fa-times-circle');
         toastIcon.classList.add('fa-check-circle');
-        toastMessage.classList.add('success');
     }
     
     toastMessage.classList.add('show');
     
-    // Auto-hide after 3 seconds
     setTimeout(() => {
         toastMessage.classList.remove('show');
     }, 3000);
