@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Store Details - Grozily</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Loading overlay script -->
+    <script src="loader.js" defer></script>
     <style>
         :root {
             --primary: #805AD5;
@@ -563,6 +565,9 @@
         
         // Load store details
         function loadStoreDetails(storeId) {
+            // Show loading state
+            if (window.showLoading) window.showLoading();
+            
             firebase.database().ref(`vendors/${storeId}`).once('value')
                 .then((snapshot) => {
                     if (!snapshot.exists()) {
@@ -617,9 +622,11 @@
                     
                     pincodeValue.textContent = store.pinCode || store.address?.pinCode || 'Not available';
                     
-                    // Set business hours
+                    // Set business hours in 12-hour format
                     if (store.openingTime && store.closingTime) {
-                        hoursValue.textContent = `${store.openingTime} - ${store.closingTime}`;
+                        const openingTime = formatTo12Hour(store.openingTime);
+                        const closingTime = formatTo12Hour(store.closingTime);
+                        hoursValue.textContent = `${openingTime} - ${closingTime}`;
                     } else {
                         hoursValue.textContent = 'Not available';
                     }
@@ -630,6 +637,7 @@
                 .catch((error) => {
                     console.error('Error loading store details:', error);
                     showToast('Error loading store details', 'error');
+                    if (window.hideLoading) window.hideLoading();
                 });
         }
         
@@ -645,6 +653,9 @@
                             </div>
                         `;
                         productsCount.textContent = '0';
+                        
+                        // Hide loading after loading products
+                        if (window.hideLoading) window.hideLoading();
                         return;
                     }
                     
@@ -697,11 +708,69 @@
                         
                         productsContainer.appendChild(productCard);
                     });
+                    
+                    // Hide loading after loading products
+                    if (window.hideLoading) window.hideLoading();
                 })
                 .catch((error) => {
                     console.error('Error loading store products:', error);
                     showToast('Error loading products', 'error');
+                    
+                    // Hide loading after error
+                    if (window.hideLoading) window.hideLoading();
                 });
+        }
+        
+        // Format time from 24h to 12h format with AM/PM
+        function formatTo12Hour(timeString) {
+            if (!timeString) return '';
+            
+            // Handle various time formats
+            let hours = 0;
+            let minutes = 0;
+            let period = 'AM';
+            
+            // Extract hours and minutes from common formats
+            if (timeString.includes(':')) {
+                // Format: "14:30" or "2:30 PM"
+                const parts = timeString.split(':');
+                hours = parseInt(parts[0], 10);
+                
+                // Handle minutes which might include AM/PM
+                if (parts[1].includes('AM') || parts[1].includes('PM')) {
+                    const minParts = parts[1].split(' ');
+                    minutes = parseInt(minParts[0], 10);
+                    period = minParts[1];
+                } else {
+                    minutes = parseInt(parts[1], 10);
+                }
+            } else if (timeString.includes('AM') || timeString.includes('PM')) {
+                // Format: "2 PM" or "2PM"
+                const parts = timeString.replace(/\s+/g, '').split(/AM|PM/);
+                hours = parseInt(parts[0], 10);
+                period = timeString.includes('AM') ? 'AM' : 'PM';
+            } else {
+                // Assume simple hour format "14" or "2"
+                hours = parseInt(timeString, 10);
+            }
+            
+            // Convert to 12-hour format if needed
+            if (hours > 12) {
+                hours = hours - 12;
+                period = 'PM';
+            } else if (hours === 12) {
+                period = 'PM';
+            } else if (hours === 0) {
+                hours = 12;
+                period = 'AM';
+            }
+            
+            // Format the result
+            if (isNaN(minutes) || minutes === 0) {
+                return `${hours} ${period}`;
+            } else {
+                return `${hours}:${minutes.toString().padStart(2, '0')} ${period}`;
+            }
         }
         
         // Event Listeners
