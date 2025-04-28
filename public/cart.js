@@ -386,7 +386,7 @@ function showEmptyCart() {
     const emptyCartIcon = emptyCartElement.querySelector('.empty-cart-icon i');
     if (emptyCartIcon) {
         emptyCartIcon.classList.add('pulse');
-        setTimeout(() => {
+    setTimeout(() => {
             emptyCartIcon.classList.add('sad');
         }, 500);
     }
@@ -756,7 +756,7 @@ function proceedToCheckout() {
         setTimeout(() => {
             window.location.href = 'orders.html';
         }, 1500);
-    }, 2000);
+        }, 2000);
 }
 
 // Show toast message
@@ -955,10 +955,25 @@ function showLocationModal() {
     // Initialize map if not already initialized
     if (!locationMap) {
         initializeMap();
+    } else {
+        // If map already exists, make sure it renders correctly
+        setTimeout(() => {
+            if (locationMap) {
+                locationMap.invalidateSize();
+                console.log('Map size refreshed');
+            }
+        }, 500);
     }
     
     // Get user's current location
     getUserLocation();
+    
+    // Make sure the map refreshes correctly after animation completes
+    setTimeout(() => {
+        if (locationMap) {
+            locationMap.invalidateSize();
+        }
+    }, 1000);
 }
 
 // Hide location modal
@@ -968,20 +983,46 @@ function hideLocationModal() {
 
 // Initialize Leaflet map
 function initializeMap() {
-    // Create map in the location-map container
-    locationMap = L.map('location-map').setView([28.6139, 77.2090], 13); // Default to New Delhi
-    
-    // Add a tile layer
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-        attribution: '&copy; OpenStreetMap contributors'
-    }).addTo(locationMap);
-    
-    // Add click event to map
-    locationMap.on('click', (e) => {
-        const { lat, lng } = e.latlng;
-        setMapMarker(lat, lng);
-        reverseGeocode(lat, lng, 'selected');
-    });
+    try {
+        // Small delay to ensure the modal is visible and the map container is rendered
+        setTimeout(() => {
+            try {
+                // Check if the map element exists
+                const mapElement = document.getElementById('location-map');
+                if (!mapElement) {
+                    console.error('Map container element not found');
+                    showToast('Error initializing map', 'error');
+                    return;
+                }
+                
+                // Create map in the location-map container
+                locationMap = L.map('location-map').setView([28.6139, 77.2090], 13); // Default to New Delhi
+                
+                // Add a tile layer
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(locationMap);
+                
+                // Add click event to map
+                locationMap.on('click', (e) => {
+                    const { lat, lng } = e.latlng;
+                    setMapMarker(lat, lng);
+                    reverseGeocode(lat, lng, 'selected');
+                });
+                
+                // Force map to recalculate its container size
+                locationMap.invalidateSize();
+                
+                console.log('Map initialized successfully');
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                showToast('Could not initialize map', 'error');
+            }
+        }, 300); // 300ms delay to ensure modal is visible
+    } catch (error) {
+        console.error('Fatal error initializing map:', error);
+        showToast('Could not initialize map', 'error');
+    }
 }
 
 // Get user's current location
@@ -991,49 +1032,60 @@ function getUserLocation() {
     currentDistrict.textContent = '';
     currentPincode.textContent = '';
     
+    console.log('Getting user location...');
+    
     if ('geolocation' in navigator) {
-        navigator.geolocation.getCurrentPosition(
-            // Success callback
-            position => {
-                const latitude = position.coords.latitude;
-                const longitude = position.coords.longitude;
-                
-                // Update map with user's location
-                if (locationMap) {
-                    locationMap.setView([latitude, longitude], 15);
-                    setMapMarker(latitude, longitude);
+        console.log('Geolocation is supported');
+        try {
+            navigator.geolocation.getCurrentPosition(
+                // Success callback
+                position => {
+                    console.log('Got position:', position.coords.latitude, position.coords.longitude);
+                    const latitude = position.coords.latitude;
+                    const longitude = position.coords.longitude;
+                    
+                    // Update map with user's location
+                    if (locationMap) {
+                        locationMap.setView([latitude, longitude], 15);
+                        setMapMarker(latitude, longitude);
+                    }
+                    
+                    // Use reverse geocoding to get address details
+                    reverseGeocode(latitude, longitude, 'current');
+                },
+                // Error callback
+                error => {
+                    console.error('Error getting location:', error.code, error.message);
+                    currentArea.textContent = 'Unable to get location';
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            showToast('Please enable location services for better experience', 'info');
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            showToast('Location information is unavailable', 'error');
+                            break;
+                        case error.TIMEOUT:
+                            showToast('Location request timed out', 'error');
+                            break;
+                        default:
+                            showToast('An unknown error occurred getting location', 'error');
+                    }
+                },
+                // Options
+                {
+                    enableHighAccuracy: true,
+                    timeout: 20000, // Increase timeout to 20 seconds
+                    maximumAge: 5000 // Allow cached positions up to 5 seconds old
                 }
-                
-                // Use reverse geocoding to get address details
-                reverseGeocode(latitude, longitude, 'current');
-            },
-            // Error callback
-            error => {
-                console.error('Error getting location:', error);
-                currentArea.textContent = 'Unable to get location';
-                
-                switch(error.code) {
-                    case error.PERMISSION_DENIED:
-                        showToast('Please enable location services for better experience', 'info');
-                        break;
-                    case error.POSITION_UNAVAILABLE:
-                        showToast('Location information is unavailable', 'error');
-                        break;
-                    case error.TIMEOUT:
-                        showToast('Location request timed out', 'error');
-                        break;
-                    default:
-                        showToast('An unknown error occurred getting location', 'error');
-                }
-            },
-            // Options
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0
-            }
-        );
+            );
+        } catch (e) {
+            console.error('Exception in geolocation API:', e);
+            showToast('Error accessing location services', 'error');
+            currentArea.textContent = 'Error accessing location';
+        }
     } else {
+        console.error('Geolocation is not supported by this browser');
         currentArea.textContent = 'Geolocation not supported';
         showToast('Your browser does not support geolocation', 'error');
     }
@@ -1041,10 +1093,29 @@ function getUserLocation() {
 
 // Reverse geocode coordinates to get address
 function reverseGeocode(lat, lng, targetElement) {
-    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
-        .then(response => response.json())
+    // Show loading state
+    if (targetElement === 'current') {
+        currentArea.textContent = 'Getting address...';
+    } else {
+        selectedArea.textContent = 'Getting address...';
+    }
+    
+    // Add timeout to handle API not responding
+    const timeoutId = setTimeout(() => {
+        console.warn('Reverse geocoding timed out');
+        handleFallback(targetElement, lat, lng);
+    }, 8000); // 8 second timeout
+    
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`)
+        .then(response => {
+            clearTimeout(timeoutId);
+            if (!response.ok) {
+                throw new Error(`HTTP error! Status: ${response.status}`);
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data.address) {
+            if (data && data.address) {
                 // Extract area name - try different possible fields from Nominatim
                 const area = data.address.suburb || data.address.neighbourhood || 
                              data.address.district || data.address.locality || '';
@@ -1094,23 +1165,50 @@ function reverseGeocode(lat, lng, targetElement) {
                     };
                 }
             } else {
-                if (targetElement === 'current') {
-                    currentArea.textContent = 'Unable to determine location';
-                } else {
-                    selectedArea.textContent = 'Unable to determine location';
-                }
-                showToast('Could not get address information for this location', 'error');
+                handleFallback(targetElement, lat, lng);
             }
         })
         .catch(error => {
+            clearTimeout(timeoutId);
             console.error('Error with reverse geocoding:', error);
-            if (targetElement === 'current') {
-                currentArea.textContent = 'Error getting location details';
-            } else {
-                selectedArea.textContent = 'Error getting location details';
-            }
-            showToast('Error getting location details', 'error');
+            handleFallback(targetElement, lat, lng);
         });
+}
+
+// Handle fallback when reverse geocoding fails
+function handleFallback(targetElement, lat, lng) {
+    // Create fallback location data with coordinates but no address details
+    const fallbackData = {
+        lat,
+        lng,
+        area: 'Selected Location',
+        district: 'Unknown District',
+        pincode: '',
+        fullAddress: `Coordinates: ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+    };
+    
+    if (targetElement === 'current') {
+        // Update current location elements with fallback data
+        currentArea.textContent = fallbackData.area;
+        currentDistrict.textContent = fallbackData.district;
+        currentPincode.textContent = '';
+        
+        // Store the fallback location data
+        userLocation = fallbackData;
+        
+        showToast('Using approximate location', 'info');
+    } else if (targetElement === 'selected') {
+        // Show the selected location section
+        selectedLocationSection.style.display = 'block';
+        
+        // Update selected location elements with fallback data
+        selectedArea.textContent = fallbackData.area;
+        selectedDistrict.textContent = fallbackData.district;
+        selectedPincode.textContent = '';
+        
+        // Store the fallback location data
+        selectedLocationData = fallbackData;
+    }
 }
 
 // Set marker on map
