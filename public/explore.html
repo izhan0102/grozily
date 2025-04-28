@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grozily - Explore</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="explore.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Loading overlay script -->
+    <script src="loader.js" defer></script>
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Firebase Storage -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-storage-compat.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <header class="explore-header">
+            <button id="back-btn" class="back-button">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <div class="search-container">
+                <input type="text" id="search-input" placeholder="Search products, stores..." autocomplete="off">
+                <button id="search-btn" class="search-button">
+                    <i class="fa-solid fa-search"></i>
+                </button>
+                <button id="clear-search-btn" class="clear-search-button hidden">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+        </header>
+
+        <main class="app-content">
+            <!-- Tabs navigation -->
+            <div class="explore-tabs">
+                <button id="products-tab" class="tab-button active">Products</button>
+                <button id="stores-tab" class="tab-button">Stores</button>
+                <div class="tab-indicator"></div>
+            </div>
+
+            <!-- Tab content -->
+            <div class="explore-content">
+                <!-- Products Tab -->
+                <div id="products-content" class="tab-content active">
+                    <!-- Top Products Section (shown when no search is active) -->
+                    <div id="top-products" class="top-products">
+                        <h3>Popular Products</h3>
+                        <div class="top-product-items">
+                            <!-- Top products will be dynamically added here -->
+                        </div>
+                    </div>
+
+                    <!-- Products Search Results (shown when search is active) -->
+                    <div id="product-search-results" class="search-results hidden">
+                        <div class="result-stats">
+                            <span id="product-result-count">0 results</span>
+                        </div>
+                        <div id="product-results-container" class="results-grid">
+                            <!-- Product results will be dynamically added here -->
+                        </div>
+                    </div>
+
+                    <!-- Loading indicator -->
+                    <div id="products-loading" class="loading-indicator hidden">
+                        <div class="loader"></div>
+                        <p>Searching products...</p>
+                    </div>
+
+                    <!-- No results message -->
+                    <div id="products-no-results" class="no-results hidden">
+                        <i class="fa-solid fa-search"></i>
+                        <p>No products found</p>
+                    </div>
+                </div>
+
+                <!-- Stores Tab -->
+                <div id="stores-content" class="tab-content">
+                    <!-- Top Stores Section (shown when no search is active) -->
+                    <div id="top-stores" class="top-stores">
+                        <h3>Popular Stores</h3>
+                        <div class="top-store-items">
+                            <!-- Top stores will be dynamically added here -->
+                        </div>
+                    </div>
+
+                    <!-- Stores Search Results (shown when search is active) -->
+                    <div id="store-search-results" class="search-results hidden">
+                        <div class="result-stats">
+                            <span id="store-result-count">0 results</span>
+                        </div>
+                        <div id="store-results-container" class="results-list">
+                            <!-- Store results will be dynamically added here -->
+                        </div>
+                    </div>
+
+                    <!-- Loading indicator -->
+                    <div id="stores-loading" class="loading-indicator hidden">
+                        <div class="loader"></div>
+                        <p>Searching stores...</p>
+                    </div>
+
+                    <!-- No results message -->
+                    <div id="stores-no-results" class="no-results hidden">
+                        <i class="fa-solid fa-search"></i>
+                        <p>No stores found</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Real-time search suggestions -->
+        <div id="search-suggestions" class="search-suggestions hidden">
+            <div class="suggestion-header">
+                <span>Suggestions</span>
+                <button id="close-suggestions-btn" class="close-suggestions-button">
+                    <i class="fa-solid fa-times"></i>
+                </button>
+            </div>
+            <div id="suggestions-list" class="suggestions-list">
+                <!-- Suggestions will be dynamically added here -->
+            </div>
+        </div>
+
+        <!-- Toast Message -->
+        <div id="toast-message" class="toast-message">
+            <div class="toast-content">
+                <i class="toast-icon fa-solid fa-check-circle success"></i>
+                <p class="toast-text"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Product Item Template -->
+    <template id="product-item-template">
+        <div class="product-item">
+            <div class="product-image">
+                <img src="" alt="Product Image">
+            </div>
+            <div class="product-info">
+                <h4 class="product-name"></h4>
+                <p class="product-vendor"></p>
+                <div class="product-pricing">
+                    <span class="product-price"></span>
+                    <span class="original-price"></span>
+                </div>
+                <p class="product-weight"></p>
+            </div>
+        </div>
+    </template>
+
+    <!-- Store Item Template -->
+    <template id="store-item-template">
+        <div class="store-item">
+            <div class="store-image">
+                <i class="fa-solid fa-store"></i>
+            </div>
+            <div class="store-info">
+                <h4 class="store-name"></h4>
+                <p class="store-location"></p>
+                <div class="store-rating">
+                    <i class="fa-solid fa-star"></i>
+                    <span class="rating-value"></span>
+                    <span class="review-count"></span>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Search Suggestion Template -->
+    <template id="suggestion-item-template">
+        <div class="suggestion-item">
+            <i class="fa-solid fa-search"></i>
+            <span class="suggestion-text"></span>
+        </div>
+    </template>
+
+    <script src="explore.js"></script>
+</body>
+</html> 
