@@ -458,46 +458,20 @@ body {
 
 .total-container {
     display: flex;
-    flex-direction: column;
-    padding: 8px 12px;
-    background-color: rgba(255, 255, 255, 0.1);
-    border-radius: 8px;
-    position: relative;
-    transition: all 0.2s ease;
-}
-
-.total-container:active {
-    transform: scale(0.98);
-    background-color: rgba(255, 255, 255, 0.15);
-}
-
-.total-container::after {
-    content: 'Hold for details';
-    position: absolute;
-    bottom: -20px;
-    left: 0;
-    width: 100%;
-    text-align: center;
-    font-size: 10px;
-    color: rgba(255, 255, 255, 0.6);
-    opacity: 0;
-    transition: opacity 0.3s ease;
-    pointer-events: none;
-}
-
-.total-container:hover::after {
-    opacity: 1;
+    align-items: center;
+    flex-direction: row;
+    gap: 5px;
 }
 
 .total-label {
-    color: rgba(255, 255, 255, 0.8) !important;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.7) !important;
 }
 
 .total-amount {
-    font-size: 1.3rem;
-    font-weight: 700;
-    color: var(--primary);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: white !important;
 }
 
 .checkout-button {

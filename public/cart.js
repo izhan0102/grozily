@@ -37,17 +37,6 @@ const discountCodeInput = document.getElementById('discount-code');
 const cartHeaderElement = document.querySelector('.cart-header');
 const discountInputContainer = document.getElementById('discount-input-container');
 
-// Popup Order Summary Elements
-const viewDetailsLink = document.getElementById('view-details-link');
-const orderDetailsPopup = document.getElementById('order-details-popup');
-const closeDetailsBtn = document.getElementById('close-details');
-const popupSubtotalElement = document.getElementById('popup-subtotal');
-const popupDeliveryFeeElement = document.getElementById('popup-delivery-fee');
-const popupPlatformFeeElement = document.getElementById('popup-platform-fee');
-const popupDiscountAmountElement = document.getElementById('popup-discount-amount');
-const popupDiscountRow = document.getElementById('popup-discount-row');
-const popupTotalElement = document.getElementById('popup-total');
-
 // Confirmation Dialog
 const confirmDialog = document.getElementById('confirm-dialog');
 const confirmMessage = document.getElementById('confirm-message');
@@ -151,51 +140,6 @@ document.addEventListener('DOMContentLoaded', () => {
     // Checkout button
     checkoutBtn.addEventListener('click', proceedToCheckout);
     
-    // Long press on total amount to show details
-    const totalAmount = document.getElementById('cart-total');
-    if (totalAmount) {
-        let pressTimer;
-        
-        totalAmount.addEventListener('mousedown', () => {
-            pressTimer = setTimeout(() => {
-                showOrderDetailsPopup();
-            }, 800);
-        });
-        
-        totalAmount.addEventListener('mouseup', () => {
-            clearTimeout(pressTimer);
-        });
-        
-        totalAmount.addEventListener('mouseleave', () => {
-            clearTimeout(pressTimer);
-        });
-        
-        // For mobile
-        totalAmount.addEventListener('touchstart', () => {
-            pressTimer = setTimeout(() => {
-                showOrderDetailsPopup();
-            }, 800);
-        });
-        
-        totalAmount.addEventListener('touchend', () => {
-            clearTimeout(pressTimer);
-        });
-        
-        totalAmount.addEventListener('touchcancel', () => {
-            clearTimeout(pressTimer);
-        });
-    }
-    
-    // Close popup button
-    closeDetailsBtn.addEventListener('click', hideOrderDetailsPopup);
-    
-    // Close popup when clicking outside content
-    orderDetailsPopup.addEventListener('click', (e) => {
-        if (e.target === orderDetailsPopup) {
-            hideOrderDetailsPopup();
-        }
-    });
-    
     // Select location button
     selectLocationBtn.addEventListener('click', showLocationModal);
     
@@ -217,13 +161,6 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Location search input
     locationSearchInput.addEventListener('input', handleLocationSearch);
-    
-    // Add helper tooltip for total price
-    const totalContainer = document.querySelector('.total-container');
-    if (totalContainer) {
-        totalContainer.setAttribute('title', 'Long press to view order breakdown');
-        totalAmount.style.cursor = 'pointer';
-    }
 });
 
 // Check if user is authenticated
@@ -443,25 +380,19 @@ function showEmptyCart() {
 function updateCartTotals() {
     // Update UI elements with animation
     animateNumberChange(cartSubtotalElement, `₹${formatPrice(cartSubtotal)}`);
-    animateNumberChange(deliveryFeeElement, `₹${formatPrice(deliveryFee)}`);
-    animateNumberChange(platformFeeElement, `₹${formatPrice(platformFee)}`);
     
-    // Update popup elements as well
-    animateNumberChange(popupSubtotalElement, `₹${formatPrice(cartSubtotal)}`);
-    animateNumberChange(popupDeliveryFeeElement, `₹${formatPrice(deliveryFee)}`);
-    animateNumberChange(popupPlatformFeeElement, `₹${formatPrice(platformFee)}`);
+    // For display purposes, only show the subtotal - we'll still calculate the complete total
+    // for when we proceed to checkout, but we won't display platform fee and delivery fee
     
-    // Calculate total
+    // Calculate total including all fees (stored but not displayed)
     cartTotal = cartSubtotal + deliveryFee + platformFee - discountAmount;
     
     // Update discount amount if any
     if (discountApplied && discountAmount > 0) {
         animateNumberChange(discountAmountElement, `-₹${formatPrice(discountAmount)}`);
-        animateNumberChange(popupDiscountAmountElement, `-₹${formatPrice(discountAmount)}`);
         
         if (discountRow.classList.contains('hidden')) {
             discountRow.classList.remove('hidden');
-            popupDiscountRow.classList.remove('hidden');
             // Add entry animation for discount row
             discountRow.classList.add('discount-applied');
             setTimeout(() => {
@@ -474,22 +405,9 @@ function updateCartTotals() {
             discountRow.classList.add('discount-removed');
             setTimeout(() => {
                 discountRow.classList.add('hidden');
-                popupDiscountRow.classList.add('hidden');
                 discountRow.classList.remove('discount-removed');
             }, 300);
         }
-    }
-    
-    // Update total amount
-    animateNumberChange(cartTotalElement, `₹${formatPrice(cartTotal)}`);
-    animateNumberChange(popupTotalElement, `₹${formatPrice(cartTotal)}`);
-    
-    // Update cart header
-    if (cartHeaderElement) {
-        cartHeaderElement.classList.add('updated');
-        setTimeout(() => {
-            cartHeaderElement.classList.remove('updated');
-        }, 300);
     }
     
     // Disable checkout button if cart is empty
@@ -795,7 +713,7 @@ function proceedToCheckout() {
         setTimeout(() => {
             window.location.href = 'orders.html';
         }, 1500);
-        }, 2000);
+    }, 2000);
 }
 
 // Show toast message
@@ -951,40 +869,6 @@ function showQuantityChangeIndicator(cartItemElement, changeAmount) {
     setTimeout(() => {
         indicator.remove();
     }, 2000);
-}
-
-// Show order details popup
-function showOrderDetailsPopup() {
-    // Ensure prices are up-to-date before showing popup
-    updateCartSubtotal();
-    updateCartTotals();
-    
-    // Update popup values to ensure they're current
-    popupSubtotalElement.textContent = `₹${formatPrice(cartSubtotal)}`;
-    popupDeliveryFeeElement.textContent = `₹${formatPrice(deliveryFee)}`;
-    popupPlatformFeeElement.textContent = `₹${formatPrice(platformFee)}`;
-    popupTotalElement.textContent = `₹${formatPrice(cartTotal)}`;
-    
-    // Update the platform fee label based on the current rate
-    const popupPlatformFeeLabel = document.getElementById('popup-platform-fee-label');
-    if (popupPlatformFeeLabel) {
-        popupPlatformFeeLabel.textContent = `Platform Fee (${platformFeeRate}%)`;
-    }
-    
-    if (discountApplied && discountAmount > 0) {
-        popupDiscountAmountElement.textContent = `-₹${formatPrice(discountAmount)}`;
-        popupDiscountRow.classList.remove('hidden');
-    } else {
-        popupDiscountRow.classList.add('hidden');
-    }
-    
-    // Show popup with animation
-    orderDetailsPopup.classList.add('show');
-}
-
-// Hide order details popup
-function hideOrderDetailsPopup() {
-    orderDetailsPopup.classList.remove('show');
 }
 
 // Show location modal
