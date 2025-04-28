@@ -195,6 +195,15 @@ body {
     font-weight: 600;
 }
 
+.tab-button .count {
+    display: none !important;
+}
+
+.tab-button.active .count {
+    background-color: var(--primary);
+    color: white;
+}
+
 .tab-indicator {
     position: absolute;
     bottom: 0;
@@ -822,18 +831,218 @@ body.page-loaded .app-container {
     animation: fadeIn 0.4s ease forwards;
 }
 
+.recent-searches-section {
+    margin-bottom: 20px;
+}
+
 .recent-searches-header {
-    display: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.recent-searches-header h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0;
 }
 
 .clear-recent-button {
-    display: none;
+    background: none;
+    border: none;
+    color: var(--text-medium);
+    font-size: 13px;
+    padding: 6px 10px;
+    border-radius: 4px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 5px;
 }
 
-.recent-search-items {
-    display: none;
+.clear-recent-button:hover {
+    background-color: #f1f1f1;
+}
+
+.clear-recent-button i {
+    font-size: 12px;
+}
+
+.recent-searches-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .recent-search-item {
-    display: none;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background-color: white;
+    padding: 10px 15px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.recent-search-item:hover {
+    background-color: var(--primary-very-light);
+}
+
+.recent-search-item i {
+    color: var(--text-light);
+    font-size: 14px;
+}
+
+/* Suggestion section styles */
+.suggestion-section-header {
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+    padding: 10px 15px 5px;
+    border-bottom: 1px solid #eee;
+    background-color: #f8f8f8;
+}
+
+/* Toast Message styles */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%) translateY(100px);
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 12px 20px;
+    border-radius: 8px;
+    font-size: 14px;
+    font-weight: 500;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+    z-index: 9999;
+    transition: transform 0.3s ease, opacity 0.3s ease;
+    opacity: 0;
+}
+
+.toast.visible {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+/* Add these styles to enhance suggestion display */
+
+.suggestion-category-header {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--text-medium);
+    padding: 12px 16px 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.suggestion-category-header i {
+    color: var(--primary);
+    font-size: 16px;
+}
+
+.suggestion-item {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    transition: background-color 0.2s ease;
+}
+
+.suggestion-item:hover {
+    background-color: rgba(0, 0, 0, 0.05);
+}
+
+.suggestion-text-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.suggestion-item i {
+    margin-right: 12px;
+    font-size: 16px;
+    color: var(--text-light);
+}
+
+.suggestion-item i.product-icon {
+    color: var(--primary);
+}
+
+.suggestion-item i.store-icon {
+    color: var(--secondary);
+}
+
+.suggestion-text {
+    font-size: 15px;
+    font-weight: 500;
+    color: var(--text-dark);
+}
+
+.suggestion-category, .suggestion-location {
+    font-size: 12px;
+    color: var(--text-light);
+    margin-top: 2px;
+}
+
+.suggestion-see-more, .suggestion-see-all {
+    padding: 12px 16px;
+    cursor: pointer;
+    color: var(--primary);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    transition: background-color 0.2s ease;
+    font-size: 14px;
+}
+
+.suggestion-see-more:hover, .suggestion-see-all:hover {
+    background-color: rgba(128, 90, 213, 0.1);
+}
+
+.suggestion-see-more i, .suggestion-see-all i {
+    margin-right: 8px;
+}
+
+.suggestion-see-all {
+    border-top: 1px solid var(--border-light);
+    justify-content: center;
+}
+
+.suggestion-no-results {
+    padding: 24px 16px;
+    text-align: center;
+    color: var(--text-medium);
+}
+
+.search-all {
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 500;
+}
+
+.highlight {
+    background-color: rgba(128, 90, 213, 0.2);
+    padding: 0 2px;
+    border-radius: 2px;
+    color: var(--primary-dark);
+    font-weight: 500;
+}
+
+.suggestion-loading {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-medium);
+    font-size: 14px;
+}
+
+.suggestion-placeholder {
+    padding: 16px;
+    text-align: center;
+    color: var(--text-light);
+    font-style: italic;
 } 
