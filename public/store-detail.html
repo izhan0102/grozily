@@ -1,0 +1,753 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Store Details - Grozily</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <style>
+        :root {
+            --primary: #805AD5;
+            --primary-light: #E9D8FD;
+            --text-dark: #2D3748;
+            --text-medium: #4A5568;
+            --text-light: #A0AEC0;
+            --border-color: #E2E8F0;
+            --bg-gray: #F7FAFC;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0;
+            background-color: white;
+            min-height: 100vh;
+            position: relative;
+        }
+
+        /* Header */
+        .store-header {
+            background: linear-gradient(135deg, var(--primary), var(--primary-light));
+            color: white;
+            padding: 20px 16px 30px;
+            position: relative;
+            box-shadow: 0 2px 10px rgba(108, 92, 231, 0.2);
+        }
+
+        .top-nav {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .back-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .back-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .share-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .share-btn:hover {
+            background-color: rgba(255, 255, 255, 0.3);
+        }
+
+        .store-avatar {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background-color: white;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            font-weight: bold;
+            margin: 0 auto 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        .store-name {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+
+        .store-category {
+            font-size: 14px;
+            text-align: center;
+            opacity: 0.9;
+        }
+
+        /* Store Info Card */
+        .store-info-card {
+            background-color: white;
+            border-radius: 12px;
+            margin: -20px 16px 16px;
+            padding: 16px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            position: relative;
+            z-index: 10;
+        }
+
+        .store-stat {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 16px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-value {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text-dark);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-medium);
+        }
+
+        .store-details {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .detail-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .detail-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 8px;
+            background-color: #F0F3FF;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            flex-shrink: 0;
+        }
+
+        .detail-content {
+            flex: 1;
+        }
+
+        .detail-label {
+            font-size: 12px;
+            color: var(--text-medium);
+            margin-bottom: 2px;
+        }
+
+        .detail-value {
+            font-size: 14px;
+            color: var(--text-dark);
+            font-weight: 500;
+        }
+
+        /* Products Section */
+        .products-section {
+            padding: 16px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .products-count {
+            background-color: var(--primary);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: normal;
+        }
+
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+        }
+
+        .product-card {
+            background-color: white;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+            transition: transform 0.2s, box-shadow 0.2s;
+            border: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+        }
+
+        .product-image {
+            width: 100%;
+            aspect-ratio: 1;
+            object-fit: cover;
+        }
+
+        .product-details {
+            padding: 12px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .product-name {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            min-height: 36px;
+        }
+
+        .product-category {
+            font-size: 12px;
+            color: var(--text-medium);
+            margin-bottom: 8px;
+        }
+
+        .product-pricing {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: auto;
+        }
+
+        .current-price {
+            font-size: 16px;
+            font-weight: bold;
+            color: var(--primary);
+        }
+
+        .original-price {
+            font-size: 12px;
+            color: var(--text-light);
+            text-decoration: line-through;
+        }
+
+        .discount-badge {
+            background-color: #FEF5E7;
+            color: #DD6B20;
+            font-size: 10px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: 500;
+        }
+
+        .empty-products {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-medium);
+        }
+
+        .empty-products i {
+            font-size: 48px;
+            color: var(--border-color);
+            margin-bottom: 16px;
+        }
+
+        /* Contact Action */
+        .contact-action {
+            background-color: var(--primary);
+            color: white;
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(108, 92, 231, 0.3);
+            cursor: pointer;
+            border: none;
+            font-size: 24px;
+            z-index: 100;
+            transition: transform 0.2s;
+        }
+
+        .contact-action:hover {
+            transform: scale(1.1);
+        }
+
+        /* Responsive */
+        @media (min-width: 600px) {
+            .products-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
+        }
+
+        /* Toast Message */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 9999;
+            transition: transform 0.3s ease;
+            opacity: 0;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        .toast.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast.success {
+            background-color: #38A169;
+        }
+
+        .toast.error {
+            background-color: #E53E3E;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="store-header">
+            <div class="top-nav">
+                <button class="back-btn" id="back-btn">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <button class="share-btn" id="share-btn">
+                    <i class="fas fa-share-alt"></i>
+                </button>
+            </div>
+            <div class="store-avatar" id="store-avatar">A</div>
+            <h1 class="store-name" id="store-name">Store Name</h1>
+            <p class="store-category" id="store-category">Grocery Store</p>
+        </div>
+
+        <div class="store-info-card">
+            <div class="store-stat">
+                <div class="stat-item">
+                    <div class="stat-value" id="products-stat">0</div>
+                    <div class="stat-label">Products</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="rating-stat">0.0</div>
+                    <div class="stat-label">Rating</div>
+                </div>
+                <div class="stat-item">
+                    <div class="stat-value" id="reviews-stat">0</div>
+                    <div class="stat-label">Reviews</div>
+                </div>
+            </div>
+
+            <div class="store-details">
+                <div class="detail-item">
+                    <div class="detail-icon">
+                        <i class="fas fa-user"></i>
+                    </div>
+                    <div class="detail-content">
+                        <div class="detail-label">Owner</div>
+                        <div class="detail-value" id="owner-value">Owner Name</div>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon">
+                        <i class="fas fa-phone"></i>
+                    </div>
+                    <div class="detail-content">
+                        <div class="detail-label">Phone Number</div>
+                        <div class="detail-value" id="phone-value">+91 1234567890</div>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon">
+                        <i class="fas fa-map-marker-alt"></i>
+                    </div>
+                    <div class="detail-content">
+                        <div class="detail-label">Address</div>
+                        <div class="detail-value" id="address-value">123 Main Street, City, State</div>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon">
+                        <i class="fas fa-map-pin"></i>
+                    </div>
+                    <div class="detail-content">
+                        <div class="detail-label">PIN Code</div>
+                        <div class="detail-value" id="pincode-value">123456</div>
+                    </div>
+                </div>
+                <div class="detail-item">
+                    <div class="detail-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="detail-content">
+                        <div class="detail-label">Business Hours</div>
+                        <div class="detail-value" id="hours-value">9:00 AM - 9:00 PM</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="products-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-box" style="color: var(--primary);"></i>
+                    Products
+                    <span class="products-count" id="products-count">0</span>
+                </h2>
+            </div>
+            <div class="products-grid" id="products-container">
+                <!-- Products will be loaded here -->
+            </div>
+        </div>
+    </div>
+
+    <button class="contact-action" id="contact-btn" title="Contact Store">
+        <i class="fas fa-phone-alt"></i>
+    </button>
+
+    <div class="toast" id="toast">Message goes here</div>
+
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    
+    <script>
+        // Initialize Firebase
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+            authDomain: "grozily2.firebaseapp.com",
+            databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+            projectId: "grozily2",
+            storageBucket: "grozily2.appspot.com",
+            messagingSenderId: "665300145710",
+            appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+            measurementId: "G-83S7ZWXEB9"
+        };
+        
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // DOM Elements
+        const backBtn = document.getElementById('back-btn');
+        const shareBtn = document.getElementById('share-btn');
+        const contactBtn = document.getElementById('contact-btn');
+        const storeAvatar = document.getElementById('store-avatar');
+        const storeName = document.getElementById('store-name');
+        const storeCategory = document.getElementById('store-category');
+        const productsStat = document.getElementById('products-stat');
+        const ratingStat = document.getElementById('rating-stat');
+        const reviewsStat = document.getElementById('reviews-stat');
+        const ownerValue = document.getElementById('owner-value');
+        const phoneValue = document.getElementById('phone-value');
+        const addressValue = document.getElementById('address-value');
+        const pincodeValue = document.getElementById('pincode-value');
+        const hoursValue = document.getElementById('hours-value');
+        const productsCount = document.getElementById('products-count');
+        const productsContainer = document.getElementById('products-container');
+        const toast = document.getElementById('toast');
+        
+        // Global variables
+        let currentStoreId = null;
+        let storePhone = '';
+        
+        // Helper Functions
+        function formatCurrency(price) {
+            return '₹' + parseFloat(price).toLocaleString('en-IN', {
+                minimumFractionDigits: 2,
+                maximumFractionDigits: 2
+            });
+        }
+        
+        function calculateDiscount(original, discounted) {
+            const discount = ((original - discounted) / original) * 100;
+            return Math.round(discount);
+        }
+        
+        function showToast(message, type = '') {
+            toast.textContent = message;
+            toast.className = `toast ${type}`;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+        
+        // Get store ID from URL
+        function getStoreIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('id');
+        }
+        
+        // Load store details
+        function loadStoreDetails(storeId) {
+            firebase.database().ref(`vendors/${storeId}`).once('value')
+                .then((snapshot) => {
+                    if (!snapshot.exists()) {
+                        showToast('Store not found', 'error');
+                        setTimeout(() => {
+                            window.location.href = 'home.html';
+                        }, 2000);
+                        return;
+                    }
+                    
+                    const store = snapshot.val();
+                    
+                    // Set store info in header
+                    document.title = `${store.storeName || store.name || 'Store'} - Grozily`;
+                    storeName.textContent = store.storeName || store.name || 'Store';
+                    storeCategory.textContent = store.shopCategory || 'Grocery Store';
+                    storeAvatar.textContent = (store.storeName || store.name || 'S').charAt(0).toUpperCase();
+                    
+                    // Set stats
+                    productsStat.textContent = store.productCount || '0';
+                    ratingStat.textContent = store.rating ? parseFloat(store.rating).toFixed(1) : '0.0';
+                    reviewsStat.textContent = store.reviewCount || '0';
+                    
+                    // Set store details
+                    ownerValue.textContent = store.name || 'Not available';
+                    
+                    // Set phone and contact button
+                    if (store.phone) {
+                        phoneValue.textContent = store.phone;
+                        storePhone = store.phone;
+                        contactBtn.addEventListener('click', () => {
+                            window.location.href = `tel:${store.phone}`;
+                        });
+                    } else {
+                        phoneValue.textContent = 'Not available';
+                        contactBtn.style.display = 'none';
+                    }
+                    
+                    // Set address and pincode
+                    if (store.address) {
+                        let fullAddress = '';
+                        if (store.address.line1) fullAddress += store.address.line1;
+                        if (store.address.line2) fullAddress += ', ' + store.address.line2;
+                        if (store.address.area) fullAddress += ', ' + store.address.area;
+                        if (store.address.city) fullAddress += ', ' + store.address.city;
+                        if (store.address.state) fullAddress += ', ' + store.address.state;
+                        
+                        addressValue.textContent = fullAddress || store.location || 'Not available';
+                    } else {
+                        addressValue.textContent = store.location || 'Not available';
+                    }
+                    
+                    pincodeValue.textContent = store.pinCode || store.address?.pinCode || 'Not available';
+                    
+                    // Set business hours
+                    if (store.openingTime && store.closingTime) {
+                        hoursValue.textContent = `${store.openingTime} - ${store.closingTime}`;
+                    } else {
+                        hoursValue.textContent = 'Not available';
+                    }
+                    
+                    // Load products
+                    loadStoreProducts(storeId);
+                })
+                .catch((error) => {
+                    console.error('Error loading store details:', error);
+                    showToast('Error loading store details', 'error');
+                });
+        }
+        
+        // Load store products
+        function loadStoreProducts(storeId) {
+            firebase.database().ref(`vendor_products/${storeId}`).once('value')
+                .then((snapshot) => {
+                    if (!snapshot.exists() || snapshot.numChildren() === 0) {
+                        productsContainer.innerHTML = `
+                            <div class="empty-products" style="grid-column: 1 / -1;">
+                                <i class="fas fa-box-open"></i>
+                                <p>No products available from this store</p>
+                            </div>
+                        `;
+                        productsCount.textContent = '0';
+                        return;
+                    }
+                    
+                    const products = [];
+                    snapshot.forEach((productSnapshot) => {
+                        const productId = productSnapshot.key;
+                        const product = productSnapshot.val();
+                        products.push({ ...product, id: productId });
+                    });
+                    
+                    // Update products count
+                    productsCount.textContent = products.length;
+                    productsStat.textContent = products.length;
+                    
+                    // Sort products by creation date (newest first)
+                    products.sort((a, b) => {
+                        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+                        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+                        return dateB - dateA;
+                    });
+                    
+                    // Render products
+                    productsContainer.innerHTML = '';
+                    products.forEach(product => {
+                        const discountPercent = product.originalPrice && product.discountedPrice ? 
+                            calculateDiscount(product.originalPrice, product.discountedPrice) : 0;
+                        
+                        const productCard = document.createElement('div');
+                        productCard.className = 'product-card';
+                        productCard.innerHTML = `
+                            <img src="${product.imageURL || 'https://via.placeholder.com/300x300?text=No+Image'}" 
+                                alt="${product.name}" 
+                                class="product-image" 
+                                onerror="this.src='https://via.placeholder.com/300x300?text=No+Image'">
+                            <div class="product-details">
+                                <h3 class="product-name">${product.name || 'Unnamed Product'}</h3>
+                                <div class="product-category">${product.category || 'Uncategorized'}</div>
+                                <div class="product-pricing">
+                                    <span class="current-price">${formatCurrency(product.discountedPrice || product.price || 0)}</span>
+                                    ${product.originalPrice && product.originalPrice > (product.discountedPrice || product.price) ? 
+                                        `<span class="original-price">${formatCurrency(product.originalPrice)}</span>
+                                         <span class="discount-badge">${discountPercent}% OFF</span>` : ''}
+                                </div>
+                            </div>
+                        `;
+                        
+                        productCard.addEventListener('click', () => {
+                            window.location.href = `product-detail.html?id=${product.id}`;
+                        });
+                        
+                        productsContainer.appendChild(productCard);
+                    });
+                })
+                .catch((error) => {
+                    console.error('Error loading store products:', error);
+                    showToast('Error loading products', 'error');
+                });
+        }
+        
+        // Event Listeners
+        document.addEventListener('DOMContentLoaded', () => {
+            // Get store ID from URL
+            currentStoreId = getStoreIdFromUrl();
+            
+            if (!currentStoreId) {
+                showToast('Store ID not provided', 'error');
+                setTimeout(() => {
+                    window.location.href = 'home.html';
+                }, 2000);
+                return;
+            }
+            
+            // Load store details
+            loadStoreDetails(currentStoreId);
+            
+            // Back button event
+            backBtn.addEventListener('click', () => {
+                window.history.back();
+            });
+            
+            // Share button event
+            shareBtn.addEventListener('click', () => {
+                if (navigator.share) {
+                    navigator.share({
+                        title: document.title,
+                        url: window.location.href
+                    })
+                    .catch(error => {
+                        console.error('Error sharing:', error);
+                    });
+                } else {
+                    // Fallback for browsers that don't support Web Share API
+                    navigator.clipboard.writeText(window.location.href)
+                        .then(() => {
+                            showToast('Link copied to clipboard', 'success');
+                        })
+                        .catch(error => {
+                            console.error('Error copying link:', error);
+                            showToast('Could not copy link', 'error');
+                        });
+                }
+            });
+        });
+    </script>
+</body>
+</html> 

@@ -141,8 +141,8 @@ function loadAllData() {
                     rating: vendorData.rating || 0,
                     reviewCount: vendorData.reviewCount || 0,
                     ...vendorData
-                });
-            });
+    });
+});
         }
         
         console.log(`Loaded ${allStores.length} stores`);
@@ -263,7 +263,7 @@ function setupEventListeners() {
         
         // Clear previous timeout
         if (searchTimeout) {
-            clearTimeout(searchTimeout);
+        clearTimeout(searchTimeout);
         }
         
         // Show loading indicator in suggestions
@@ -392,8 +392,8 @@ function displayTopStores() {
     
     // Render each store
     topStoresToShow.forEach(store => {
-        renderStoreItem(store, topStoreItems);
-    });
+                    renderStoreItem(store, topStoreItems);
+                });
     
     console.log(`Displayed ${topStoresToShow.length} top stores`);
 }
@@ -550,7 +550,7 @@ function updateSearchSuggestions(query, products, stores) {
             
             // Add click handler
             item.addEventListener('click', () => {
-                window.location.href = `vendor-detail.html?id=${store.id}`;
+                window.location.href = `store-detail.html?id=${store.id}`;
             });
             
             suggestionsList.appendChild(item);
@@ -572,13 +572,13 @@ function updateSearchSuggestions(query, products, stores) {
     }
     
     // Add "See all results" option at the bottom
-    const seeAllItem = document.createElement('div');
-    seeAllItem.className = 'suggestion-see-all';
-    seeAllItem.innerHTML = `<i class="fa-solid fa-search"></i> See all results for "${query}"`;
-    seeAllItem.addEventListener('click', () => {
+            const seeAllItem = document.createElement('div');
+            seeAllItem.className = 'suggestion-see-all';
+            seeAllItem.innerHTML = `<i class="fa-solid fa-search"></i> See all results for "${query}"`;
+            seeAllItem.addEventListener('click', () => {
         executeFullSearch(query);
-    });
-    suggestionsList.appendChild(seeAllItem);
+            });
+            suggestionsList.appendChild(seeAllItem);
 }
 
 // Highlight matching text in a string
@@ -586,8 +586,8 @@ function highlightMatchingText(text, query) {
     if (!text || !query) return text || '';
     
     const lowerText = text.toLowerCase();
-    const lowerQuery = query.toLowerCase();
-    
+                const lowerQuery = query.toLowerCase();
+
     // If query not found in text, return text as is
     if (!lowerText.includes(lowerQuery)) return text;
     
@@ -686,58 +686,58 @@ function performFullSearch(query, showLoading = true) {
     // Update result counts
     productsTabCount.textContent = matchingProducts.length;
     storesTabCount.textContent = matchingStores.length;
-    
-    // Update product results
+        
+        // Update product results
     if (matchingProducts.length > 0) {
         productResultCount.textContent = `${matchingProducts.length} result${matchingProducts.length !== 1 ? 's' : ''}`;
-        productResultsContainer.innerHTML = '';
+            productResultsContainer.innerHTML = '';
         matchingProducts.forEach(product => {
-            renderProductItem(product, productResultsContainer);
-        });
-    } else {
-        productResultsContainer.innerHTML = `
-            <div class="no-results">
-                <i class="fa-solid fa-search"></i>
-                <p>No products found for "${query}"</p>
-            </div>
-        `;
-    }
-    
-    // Update store results
+                renderProductItem(product, productResultsContainer);
+            });
+        } else {
+            productResultsContainer.innerHTML = `
+                <div class="no-results">
+                    <i class="fa-solid fa-search"></i>
+                    <p>No products found for "${query}"</p>
+                </div>
+            `;
+        }
+        
+        // Update store results
     if (matchingStores.length > 0) {
         storeResultCount.textContent = `${matchingStores.length} result${matchingStores.length !== 1 ? 's' : ''}`;
-        storeResultsContainer.innerHTML = '';
+            storeResultsContainer.innerHTML = '';
         matchingStores.forEach(store => {
-            renderStoreItem(store, storeResultsContainer);
-        });
-    } else {
-        storeResultsContainer.innerHTML = `
-            <div class="no-results">
-                <i class="fa-solid fa-search"></i>
-                <p>No stores found for "${query}"</p>
-            </div>
-        `;
-    }
-    
-    // If no results at all
+                renderStoreItem(store, storeResultsContainer);
+            });
+        } else {
+            storeResultsContainer.innerHTML = `
+                <div class="no-results">
+                    <i class="fa-solid fa-search"></i>
+                    <p>No stores found for "${query}"</p>
+                </div>
+            `;
+        }
+        
+        // If no results at all
     if (matchingProducts.length === 0 && matchingStores.length === 0) {
-        productResultsContainer.innerHTML = `
-            <div class="no-results">
-                <i class="fa-solid fa-search"></i>
-                <p>No results found for "${query}"</p>
-                <p class="suggestion">Try a different search term or browse categories</p>
-            </div>
-        `;
-    }
-    
+            productResultsContainer.innerHTML = `
+                <div class="no-results">
+                    <i class="fa-solid fa-search"></i>
+                    <p>No results found for "${query}"</p>
+                    <p class="suggestion">Try a different search term or browse categories</p>
+                </div>
+            `;
+        }
+        
     // Show appropriate tab based on results
     if (matchingProducts.length > 0 && matchingStores.length === 0) {
-        switchTab('products');
+            switchTab('products');
     } else if (matchingProducts.length === 0 && matchingStores.length > 0) {
-        switchTab('stores');
-    } else {
-        switchTab(currentTab); // Stay on current tab
-    }
+            switchTab('stores');
+        } else {
+            switchTab(currentTab); // Stay on current tab
+        }
     
     // Hide loading indicator if we showed it
     if (showLoading && window.hideLoading) {
@@ -901,7 +901,7 @@ function renderStoreItem(store, container) {
         
         // Add click handler
         storeItem.addEventListener('click', () => {
-            window.location.href = `vendor-detail.html?id=${store.id}`;
+            window.location.href = `store-detail.html?id=${store.id}`;
         });
         
         // Add to container
