@@ -74,6 +74,32 @@ let platformFeeRate = 8;
 // Toast timer reference
 let toastTimer = null;
 
+// Location modal elements
+const selectLocationBtn = document.getElementById('select-location-btn');
+const locationModal = document.getElementById('location-modal');
+const closeLocationModalBtn = document.getElementById('close-location-modal');
+const useCurrentLocationBtn = document.getElementById('use-current-location');
+const confirmLocationBtn = document.getElementById('confirm-location-btn');
+const locationSearchInput = document.getElementById('location-search-input');
+const locationSearchResults = document.getElementById('location-search-results');
+const selectedLocationSection = document.getElementById('selected-location-section');
+
+// Location data elements
+const currentArea = document.getElementById('current-area');
+const currentDistrict = document.getElementById('current-district');
+const currentPincode = document.getElementById('current-pincode');
+const selectedArea = document.getElementById('selected-area');
+const selectedDistrict = document.getElementById('selected-district');
+const selectedPincode = document.getElementById('selected-pincode');
+
+// Location data
+let userLocation = null;
+let selectedLocationData = null;
+let locationMap = null;
+let locationMarker = null;
+let searchDebounceTimer = null;
+let selectedFromSearch = false;
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', () => {
     // Ensure toast is hidden initially
@@ -137,6 +163,28 @@ document.addEventListener('DOMContentLoaded', () => {
             hideOrderDetailsPopup();
         }
     });
+    
+    // Select location button
+    selectLocationBtn.addEventListener('click', showLocationModal);
+    
+    // Close location modal button
+    closeLocationModalBtn.addEventListener('click', hideLocationModal);
+    
+    // Close location modal when clicking outside content
+    locationModal.addEventListener('click', (e) => {
+        if (e.target === locationModal) {
+            hideLocationModal();
+        }
+    });
+    
+    // Use current location button
+    useCurrentLocationBtn.addEventListener('click', useCurrentLocation);
+    
+    // Confirm location button
+    confirmLocationBtn.addEventListener('click', confirmLocation);
+    
+    // Location search input
+    locationSearchInput.addEventListener('input', handleLocationSearch);
 });
 
 // Check if user is authenticated
@@ -689,32 +737,26 @@ function proceedToCheckout() {
         return;
     }
     
-    // Set button to loading state
+    // Check if delivery location is selected
+    if (!selectedLocationData) {
+        showToast('Please select a delivery location', 'error');
+        showLocationModal();
+        return;
+    }
+    
+    // Proceed with checkout
     setButtonLoading(checkoutBtn, true);
     
-    // Simulate checkout process
     setTimeout(() => {
-        // Reset button state
+        // Simulate checkout process (replace with actual checkout flow)
         setButtonLoading(checkoutBtn, false);
+        showToast('Order placed successfully!', 'success');
         
-        // Store cart data for checkout page
-        localStorage.setItem('checkout_data', JSON.stringify({
-            items: cartItems,
-            subtotal: cartSubtotal,
-            platformFee: platformFee,
-            deliveryFee: deliveryFee,
-            discount: discountAmount,
-            total: cartTotal
-        }));
-        
-        // Show toast
-        showToast('Redirecting to checkout...', 'info');
-        
-        // Simulate redirect after toast
+        // Navigate to orders page after successful checkout
         setTimeout(() => {
-            showToast('Checkout feature coming soon!', 'info');
-        }, 2000);
-    }, 800);
+            window.location.href = 'orders.html';
+        }, 1500);
+    }, 2000);
 }
 
 // Show toast message
@@ -904,4 +946,321 @@ function showOrderDetailsPopup() {
 // Hide order details popup
 function hideOrderDetailsPopup() {
     orderDetailsPopup.classList.remove('show');
+}
+
+// Show location modal
+function showLocationModal() {
+    locationModal.classList.add('show');
+    
+    // Initialize map if not already initialized
+    if (!locationMap) {
+        initializeMap();
+    }
+    
+    // Get user's current location
+    getUserLocation();
+}
+
+// Hide location modal
+function hideLocationModal() {
+    locationModal.classList.remove('show');
+}
+
+// Initialize Leaflet map
+function initializeMap() {
+    // Create map in the location-map container
+    locationMap = L.map('location-map').setView([28.6139, 77.2090], 13); // Default to New Delhi
+    
+    // Add a tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(locationMap);
+    
+    // Add click event to map
+    locationMap.on('click', (e) => {
+        const { lat, lng } = e.latlng;
+        setMapMarker(lat, lng);
+        reverseGeocode(lat, lng, 'selected');
+    });
+}
+
+// Get user's current location
+function getUserLocation() {
+    // Update UI to show we're fetching location
+    currentArea.textContent = 'Fetching location...';
+    currentDistrict.textContent = '';
+    currentPincode.textContent = '';
+    
+    if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            // Success callback
+            position => {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                
+                // Update map with user's location
+                if (locationMap) {
+                    locationMap.setView([latitude, longitude], 15);
+                    setMapMarker(latitude, longitude);
+                }
+                
+                // Use reverse geocoding to get address details
+                reverseGeocode(latitude, longitude, 'current');
+            },
+            // Error callback
+            error => {
+                console.error('Error getting location:', error);
+                currentArea.textContent = 'Unable to get location';
+                
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        showToast('Please enable location services for better experience', 'info');
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        showToast('Location information is unavailable', 'error');
+                        break;
+                    case error.TIMEOUT:
+                        showToast('Location request timed out', 'error');
+                        break;
+                    default:
+                        showToast('An unknown error occurred getting location', 'error');
+                }
+            },
+            // Options
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    } else {
+        currentArea.textContent = 'Geolocation not supported';
+        showToast('Your browser does not support geolocation', 'error');
+    }
+}
+
+// Reverse geocode coordinates to get address
+function reverseGeocode(lat, lng, targetElement) {
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.address) {
+                // Extract area name - try different possible fields from Nominatim
+                const area = data.address.suburb || data.address.neighbourhood || 
+                             data.address.district || data.address.locality || '';
+                
+                // Extract district name
+                const district = data.address.city || data.address.town || 
+                                 data.address.village || data.address.hamlet || '';
+                
+                // Extract pincode
+                const pincode = data.address.postcode || '';
+                
+                // Log for debugging
+                console.log('Address data:', data.address);
+                
+                if (targetElement === 'current') {
+                    // Update current location elements
+                    currentArea.textContent = area || 'Unknown area';
+                    currentDistrict.textContent = district || 'Unknown district';
+                    currentPincode.textContent = pincode || '';
+                    
+                    // Store the location data
+                    userLocation = {
+                        lat,
+                        lng,
+                        area,
+                        district,
+                        pincode,
+                        fullAddress: data.display_name
+                    };
+                } else if (targetElement === 'selected') {
+                    // Show the selected location section
+                    selectedLocationSection.style.display = 'block';
+                    
+                    // Update selected location elements
+                    selectedArea.textContent = area || 'Unknown area';
+                    selectedDistrict.textContent = district || 'Unknown district';
+                    selectedPincode.textContent = pincode || '';
+                    
+                    // Store the selected location data
+                    selectedLocationData = {
+                        lat,
+                        lng,
+                        area,
+                        district,
+                        pincode,
+                        fullAddress: data.display_name
+                    };
+                }
+            } else {
+                if (targetElement === 'current') {
+                    currentArea.textContent = 'Unable to determine location';
+                } else {
+                    selectedArea.textContent = 'Unable to determine location';
+                }
+                showToast('Could not get address information for this location', 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error with reverse geocoding:', error);
+            if (targetElement === 'current') {
+                currentArea.textContent = 'Error getting location details';
+            } else {
+                selectedArea.textContent = 'Error getting location details';
+            }
+            showToast('Error getting location details', 'error');
+        });
+}
+
+// Set marker on map
+function setMapMarker(lat, lng) {
+    // Remove existing marker if any
+    if (locationMarker) {
+        locationMap.removeLayer(locationMarker);
+    }
+    
+    // Add new marker
+    locationMarker = L.marker([lat, lng]).addTo(locationMap);
+    
+    // Center map on marker
+    locationMap.setView([lat, lng], 15);
+}
+
+// Use current location as delivery location
+function useCurrentLocation() {
+    if (!userLocation) {
+        showToast('Please wait while we fetch your location', 'info');
+        return;
+    }
+    
+    // Copy current location to selected location
+    selectedLocationData = { ...userLocation };
+    
+    // Update selected location display
+    selectedLocationSection.style.display = 'block';
+    selectedArea.textContent = userLocation.area || 'Unknown area';
+    selectedDistrict.textContent = userLocation.district || 'Unknown district';
+    selectedPincode.textContent = userLocation.pincode || '';
+    
+    // Show toast
+    showToast('Current location selected for delivery', 'success');
+}
+
+// Handle location search input
+function handleLocationSearch() {
+    const searchTerm = locationSearchInput.value.trim();
+    
+    // Clear previous timer
+    if (searchDebounceTimer) {
+        clearTimeout(searchDebounceTimer);
+    }
+    
+    // Clear results if search term is empty
+    if (searchTerm.length === 0) {
+        locationSearchResults.innerHTML = '';
+        locationSearchResults.classList.remove('show');
+        return;
+    }
+    
+    // Debounce search to avoid too many requests
+    searchDebounceTimer = setTimeout(() => {
+        searchLocations(searchTerm);
+    }, 500);
+}
+
+// Search for locations
+function searchLocations(searchTerm) {
+    // Show loading indicator
+    locationSearchResults.innerHTML = '<div class="search-loading">Searching...</div>';
+    locationSearchResults.classList.add('show');
+    
+    // Make request to Nominatim search API
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}`)
+        .then(response => response.json())
+        .then(data => {
+            // Clear results
+            locationSearchResults.innerHTML = '';
+            
+            if (data.length === 0) {
+                locationSearchResults.innerHTML = '<div class="no-results">No locations found</div>';
+                return;
+            }
+            
+            // Display results (limit to 5)
+            const results = data.slice(0, 5);
+            results.forEach(result => {
+                const resultItem = document.createElement('div');
+                resultItem.className = 'location-result-item';
+                resultItem.innerHTML = `
+                    <div class="result-title">${result.display_name.split(',')[0]}</div>
+                    <div class="result-address">${result.display_name}</div>
+                `;
+                
+                // Add click event
+                resultItem.addEventListener('click', () => {
+                    selectSearchResult(result);
+                });
+                
+                locationSearchResults.appendChild(resultItem);
+            });
+        })
+        .catch(error => {
+            console.error('Error searching locations:', error);
+            locationSearchResults.innerHTML = '<div class="search-error">Error searching locations</div>';
+        });
+}
+
+// Select a search result
+function selectSearchResult(result) {
+    const lat = parseFloat(result.lat);
+    const lon = parseFloat(result.lon);
+    
+    // Update map
+    setMapMarker(lat, lon);
+    locationMap.setView([lat, lon], 15);
+    
+    // Close search results
+    locationSearchResults.classList.remove('show');
+    
+    // Set flag to indicate selection from search
+    selectedFromSearch = true;
+    
+    // Reverse geocode to get detailed address
+    reverseGeocode(lat, lon, 'selected');
+    
+    // Clear search input
+    locationSearchInput.value = '';
+}
+
+// Confirm selected location and close modal
+function confirmLocation() {
+    if (!selectedLocationData) {
+        showToast('Please select a location first', 'error');
+        return;
+    }
+    
+    // Show selected location on the main page
+    selectLocationBtn.innerHTML = `
+        <i class="fa-solid fa-location-dot"></i>
+        <span class="btn-text">Deliver to: ${selectedLocationData.area}, ${selectedLocationData.pincode}</span>
+    `;
+    
+    // Store the location in user's data
+    const user = auth.currentUser;
+    if (user) {
+        database.ref(`users/${user.uid}/deliveryLocation`).set(selectedLocationData)
+            .then(() => {
+                console.log('Delivery location saved');
+            })
+            .catch(error => {
+                console.error('Error saving delivery location:', error);
+            });
+    }
+    
+    // Close the modal
+    hideLocationModal();
+    
+    // Show success message
+    showToast('Delivery location updated', 'success');
 } 

@@ -240,10 +240,16 @@
                 <span id="cart-total" class="total-amount">₹0.00</span>
                 <a id="view-details-link" class="view-details-link">View Details <i class="fa-solid fa-chevron-up"></i></a>
             </div>
-            <button id="checkout-btn" class="checkout-button">
-                <span class="btn-text">Proceed to Checkout</span>
-                <span class="btn-loader"></span>
-            </button>
+            <div class="checkout-buttons">
+                <button id="checkout-btn" class="checkout-button">
+                    <span class="btn-text">Proceed to Checkout</span>
+                    <span class="btn-loader"></span>
+                </button>
+                <button id="select-location-btn" class="select-location-button">
+                    <i class="fa-solid fa-location-dot"></i>
+                    <span class="btn-text">Select Delivery Location</span>
+                </button>
+            </div>
         </div>
     </div>
 
@@ -271,6 +277,64 @@
             <div class="summary-row" style="font-weight: bold; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
                 <span>Total</span>
                 <span id="popup-total">₹0.00</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delivery Location Modal -->
+    <div id="location-modal" class="location-modal">
+        <div class="location-modal-content">
+            <div class="location-modal-header">
+                <h3>Select Delivery Location</h3>
+                <button class="close-popup" id="close-location-modal">&times;</button>
+            </div>
+            <div class="location-modal-body">
+                <!-- Current Location Section -->
+                <div class="current-location-section">
+                    <h4>Current Location</h4>
+                    <div id="current-location-container" class="location-details-container">
+                        <div class="location-info">
+                            <i class="fa-solid fa-location-dot"></i>
+                            <div class="location-text">
+                                <p id="current-area">Fetching location...</p>
+                                <p id="current-district-pincode"><span id="current-district"></span>, <span id="current-pincode"></span></p>
+                            </div>
+                        </div>
+                        <button id="use-current-location" class="use-location-btn">Use This Location</button>
+                    </div>
+                </div>
+                
+                <!-- Search Location Section -->
+                <div class="search-location-section">
+                    <h4>Search Location</h4>
+                    <div class="location-search-container">
+                        <div class="location-search-bar">
+                            <i class="fa-solid fa-search"></i>
+                            <input type="text" id="location-search-input" placeholder="Search for area, landmark, district...">
+                        </div>
+                    </div>
+                    <div id="location-search-results" class="location-search-results"></div>
+                </div>
+                
+                <!-- Map Section -->
+                <div class="map-section">
+                    <div id="location-map" class="location-map"></div>
+                </div>
+                
+                <!-- Selected Location Section -->
+                <div id="selected-location-section" class="selected-location-section" style="display: none;">
+                    <h4>Selected Location</h4>
+                    <div class="location-details-container">
+                        <div class="location-info">
+                            <i class="fa-solid fa-map-marker-alt"></i>
+                            <div class="location-text">
+                                <p id="selected-area">No location selected</p>
+                                <p id="selected-district-pincode"><span id="selected-district"></span>, <span id="selected-pincode"></span></p>
+                            </div>
+                        </div>
+                        <button id="confirm-location-btn" class="confirm-location-btn">Confirm Location</button>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
