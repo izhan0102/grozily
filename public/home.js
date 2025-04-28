@@ -213,9 +213,16 @@ function reverseGeocode(lat, lon) {
             
             // Update the UI with the location data
             if (data.address) {
-                const city = data.address.city || data.address.town || data.address.village || data.address.hamlet || '';
-                const state = data.address.state || '';
-                const display = city ? (state ? `${city}, ${state}` : city) : 'Location found';
+                // Extract area name - try different possible fields from Nominatim
+                const area = data.address.suburb || data.address.neighbourhood || data.address.district || data.address.locality || '';
+                
+                // Extract pincode
+                const pincode = data.address.postcode || '';
+                
+                // Create display string: "Area Name, Pincode" or just "Area Name" if no pincode
+                const display = area ? (pincode ? `${area}, ${pincode}` : area) : 'Location found';
+                
+                console.log('Address data:', data.address); // Log the full address data for debugging
                 userLocation.textContent = display;
                 
                 // Add animation class

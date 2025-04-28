@@ -883,12 +883,13 @@ html, body {
 
 .header-location #user-location {
     color: white;
-    font-size: 13px;
-    font-weight: 500;
-    max-width: 100px;
+    font-size: 14px;
+    margin-left: 5px;
+    max-width: 200px;
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
+    font-weight: 400;
 }
 
 /* Make profile icon bigger */
@@ -1055,10 +1056,11 @@ html, body {
     color: white;
     font-size: 14px;
     margin-left: 5px;
-    max-width: 150px;
+    max-width: 200px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    font-weight: 400;
 }
 
 /* Animation for location update */
