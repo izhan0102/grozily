@@ -285,6 +285,8 @@ function initSearchBar() {
     // Stop cycling when user focuses on input
     searchInput.addEventListener('focus', () => {
         clearInterval(placeholderInterval);
+        // Redirect to explore page when search input is focused
+        window.location.href = 'explore.html';
     });
     
     // Resume cycling when user blurs input
@@ -297,26 +299,14 @@ function initSearchBar() {
     });
     
     // Search functionality
-    searchButton.addEventListener('click', performSearch);
+    searchButton.addEventListener('click', () => {
+        window.location.href = 'explore.html';
+    });
     searchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
-            performSearch();
+            window.location.href = 'explore.html';
         }
     });
-    
-    function performSearch() {
-        const searchTerm = searchInput.value.trim();
-        if (searchTerm.length > 0) {
-            // For now, we'll just show a toast message
-            showToast(`Searching for "${searchTerm}"...`, 'info');
-            
-            // Here you would normally redirect to search results or filter products
-            // This is a placeholder for future functionality
-            setTimeout(() => {
-                showToast(`No products found for "${searchTerm}". Try another search.`, 'info');
-            }, 1500);
-        }
-    }
 }
 
 // Check if user is authenticated
