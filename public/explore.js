@@ -322,8 +322,13 @@ function setupEventListeners() {
 function displayTopProducts() {
     console.log("Displaying top products...");
     
-    // Clear container
-    topProductItems.innerHTML = '';
+    // Clear container and show loading
+    topProductItems.innerHTML = `
+        <div class="loading-indicator" style="grid-column: 1 / -1;">
+            <div class="loader"></div>
+            <p>Loading products...</p>
+        </div>
+    `;
     
     // Check if we have products
     if (allProducts.length === 0) {
@@ -350,6 +355,9 @@ function displayTopProducts() {
     // Display top 8 products
     const topProductsToShow = sortedProducts.slice(0, 8);
     
+    // Clear loading indicator
+    topProductItems.innerHTML = '';
+    
     // Render each product
     topProductsToShow.forEach(product => {
         renderProductItem(product, topProductItems);
@@ -362,8 +370,13 @@ function displayTopProducts() {
 function displayTopStores() {
     console.log("Displaying top stores...");
     
-    // Clear container
-    topStoreItems.innerHTML = '';
+    // Clear container and show loading
+    topStoreItems.innerHTML = `
+        <div class="loading-indicator">
+            <div class="loader"></div>
+            <p>Loading stores...</p>
+        </div>
+    `;
     
     // Check if we have stores
     if (allStores.length === 0) {
@@ -390,10 +403,13 @@ function displayTopStores() {
     // Display top 6 stores
     const topStoresToShow = sortedStores.slice(0, 6);
     
+    // Clear loading indicator
+    topStoreItems.innerHTML = '';
+    
     // Render each store
     topStoresToShow.forEach(store => {
-                    renderStoreItem(store, topStoreItems);
-                });
+        renderStoreItem(store, topStoreItems);
+    });
     
     console.log(`Displayed ${topStoresToShow.length} top stores`);
 }
