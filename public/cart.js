@@ -151,8 +151,40 @@ document.addEventListener('DOMContentLoaded', () => {
     // Checkout button
     checkoutBtn.addEventListener('click', proceedToCheckout);
     
-    // View Details link
-    viewDetailsLink.addEventListener('click', showOrderDetailsPopup);
+    // Long press on total amount to show details
+    const totalAmount = document.getElementById('cart-total');
+    if (totalAmount) {
+        let pressTimer;
+        
+        totalAmount.addEventListener('mousedown', () => {
+            pressTimer = setTimeout(() => {
+                showOrderDetailsPopup();
+            }, 800);
+        });
+        
+        totalAmount.addEventListener('mouseup', () => {
+            clearTimeout(pressTimer);
+        });
+        
+        totalAmount.addEventListener('mouseleave', () => {
+            clearTimeout(pressTimer);
+        });
+        
+        // For mobile
+        totalAmount.addEventListener('touchstart', () => {
+            pressTimer = setTimeout(() => {
+                showOrderDetailsPopup();
+            }, 800);
+        });
+        
+        totalAmount.addEventListener('touchend', () => {
+            clearTimeout(pressTimer);
+        });
+        
+        totalAmount.addEventListener('touchcancel', () => {
+            clearTimeout(pressTimer);
+        });
+    }
     
     // Close popup button
     closeDetailsBtn.addEventListener('click', hideOrderDetailsPopup);
@@ -185,6 +217,13 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Location search input
     locationSearchInput.addEventListener('input', handleLocationSearch);
+    
+    // Add helper tooltip for total price
+    const totalContainer = document.querySelector('.total-container');
+    if (totalContainer) {
+        totalContainer.setAttribute('title', 'Long press to view order breakdown');
+        totalAmount.style.cursor = 'pointer';
+    }
 });
 
 // Check if user is authenticated
@@ -1218,11 +1257,21 @@ function setMapMarker(lat, lng) {
         locationMap.removeLayer(locationMarker);
     }
     
-    // Add new marker
-    locationMarker = L.marker([lat, lng]).addTo(locationMap);
+    // Add new marker with animation
+    locationMarker = L.marker([lat, lng], {
+        icon: L.divIcon({
+            className: 'custom-map-marker',
+            html: '<i class="fa-solid fa-location-dot bounce"></i>',
+            iconSize: [30, 42],
+            iconAnchor: [15, 42]
+        })
+    }).addTo(locationMap);
     
-    // Center map on marker
-    locationMap.setView([lat, lng], 15);
+    // Center map on marker with smooth animation
+    locationMap.flyTo([lat, lng], 15, {
+        animate: true,
+        duration: 1
+    });
 }
 
 // Use current location as delivery location
@@ -1273,26 +1322,50 @@ function searchLocations(searchTerm) {
     locationSearchResults.innerHTML = '<div class="search-loading">Searching...</div>';
     locationSearchResults.classList.add('show');
     
-    // Make request to Nominatim search API
-    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchTerm)}`)
+    // Check if search term might be a pincode (numeric)
+    const isPincodeSearch = /^\d+$/.test(searchTerm);
+    
+    // Create search query with Kashmir/Jammu focus
+    let searchQuery = searchTerm;
+    if (isPincodeSearch) {
+        searchQuery = `${searchTerm} Jammu and Kashmir India`;
+    } else {
+        searchQuery = `${searchTerm} Jammu and Kashmir India`;
+    }
+    
+    // Make request to Nominatim search API with bounded search
+    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(searchQuery)}&countrycodes=in&bounded=1&viewbox=73.0,35.5,78.0,32.0&limit=10`)
         .then(response => response.json())
         .then(data => {
             // Clear results
             locationSearchResults.innerHTML = '';
             
-            if (data.length === 0) {
-                locationSearchResults.innerHTML = '<div class="no-results">No locations found</div>';
+            // Filter results to prioritize Kashmir/Jammu locations
+            const filteredResults = data.filter(result => {
+                const displayName = result.display_name.toLowerCase();
+                return displayName.includes('kashmir') || 
+                       displayName.includes('jammu') || 
+                       (isPincodeSearch && displayName.includes(searchTerm));
+            });
+            
+            if (filteredResults.length === 0) {
+                locationSearchResults.innerHTML = '<div class="no-results">No locations found in Kashmir region</div>';
                 return;
             }
             
-            // Display results (limit to 5)
-            const results = data.slice(0, 5);
-            results.forEach(result => {
+            // Display results
+            filteredResults.forEach(result => {
                 const resultItem = document.createElement('div');
                 resultItem.className = 'location-result-item';
+                
+                // Extract main location name and format additional info
+                const nameParts = result.display_name.split(',');
+                const mainName = nameParts[0];
+                const additionalInfo = nameParts.slice(1, 4).join(',');
+                
                 resultItem.innerHTML = `
-                    <div class="result-title">${result.display_name.split(',')[0]}</div>
-                    <div class="result-address">${result.display_name}</div>
+                    <div class="result-title">${mainName}</div>
+                    <div class="result-address">${additionalInfo}</div>
                 `;
                 
                 // Add click event
@@ -1314,12 +1387,24 @@ function selectSearchResult(result) {
     const lat = parseFloat(result.lat);
     const lon = parseFloat(result.lon);
     
-    // Update map
-    setMapMarker(lat, lon);
-    locationMap.setView([lat, lon], 15);
+    // Add smooth transition
+    if (locationMap) {
+        // Pan the map smoothly
+        locationMap.flyTo([lat, lon], 15, {
+            animate: true,
+            duration: 1.5
+        });
+    }
     
-    // Close search results
-    locationSearchResults.classList.remove('show');
+    // Close search results with slight delay
+    setTimeout(() => {
+        locationSearchResults.classList.remove('show');
+    }, 300);
+    
+    // Set marker after a small delay for smoother animation
+    setTimeout(() => {
+        setMapMarker(lat, lon);
+    }, 700);
     
     // Set flag to indicate selection from search
     selectedFromSearch = true;

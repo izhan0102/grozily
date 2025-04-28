@@ -459,12 +459,39 @@ body {
 .total-container {
     display: flex;
     flex-direction: column;
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.total-container:active {
+    transform: scale(0.98);
+    background-color: rgba(255, 255, 255, 0.15);
+}
+
+.total-container::after {
+    content: 'Hold for details';
+    position: absolute;
+    bottom: -20px;
+    left: 0;
+    width: 100%;
+    text-align: center;
+    font-size: 10px;
+    color: rgba(255, 255, 255, 0.6);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.total-container:hover::after {
+    opacity: 1;
 }
 
 .total-label {
-    font-size: 0.9rem;
-    color: var(--text-medium);
-    margin-bottom: 2px;
+    color: rgba(255, 255, 255, 0.8) !important;
+    font-size: 0.85rem;
 }
 
 .total-amount {
@@ -1264,4 +1291,29 @@ body.page-loaded .app-container {
     border-top: 1px solid var(--border-light);
     padding-top: 16px;
     margin-top: 4px;
+}
+
+/* Custom Map Marker Styles */
+.custom-map-marker {
+    background: transparent;
+    border: none;
+}
+
+.custom-map-marker i {
+    font-size: 24px;
+    color: #e74c3c;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.custom-map-marker i.bounce {
+    animation: marker-bounce 0.8s ease-in-out;
+}
+
+@keyframes marker-bounce {
+    0%, 100% {
+        transform: translateY(0);
+    }
+    50% {
+        transform: translateY(-15px);
+    }
 } 
