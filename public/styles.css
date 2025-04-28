@@ -487,4 +487,279 @@ body {
     color: var(--primary-color);
     text-decoration: none;
     font-weight: 500;
+}
+
+/* Cart quantity animation */
+.quantity-changing {
+    position: relative;
+    animation: fadeOut 0.15s ease;
+}
+
+.quantity-changing::before {
+    content: attr(data-prev);
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    animation: slideOut 0.15s ease;
+}
+
+.quantity-changing::after {
+    content: attr(data-new);
+    position: absolute;
+    top: -20px;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    animation: slideIn 0.15s ease 0.05s forwards;
+}
+
+/* Quantity Change Indicator */
+.quantity-change-indicator {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background-color: #4CAF50;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 12px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    z-index: 5;
+}
+
+.quantity-change-indicator.decrease {
+    background-color: #FF5722;
+}
+
+.quantity-change-indicator.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* Animation Keyframes */
+@keyframes slideOut {
+    0% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+    100% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
+
+@keyframes slideIn {
+    0% {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes highlight {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(76, 175, 80, 0.1); }
+    100% { background-color: transparent; }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.1); color: #4CAF50; }
+    100% { transform: scale(1); }
+}
+
+@keyframes fadeOut {
+    0% { opacity: 1; }
+    100% { opacity: 0; }
+}
+
+/* Discount Animation Styles */
+.discount-applied {
+    animation: greenPulse 0.6s ease;
+}
+
+.discount-removed {
+    animation: redPulse 0.6s ease;
+}
+
+@keyframes greenPulse {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(76, 175, 80, 0.15); }
+    100% { background-color: transparent; }
+}
+
+@keyframes redPulse {
+    0% { background-color: transparent; }
+    50% { background-color: rgba(244, 67, 54, 0.15); }
+    100% { background-color: transparent; }
+}
+
+/* Cart Item Styles */
+.cart-item {
+    position: relative;
+    transition: background-color 0.3s ease;
+}
+
+.cart-item.highlight {
+    background-color: rgba(255, 220, 40, 0.2);
+    transition: background-color 0.7s ease;
+}
+
+/* Discount related styles */
+.discount-container {
+    margin: 10px 0;
+    width: 100%;
+}
+
+.discount-input-container {
+    display: flex;
+    width: 100%;
+    margin-top: 5px;
+}
+
+#discount-code {
+    flex: 1;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px 0 0 4px;
+    font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+#discount-code:focus {
+    border-color: var(--primary-color);
+}
+
+.apply-btn {
+    background-color: var(--primary-color);
+    color: white;
+    border: none;
+    border-radius: 0 4px 4px 0;
+    padding: 0 15px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s;
+    position: relative;
+    min-width: 80px;
+}
+
+.apply-btn:hover {
+    background-color: var(--primary-color-dark);
+}
+
+.btn-loader {
+    display: none;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s ease-in-out infinite;
+    position: absolute;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.discount-row {
+    color: #2ecc71;
+    font-weight: 500;
+}
+
+.discount-row.hidden {
+    display: none;
+}
+
+.discount-change-animation {
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%) translateY(10px);
+    opacity: 0;
+    background-color: #4caf50;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+    z-index: 10;
+    transition: all 0.3s ease;
+}
+
+.discount-change-animation.show {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+}
+
+.cart-summary {
+    position: relative;
+}
+
+.discount-input-container.shake {
+    animation: shake 0.4s ease-in-out;
+}
+
+.discount-input-container.success .discount-input {
+    border-color: #4caf50;
+    background-color: rgba(76, 175, 80, 0.05);
+}
+
+.discount-input-container.error .discount-input {
+    border-color: #f44336;
+    background-color: rgba(244, 67, 54, 0.05);
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-5px); }
+    40%, 80% { transform: translateX(5px); }
+}
+
+.updated {
+    animation: highlight 0.3s ease-in-out;
+}
+
+@keyframes highlight {
+    0%, 100% { background-color: transparent; }
+    50% { background-color: rgba(76, 175, 80, 0.1); }
+}
+
+.pulse {
+    animation: pulse 1s ease-out;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(76, 175, 80, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(76, 175, 80, 0);
+    }
+}
+
+/* Cart Item Animations */
+.item-updated {
+    animation: highlight 0.5s ease;
+}
+
+.price-updated {
+    animation: pulse 0.5s ease;
 } 

@@ -16,6 +16,9 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <!-- Firebase Database -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <!-- Leaflet CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
 </head>
 <body onload="window.scrollTo(0, 0);" id="top">
     <a id="top-anchor"></a>
@@ -64,13 +67,16 @@
                 </div>
                 <div class="header-divider"></div>
                 <div class="header-bottom">
-                    <div class="location-indicator">
+                    <div id="location-display" class="location-display">
                         <i class="fa-solid fa-location-dot"></i>
-                        <span id="user-location">Loading...</span>
+                        <span id="user-location">Fetching location...</span>
                     </div>
                 </div>
             </div>
         </header>
+        
+        <!-- Hidden map container -->
+        <div id="map-container" style="display: none; height: 0; width: 0;"></div>
         
         <h2 id="greeting-message" class="direct-greeting">Good morning, <span id="greeting-name">User</span>!</h2>
         
@@ -165,11 +171,12 @@
             </a>
             <a href="cart.html" class="nav-item">
                 <i class="fa-solid fa-cart-shopping"></i>
+                <span class="cart-badge" id="cart-badge">0</span>
                 <span>Cart</span>
             </a>
             <a href="shop.html" class="nav-item">
                 <i class="fa-solid fa-basket-shopping"></i>
-                <span>Shop</span>
+                <span>Best Deals</span>
             </a>
             <a href="orders.html" class="nav-item">
                 <i class="fa-solid fa-list-check"></i>

@@ -10,15 +10,24 @@
         const loadingHTML = `
             <div id="loading-overlay" class="loading-overlay">
                 <div class="loading-content">
-                    <div class="cart-icon">
-                        <i class="fa-solid fa-shopping-cart"></i>
-                        <div class="cart-items">
-                            <div class="item item-1"></div>
-                            <div class="item item-2"></div>
-                            <div class="item item-3"></div>
+                    <div class="loader-container">
+                        <div class="shopping-basket">
+                            <div class="basket-top"></div>
+                            <div class="basket-body">
+                                <div class="item-container">
+                                    <div class="grocery-item item-1"></div>
+                                    <div class="grocery-item item-2"></div>
+                                    <div class="grocery-item item-3"></div>
+                                    <div class="grocery-item item-4"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="loader-ring">
+                            <div class="loader-ring-light"></div>
+                            <div class="loader-ring-track"></div>
                         </div>
                     </div>
-                    <p class="loading-text">Loading...</p>
+                    <p class="loading-text">Loading<span class="dot-1">.</span><span class="dot-2">.</span><span class="dot-3">.</span></p>
                 </div>
             </div>
         `;
@@ -35,7 +44,8 @@
                 left: 0;
                 width: 100%;
                 height: 100%;
-                background-color: rgba(255, 255, 255, 0.7);
+                background-color: rgba(255, 255, 255, 0.92);
+                backdrop-filter: blur(3px);
                 display: flex;
                 justify-content: center;
                 align-items: center;
@@ -56,79 +66,197 @@
                 justify-content: center;
             }
             
-            .cart-icon {
+            .loader-container {
                 position: relative;
-                font-size: 42px;
-                color: #805AD5;
-                margin-bottom: 15px;
-                animation: pulse 1.5s infinite ease-in-out;
+                width: 120px;
+                height: 120px;
+                margin-bottom: 20px;
             }
             
-            @keyframes pulse {
-                0% {
-                    transform: scale(1);
+            .shopping-basket {
+                position: absolute;
+                width: 60px;
+                height: 60px;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                z-index: 2;
+            }
+            
+            .basket-top {
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                height: 15px;
+                background: #6c5ce7;
+                border-radius: 8px 8px 0 0;
+                box-shadow: 0 2px 5px rgba(108, 92, 231, 0.2);
+            }
+            
+            .basket-body {
+                position: absolute;
+                top: 14px;
+                left: 5px;
+                right: 5px;
+                bottom: 0;
+                background: linear-gradient(135deg, #8e78ff 0%, #6c5ce7 100%);
+                border-radius: 0 0 10px 10px;
+                box-shadow: 0 4px 10px rgba(108, 92, 231, 0.3);
+                overflow: hidden;
+            }
+            
+            .item-container {
+                position: relative;
+                width: 100%;
+                height: 100%;
+            }
+            
+            .grocery-item {
+                position: absolute;
+                border-radius: 50%;
+                opacity: 0;
+                transform-origin: center;
+            }
+            
+            .item-1 {
+                width: 12px;
+                height: 12px;
+                background: #FFC107;
+                top: 5px;
+                left: 25%;
+                animation: bobItem 2s infinite 0.1s, fadeItem 2s infinite 0.1s;
+            }
+            
+            .item-2 {
+                width: 10px;
+                height: 10px;
+                background: #4CAF50;
+                top: 8px;
+                left: 50%;
+                animation: bobItem 2s infinite 0.3s, fadeItem 2s infinite 0.3s;
+            }
+            
+            .item-3 {
+                width: 14px;
+                height: 14px;
+                background: #F44336;
+                top: 6px;
+                left: 70%;
+                animation: bobItem 2s infinite 0.5s, fadeItem 2s infinite 0.5s;
+            }
+            
+            .item-4 {
+                width: 10px;
+                height: 10px;
+                background: #2196F3;
+                top: 10px;
+                left: 40%;
+                animation: bobItem 2s infinite 0.7s, fadeItem 2s infinite 0.7s;
+            }
+            
+            @keyframes bobItem {
+                0%, 100% {
+                    transform: translateY(15px) scale(0.8);
                 }
                 50% {
-                    transform: scale(1.1);
-                }
-                100% {
-                    transform: scale(1);
+                    transform: translateY(-5px) scale(1);
                 }
             }
             
-            .cart-items {
+            @keyframes fadeItem {
+                0%, 100% {
+                    opacity: 0.4;
+                }
+                50% {
+                    opacity: 1;
+                }
+            }
+            
+            .loader-ring {
                 position: absolute;
                 top: 0;
                 left: 0;
                 width: 100%;
                 height: 100%;
+                animation: spinRing 1.5s linear infinite;
             }
             
-            .item {
-                position: absolute;
-                width: 10px;
-                height: 10px;
+            .loader-ring-light {
+                width: 100%;
+                height: 100%;
                 border-radius: 50%;
-                background-color: #805AD5;
-                opacity: 0;
+                box-shadow: 0 4px 0 0 #6c5ce7;
+                animation: pulseRing 1.5s ease-out infinite;
             }
             
-            .item-1 {
-                top: 10px;
-                left: 50%;
-                animation: drop 2s infinite 0s;
-            }
-            
-            .item-2 {
-                top: 5px;
-                left: 40%;
-                animation: drop 2s infinite 0.5s;
-            }
-            
-            .item-3 {
+            .loader-ring-track {
+                position: absolute;
                 top: 0;
-                left: 60%;
-                animation: drop 2s infinite 1s;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                border-radius: 50%;
+                border: 2px solid rgba(108, 92, 231, 0.2);
             }
             
-            @keyframes drop {
+            @keyframes spinRing {
                 0% {
-                    transform: translateY(-20px);
-                    opacity: 0;
+                    transform: rotate(0deg);
+                }
+                100% {
+                    transform: rotate(360deg);
+                }
+            }
+            
+            @keyframes pulseRing {
+                0% {
+                    opacity: 0.8;
+                    transform: scale(0.95);
                 }
                 50% {
                     opacity: 1;
+                    transform: scale(1);
                 }
                 100% {
-                    transform: translateY(20px);
-                    opacity: 0;
+                    opacity: 0.8;
+                    transform: scale(0.95);
                 }
             }
             
             .loading-text {
                 color: #4A5568;
-                font-size: 16px;
+                font-weight: 500;
+                font-size: 18px;
                 margin: 0;
+                letter-spacing: 0.5px;
+            }
+            
+            .loading-text span {
+                display: inline-block;
+            }
+            
+            .dot-1 {
+                animation: dotFade 1.5s infinite 0.2s;
+            }
+            
+            .dot-2 {
+                animation: dotFade 1.5s infinite 0.4s;
+            }
+            
+            .dot-3 {
+                animation: dotFade 1.5s infinite 0.6s;
+            }
+            
+            @keyframes dotFade {
+                0%, 100% {
+                    opacity: 0.2;
+                    transform: translateY(0);
+                }
+                50% {
+                    opacity: 1;
+                    transform: translateY(-2px);
+                }
             }
             
             /* Remove tap highlight */

@@ -122,20 +122,16 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('Username observer set up');
     }
     
+    // Initialize Leaflet map
+    initLeafletMap();
+    
+    // Update cart badge on page load
+    updateCartBadge();
+    
     // Profile dropdown toggle
     profileBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         profileDropdown.classList.toggle('show');
-        // Hide location dropdown if open
-        locationDropdown.classList.remove('show');
-    });
-    
-    // Location dropdown toggle
-    locationIndicator.addEventListener('click', (e) => {
-        e.stopPropagation();
-        locationDropdown.classList.toggle('show');
-        // Hide profile dropdown if open
-        profileDropdown.classList.remove('show');
     });
     
     // Close dropdowns when clicking outside
@@ -143,17 +139,6 @@ document.addEventListener('DOMContentLoaded', () => {
         if (profileDropdown.classList.contains('show') && !profileDropdown.contains(e.target)) {
             profileDropdown.classList.remove('show');
         }
-        if (locationDropdown.classList.contains('show') && !locationIndicator.contains(e.target)) {
-            locationDropdown.classList.remove('show');
-        }
-    });
-    
-    // Edit location button
-    editLocationBtn.addEventListener('click', () => {
-        // Close dropdown
-        locationDropdown.classList.remove('show');
-        // Navigate to user details page
-        window.location.href = 'user-details.html';
     });
     
     // Initialize search bar with changing placeholders
@@ -161,10 +146,97 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize category scrolling
     initCategoryScroll();
-    
-    // Note: updateGreeting will be called after user data loads
-    // This ensures we have the most accurate user information
 });
+
+// Initialize Leaflet map and get user location
+function initLeafletMap() {
+    // Create map in the hidden container
+    const map = L.map('map-container').setView([0, 0], 2);
+    
+    // Add a tile layer (optional, since the map is hidden)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Get user's location
+    if ('geolocation' in navigator) {
+        navigator.geolocation.getCurrentPosition(
+            // Success callback
+            function(position) {
+                const latitude = position.coords.latitude;
+                const longitude = position.coords.longitude;
+                
+                // Update map position (even though it's hidden)
+                map.setView([latitude, longitude], 13);
+                
+                // Use reverse geocoding to get address
+                reverseGeocode(latitude, longitude);
+            },
+            // Error callback
+            function(error) {
+                console.error('Error getting location:', error);
+                const userLocationElement = document.getElementById('user-location');
+                switch(error.code) {
+                    case error.PERMISSION_DENIED:
+                        userLocationElement.textContent = 'Location access denied';
+                        showToast('Please enable location services for better experience', 'info');
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        userLocationElement.textContent = 'Location unavailable';
+                        break;
+                    case error.TIMEOUT:
+                        userLocationElement.textContent = 'Location request timed out';
+                        break;
+                    default:
+                        userLocationElement.textContent = 'Unable to get location';
+                }
+            },
+            // Options
+            {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 0
+            }
+        );
+    } else {
+        document.getElementById('user-location').textContent = 'Geolocation not supported';
+    }
+}
+
+// Reverse geocode coordinates to get address
+function reverseGeocode(lat, lon) {
+    fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`)
+        .then(response => response.json())
+        .then(data => {
+            const locationDisplay = document.querySelector('.location-display');
+            const userLocation = document.getElementById('user-location');
+            
+            // Update the UI with the location data
+            if (data.address) {
+                const city = data.address.city || data.address.town || data.address.village || data.address.hamlet || '';
+                const state = data.address.state || '';
+                const display = city ? (state ? `${city}, ${state}` : city) : 'Location found';
+                userLocation.textContent = display;
+                
+                // Add animation class
+                locationDisplay.classList.add('updated');
+                
+                // Remove the class after animation completes
+                setTimeout(() => {
+                    locationDisplay.classList.remove('updated');
+                }, 1000);
+            } else {
+                userLocation.textContent = 'Location found';
+            }
+            
+            // Show the location display
+            locationDisplay.style.display = 'flex';
+        })
+        .catch(error => {
+            console.error('Error with reverse geocoding:', error);
+            document.getElementById('user-location').textContent = 'Location found';
+        });
+}
 
 // Initialize search bar with dynamic placeholders
 function initSearchBar() {
@@ -251,6 +323,9 @@ auth.onAuthStateChanged(user => {
         
         // Load featured products
         loadFeaturedProducts();
+        
+        // Update cart badge
+        updateCartBadge();
     }
 });
 
@@ -277,32 +352,11 @@ function loadBasicUserData(user) {
                     updateGreetingName(details.fullName);
                 }
                 
-                // Update location if available
-                if (details.area && details.pinCode) {
-                    userLocation.textContent = `${details.area}, ${details.pinCode}`;
-                    dropdownArea.textContent = details.area || 'Not set';
-                    dropdownPincode.textContent = details.pinCode || 'Not set';
-                } else if (details.area) {
-                    userLocation.textContent = details.area;
-                    dropdownArea.textContent = details.area;
-                    dropdownPincode.textContent = 'Not set';
-                } else if (details.pinCode) {
-                    userLocation.textContent = details.pinCode;
-                    dropdownArea.textContent = 'Not set';
-                    dropdownPincode.textContent = details.pinCode;
-                } else {
-                    userLocation.textContent = 'Set location';
-                    dropdownArea.textContent = 'Not set';
-                    dropdownPincode.textContent = 'Not set';
-                }
+                // Full greeting update after all data is loaded
+                updateGreeting();
             } else {
-                userLocation.textContent = 'Set location';
-                dropdownArea.textContent = 'Not set';
-                dropdownPincode.textContent = 'Not set';
+                updateGreeting();
             }
-            
-            // Full greeting update after all data is loaded
-            updateGreeting();
         });
     } catch (error) {
         console.error('Error loading user data:', error);
@@ -514,13 +568,6 @@ window.addEventListener('popstate', function(event) {
         profileCard.style.opacity = '0';
     }
 });
-
-// Remove the old location indicator click handler
-// Handle location indicator click
-// locationIndicator.addEventListener('click', () => {
-//     // Navigate to user details page where they can update their address
-//     window.location.href = 'user-details.html';
-// });
 
 // Improved category scrolling with better inertia
 function initCategoryScroll() {
@@ -875,11 +922,17 @@ function renderProducts(products) {
             <a href="product-detail.html?id=${product.id}" class="product-link">
                 <div class="product-image-container">
                     <img src="${product.imageURL || 'https://via.placeholder.com/300?text=No+Image'}" alt="${product.name}" class="product-image" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
-                    ${discount > 0 ? `<span class="discount-badge">${discount}% OFF</span>` : ''}
+                    ${discount > 0 ? 
+                      `<div class="discount-badge-container">
+                          <span class="discount-badge">${discount}% OFF</span>
+                       </div>` : ''}
+                    ${product.featured ? '<span class="feature-badge">FEATURED</span>' : ''}
                 </div>
                 <div class="product-details">
+                    <div class="product-meta">
+                        <span class="product-vendor">${product.vendorName}</span>
+                    </div>
                     <h3 class="product-name">${product.name}</h3>
-                    <p class="product-vendor">${product.vendorName}</p>
                     <div class="product-price">
                         <span class="current-price">₹${formatPrice(product.discountedPrice)}</span>
                         ${product.originalPrice > product.discountedPrice ? 
@@ -891,16 +944,32 @@ function renderProducts(products) {
                 <button class="add-to-cart" data-product-id="${product.id}">
                     <i class="fas fa-cart-plus"></i> Add to Cart
                 </button>
+                <button class="quick-view" data-product-id="${product.id}">
+                    <i class="fas fa-eye"></i>
+                </button>
             </div>
         `;
         
         // Add to cart functionality
         const addToCartBtn = productCard.querySelector('.add-to-cart');
-        addToCartBtn.addEventListener('click', (e) => {
-            e.preventDefault(); // Prevent navigating to detail page when clicking the button
-            e.stopPropagation(); // Prevent event bubbling
-            addToCart(product);
-        });
+        if (addToCartBtn) {
+            addToCartBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                addToCart(product);
+            });
+        }
+        
+        // Quick view functionality
+        const quickViewBtn = productCard.querySelector('.quick-view');
+        if (quickViewBtn) {
+            quickViewBtn.addEventListener('click', (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                // You can implement a quick view modal here
+                window.location.href = `product-detail.html?id=${product.id}`;
+            });
+        }
         
         productsContainer.appendChild(productCard);
     });
@@ -930,6 +999,52 @@ function formatPrice(price) {
     return parseFloat(price).toLocaleString('en-IN');
 }
 
+// Update cart badge on page load
+function updateCartBadge() {
+    // Get current user ID
+    const userId = auth.currentUser?.uid;
+    if (!userId) {
+        return;
+    }
+    
+    // Get the cart badge element
+    const cartBadge = document.getElementById('cart-badge');
+    if (!cartBadge) return;
+    
+    // Get the cart reference
+    const cartRef = database.ref(`carts/${userId}/items`);
+    
+    // Get the count of items in the cart
+    cartRef.once('value')
+        .then(snapshot => {
+            const itemCount = snapshot.numChildren();
+            if (itemCount > 0) {
+                // Update the cart badge
+                cartBadge.textContent = itemCount.toString();
+                cartBadge.classList.add('show');
+            } else {
+                // If no items in the cart, reset but don't hide the badge
+                cartBadge.textContent = '0';
+                cartBadge.classList.remove('show');
+            }
+        })
+        .catch(error => {
+            console.error('Error fetching cart items:', error);
+        });
+        
+    // Set up real-time listener for cart changes
+    cartRef.on('value', (snapshot) => {
+        const itemCount = snapshot.numChildren();
+        if (itemCount > 0) {
+            cartBadge.textContent = itemCount.toString();
+            cartBadge.classList.add('show');
+        } else {
+            cartBadge.textContent = '0';
+            cartBadge.classList.remove('show');
+        }
+    });
+}
+
 // Add product to cart
 function addToCart(product) {
     // Get current user ID
@@ -937,6 +1052,41 @@ function addToCart(product) {
     if (!userId) {
         showToast('Please log in to add items to cart', 'error');
         return;
+    }
+    
+    // Get the button that was clicked
+    const button = document.querySelector(`.add-to-cart[data-product-id="${product.id}"]`);
+    
+    // Create the flying image animation
+    const productCard = button.closest('.product-card');
+    const productImage = productCard.querySelector('.product-image');
+    const cartIcon = document.querySelector('.nav-item[href="cart.html"] i');
+    
+    if (productImage && cartIcon) {
+        // Get positions
+        const imgRect = productImage.getBoundingClientRect();
+        const cartRect = cartIcon.getBoundingClientRect();
+        
+        // Create the flying image
+        const flyingImg = document.createElement('img');
+        flyingImg.src = productImage.src;
+        flyingImg.classList.add('fly-image-to-cart');
+        flyingImg.style.top = `${imgRect.top}px`;
+        flyingImg.style.left = `${imgRect.left}px`;
+        document.body.appendChild(flyingImg);
+        
+        // Start animation in the next frame
+        requestAnimationFrame(() => {
+            flyingImg.style.top = `${cartRect.top}px`;
+            flyingImg.style.left = `${cartRect.left}px`;
+            flyingImg.style.opacity = '0.7';
+            flyingImg.style.transform = 'scale(0.3)';
+            
+            // Remove the element after animation completes
+            setTimeout(() => {
+                flyingImg.remove();
+            }, 500);
+        });
     }
     
     // Check if user has a cart
@@ -969,7 +1119,22 @@ function addToCart(product) {
             }
         })
         .then(() => {
-            showToast(`Added ${product.name} to cart`, 'success');
+            // Update cart badge
+            updateCartBadge();
+            
+            // Change button appearance to indicate success
+            if (button) {
+                button.innerHTML = '<i class="fas fa-check"></i> Added to Cart';
+                button.classList.add('added');
+                button.disabled = true;
+                
+                // Change button back after 2 seconds
+                setTimeout(() => {
+                    button.innerHTML = '<i class="fas fa-cart-plus"></i> Add to Cart';
+                    button.classList.remove('added');
+                    button.disabled = false;
+                }, 2000);
+            }
         })
         .catch(error => {
             console.error('Error adding to cart:', error);

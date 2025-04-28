@@ -16,6 +16,158 @@
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
     <!-- Firebase Database -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        .cart-item {
+            width: 100% !important;
+            margin: 0 !important;
+            box-sizing: border-box !important;
+            max-width: 100% !important;
+        }
+        
+        #cart-summary {
+            display: none !important;
+        }
+        
+        .order-details-popup {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .order-details-content {
+            background-color: white;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+            padding: 20px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+        }
+        
+        .order-details-content h3 {
+            margin-top: 0;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .close-popup {
+            float: right;
+            background: none;
+            border: none;
+            font-size: 20px;
+            cursor: pointer;
+            color: #666;
+        }
+        
+        .view-details-link {
+            display: inline-block;
+            background-color: #5a3891;
+            color: white !important;
+            font-size: 12px;
+            margin-top: 8px;
+            border-radius: 15px;
+            padding: 4px 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        
+        .view-details-link:active {
+            transform: scale(0.95);
+            background-color: #4a2f76;
+        }
+        
+        .view-details-link i {
+            margin-left: 5px;
+            font-size: 10px;
+        }
+        
+        .checkout-footer {
+            padding: 15px 20px !important;
+            background-color: #6B46C1 !important;
+        }
+        
+        .total-container {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .total-label {
+            color: rgba(255, 255, 255, 0.8) !important;
+        }
+        
+        .total-amount {
+            color: white !important;
+        }
+        
+        .cart-items-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        .cart-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        .app-content {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+            padding-bottom: 80px !important; /* Space for footer only */
+        }
+        
+        .app-container {
+            width: 100% !important;
+            max-width: 100% !important;
+            margin: 0 !important;
+            padding: 0 !important;
+        }
+        
+        .discount-container {
+            display: none;
+        }
+        
+        .platform-fee-notice {
+            text-align: center;
+            font-size: 11px;
+            color: #333;
+            margin: 0;
+            padding: 8px 15px;
+            background-color: rgba(255, 255, 255, 0.85);
+            border-radius: 20px;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: auto;
+            max-width: 90%;
+            box-sizing: border-box;
+            z-index: 999;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+            border: 1px solid rgba(0,0,0,0.05);
+            opacity: 0.9;
+            font-weight: 500;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
     <div class="app-container">
@@ -33,10 +185,11 @@
                     <div class="empty-cart-icon">
                         <i class="fa-solid fa-shopping-cart"></i>
                     </div>
-                    <h3>Your cart is empty</h3>
-                    <p>Add items to your cart to see them here</p>
+                    <h3>Looks like your cart is lonely 😔</h3>
+                    <p>Fill it with something tasty! Our products are waiting for you.</p>
                     <button id="browse-products-btn" class="primary-button">
-                        <span class="btn-text">Browse Products</span>
+                        <i class="fa-solid fa-basket-shopping"></i>
+                        <span class="btn-text">Shop Now</span>
                     </button>
                 </div>
                 
@@ -52,31 +205,74 @@
                     </div>
                     <div class="summary-row">
                         <span>Delivery Fee</span>
-                        <span id="delivery-fee">₹40.00</span>
+                        <span id="delivery-fee">₹20.00</span>
                     </div>
                     <div class="summary-row">
-                        <span>Taxes</span>
-                        <span id="taxes">₹0.00</span>
+                        <span>Platform Fee (8%)</span>
+                        <span id="platform-fee">₹0.00</span>
                     </div>
-                    <div class="discount-code">
-                        <input type="text" id="discount-code-input" placeholder="Enter discount code">
-                        <button id="apply-discount-btn">Apply</button>
-                    </div>
-                    <div class="summary-row discount hidden">
+                    <div id="discount-row" class="summary-row discount-row hidden">
                         <span>Discount</span>
                         <span id="discount-amount">-₹0.00</span>
                     </div>
-                    <div class="summary-row total">
-                        <span>Total</span>
-                        <span id="cart-total">₹0.00</span>
+                    <div class="discount-container">
+                        <div id="discount-input-container" class="discount-input-container">
+                            <input type="text" id="discount-code" placeholder="Enter discount code" maxlength="10">
+                            <button id="apply-discount-btn" class="apply-btn">
+                                <span class="btn-text">Apply</span>
+                                <span class="btn-loader"></span>
+                            </button>
+                        </div>
                     </div>
-                    <button id="checkout-btn" class="primary-button">
-                        <span class="btn-text">Proceed to Checkout</span>
-                        <span class="btn-loader"></span>
-                    </button>
                 </div>
             </div>
         </main>
+        
+        <!-- Platform fee notice -->
+        <div class="platform-fee-notice">
+            <i class="fa-solid fa-circle-info"></i> Platform fee: 8% for orders under ₹500, 5% for orders above ₹500
+        </div>
+        
+        <!-- Sticky checkout footer -->
+        <div id="checkout-footer" class="checkout-footer">
+            <div class="total-container">
+                <span class="total-label">Total:</span>
+                <span id="cart-total" class="total-amount">₹0.00</span>
+                <a id="view-details-link" class="view-details-link">View Details <i class="fa-solid fa-chevron-up"></i></a>
+            </div>
+            <button id="checkout-btn" class="checkout-button">
+                <span class="btn-text">Proceed to Checkout</span>
+                <span class="btn-loader"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Order details popup -->
+    <div id="order-details-popup" class="order-details-popup">
+        <div class="order-details-content">
+            <button class="close-popup" id="close-details">&times;</button>
+            <h3>Order Summary</h3>
+            <div class="summary-row">
+                <span>Items Total</span>
+                <span id="popup-subtotal">₹0.00</span>
+            </div>
+            <div class="summary-row">
+                <span>Delivery Fee</span>
+                <span id="popup-delivery-fee">₹20.00</span>
+            </div>
+            <div class="summary-row">
+                <span id="popup-platform-fee-label">Platform Fee (8%)</span>
+                <span id="popup-platform-fee">₹0.00</span>
+            </div>
+            <div id="popup-discount-row" class="summary-row discount-row hidden">
+                <span>Discount</span>
+                <span id="popup-discount-amount">-₹0.00</span>
+            </div>
+            <div class="summary-row" style="font-weight: bold; margin-top: 15px; border-top: 1px solid #eee; padding-top: 10px;">
+                <span>Total</span>
+                <span id="popup-total">₹0.00</span>
+            </div>
+        </div>
     </div>
 
     <!-- Template for cart item -->
@@ -91,19 +287,32 @@
                 <p class="item-price"></p>
             </div>
             <div class="item-actions">
-                <button class="quantity-btn decrease">
-                    <i class="fa-solid fa-minus"></i>
-                </button>
-                <span class="quantity-number">1</span>
-                <button class="quantity-btn increase">
-                    <i class="fa-solid fa-plus"></i>
-                </button>
+                <div class="quantity-controls">
+                    <button class="quantity-btn decrease">
+                        <i class="fa-solid fa-minus"></i>
+                    </button>
+                    <span class="quantity-number">1</span>
+                    <button class="quantity-btn increase">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
                 <button class="remove-btn">
                     <i class="fa-solid fa-trash"></i>
                 </button>
             </div>
         </div>
     </template>
+
+    <!-- Confirmation dialog -->
+    <div id="confirm-dialog" class="confirm-dialog">
+        <div class="dialog-content">
+            <p id="confirm-message">Are you sure you want to remove this item?</p>
+            <div class="dialog-buttons">
+                <button id="cancel-remove" class="cancel-btn">Cancel</button>
+                <button id="confirm-remove" class="confirm-btn">Remove</button>
+            </div>
+        </div>
+    </div>
 
     <!-- Toast Message -->
     <div id="toast-message" class="toast-message">
