@@ -103,9 +103,8 @@ document.addEventListener('DOMContentLoaded', () => {
     confirmRemoveBtn.addEventListener('click', () => {
         if (itemToRemove) {
             removeItemFromCart(itemToRemove);
-            itemToRemove = null;
+            hideConfirmDialog();
         }
-        hideConfirmDialog();
     });
     
     // Back button
@@ -332,7 +331,8 @@ function animateButton(button) {
 
 // Show confirmation dialog
 function showConfirmDialog(item) {
-    itemToRemove = item;
+    const itemId = item.id || item.productId;
+    itemToRemove = itemId;
     confirmMessage.textContent = 'Are you sure you want to remove this item?';
     confirmDialog.classList.add('active');
 }
@@ -551,8 +551,15 @@ function updateCartSubtotal() {
 
 // Remove item from cart
 function removeItemFromCart(itemId) {
+    console.log("Removing item with ID:", itemId);
+    
     // Find item in cart
-    const itemIndex = cartItems.findIndex(item => (item.id || item.productId) === itemId);
+    const itemIndex = cartItems.findIndex(item => {
+        const id = item.id || item.productId;
+        return id === itemId;
+    });
+    
+    console.log("Item index:", itemIndex);
     
     if (itemIndex !== -1) {
         // Get item name for toast message
@@ -595,6 +602,9 @@ function removeItemFromCart(itemId) {
         
         // Show toast
         showToast(`Removed ${itemName} from cart`, 'success');
+    } else {
+        console.error("Item not found in cart:", itemId);
+        showToast("Could not remove item. Please try again.", "error");
     }
 }
 
