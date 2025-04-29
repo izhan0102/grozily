@@ -10,6 +10,11 @@ const firebaseConfig = {
   measurementId: "G-83S7ZWXEB9"
 };
 
+// Global variables for location functionality
+let locationPickerMap = null;
+let locationMarker = null;
+let selectedLocation = null;
+
 // Ensure page always starts at the top on refresh
 if (history.scrollRestoration) {
     history.scrollRestoration = 'manual';
@@ -137,6 +142,83 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize location menu
     initLocationMenu();
     
+    // If current location tab is active by default, start fetching location immediately
+    const currentLocationTab = document.getElementById('current-location-tab');
+    const currentLocationContent = document.getElementById('current-location-content');
+    if (currentLocationTab && currentLocationTab.classList.contains('active') && 
+        currentLocationContent && currentLocationContent.classList.contains('active')) {
+        // Start location detection immediately
+        setTimeout(useCurrentDeviceLocation, 100);
+    }
+    
+    // Pre-fetch location in the background regardless of whether location menu is open
+    // This ensures we have location data ready when user opens the location menu
+    if ('geolocation' in navigator) {
+        // Quietly try to get location in the background for better UX
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                
+                // Store basic location immediately
+                const basicLocation = {
+                    lat, 
+                    lng,
+                    display_name: `Location at ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Cache this basic location immediately
+                localStorage.setItem('currentDetectedLocation', JSON.stringify(basicLocation));
+                window.currentDetectedLocation = basicLocation;
+                
+                // Also try to get the address in the background
+                fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.display_name) {
+                            const parts = data.display_name.split(', ');
+                            const shortAddress = parts.slice(0, 3).join(', ');
+                            
+                            if (data.address) {
+                                const area = data.address.suburb || 
+                                      data.address.neighbourhood || 
+                                      data.address.district || 
+                                      data.address.city_district || '';
+                                const city = data.address.city || 
+                                      data.address.town || 
+                                      data.address.village || '';
+                                const postcode = data.address.postcode || '';
+                                
+                                // Enhanced location object
+                                const locationObj = {
+                                    lat, 
+                                    lng, 
+                                    display_name: data.display_name,
+                                    short_name: shortAddress,
+                                    area,
+                                    city,
+                                    postcode,
+                                    timestamp: new Date().toISOString()
+                                };
+                                
+                                // Cache the enhanced location data
+                                localStorage.setItem('currentDetectedLocation', JSON.stringify(locationObj));
+                                window.currentDetectedLocation = locationObj;
+                            }
+                        }
+                    })
+                    .catch(error => console.error('Background reverse geocoding error:', error));
+            },
+            (error) => console.log('Background geolocation error:', error),
+            { 
+                enableHighAccuracy: false, // Lower accuracy for background fetch
+                timeout: 5000, 
+                maximumAge: 0
+            }
+        );
+    }
+    
     // Close dropdowns when clicking outside
     document.addEventListener('click', (e) => {
         if (profileDropdown.classList.contains('show') && !profileDropdown.contains(e.target)) {
@@ -185,10 +267,65 @@ function initLocationMenu() {
     const locationSearchBtn = document.getElementById('location-search-btn');
     const locationSearchInput = document.getElementById('location-search-input');
     
+    // Tab switching functionality
+    currentLocationTab.addEventListener('click', () => {
+        setActiveTab(currentLocationTab, currentLocationContent);
+        // Automatically fetch current location when tab is selected
+        setTimeout(useCurrentDeviceLocation, 100); // Reduced timeout for faster response
+    });
+    
+    savedLocationTab.addEventListener('click', () => {
+        setActiveTab(savedLocationTab, savedLocationContent);
+        loadSavedLocations();
+    });
+    
+    addLocationTab.addEventListener('click', () => {
+        setActiveTab(addLocationTab, addLocationContent);
+        
+        // Initialize map with retry mechanism
+        let retryCount = 0;
+        const maxRetries = 3;
+        
+        function initMapWithRetry() {
+            setTimeout(() => {
+                try {
+                    initLocationPickerMap();
+                    
+                    // Check if map initialized properly
+                    if (!locationPickerMap || !locationPickerMap._loaded) {
+                        if (retryCount < maxRetries) {
+                            console.log(`Map initialization retry ${retryCount + 1}/${maxRetries}`);
+                            retryCount++;
+                            initMapWithRetry();
+                        } else {
+                            console.error('Failed to initialize map after multiple attempts');
+                            showToast('Error loading map. Please try again.', 'error');
+                        }
+                    }
+                } catch (e) {
+                    console.error('Error in map initialization:', e);
+                    if (retryCount < maxRetries) {
+                        retryCount++;
+                        initMapWithRetry();
+                    } else {
+                        showToast('Error loading map. Please try again.', 'error');
+                    }
+                }
+            }, 300);
+        }
+        
+        initMapWithRetry();
+    });
+    
     // Toggle location menu
     locationDisplay.addEventListener('click', () => {
         locationMenu.classList.toggle('active');
         locationDisplay.classList.toggle('active');
+        
+        // Check if current location tab is active, start fetching immediately
+        if (currentLocationTab.classList.contains('active')) {
+            setTimeout(useCurrentDeviceLocation, 100);
+        }
         
         // Initialize map when opening add-location tab
         if (addLocationTab.classList.contains('active')) {
@@ -200,21 +337,6 @@ function initLocationMenu() {
     closeLocationMenuBtn.addEventListener('click', () => {
         locationMenu.classList.remove('active');
         locationDisplay.classList.remove('active');
-    });
-    
-    // Tab switching functionality
-    currentLocationTab.addEventListener('click', () => {
-        setActiveTab(currentLocationTab, currentLocationContent);
-    });
-    
-    savedLocationTab.addEventListener('click', () => {
-        setActiveTab(savedLocationTab, savedLocationContent);
-        loadSavedLocations();
-    });
-    
-    addLocationTab.addEventListener('click', () => {
-        setActiveTab(addLocationTab, addLocationContent);
-        setTimeout(initLocationPickerMap, 300);
     });
     
     // Helper function to set active tab
@@ -236,32 +358,81 @@ function initLocationMenu() {
     
     // Initialize location picker map
     function initLocationPickerMap() {
-        if (locationPickerMap !== null) {
-            locationPickerMap.invalidateSize();
+        // Force map container to be visible before initializing
+        const mapContainer = document.getElementById('location-map');
+        if (!mapContainer) {
+            console.error('Map container not found');
             return;
         }
         
-        // Create map
-        locationPickerMap = L.map('location-map').setView([28.6139, 77.2090], 13); // Default to Delhi
+        // Make sure map container is visible and has dimensions
+        mapContainer.style.display = 'block';
         
-        // Add tile layer
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-            attribution: '&copy; OpenStreetMap contributors'
-        }).addTo(locationPickerMap);
+        if (locationPickerMap) {
+            // If map already exists, just resize it
+            setTimeout(() => {
+                locationPickerMap.invalidateSize(true);
+            }, 100);
+            return;
+        }
         
-        // Try to get user's current location
-        if ('geolocation' in navigator) {
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    const lat = position.coords.latitude;
-                    const lng = position.coords.longitude;
-                    locationPickerMap.setView([lat, lng], 15);
-                    
-                    // Add marker
+        // Create map with a small delay to ensure container is visible
+        setTimeout(() => {
+            try {
+                // Create map
+                locationPickerMap = L.map('location-map').setView([28.6139, 77.2090], 13); // Default to Delhi
+                
+                // Add tile layer
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(locationPickerMap);
+                
+                // Force a resize after map creation
+                locationPickerMap.invalidateSize(true);
+                
+                // Try to get user's current location
+                if ('geolocation' in navigator) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const lat = position.coords.latitude;
+                            const lng = position.coords.longitude;
+                            locationPickerMap.setView([lat, lng], 15);
+                            
+                            // Add marker
+                            if (locationMarker) {
+                                locationMarker.setLatLng([lat, lng]);
+                            } else {
+                                locationMarker = L.marker([lat, lng], {
+                                    draggable: true
+                                }).addTo(locationPickerMap);
+                                
+                                // Update location info when marker is dragged
+                                locationMarker.on('dragend', function(e) {
+                                    updateSelectedLocation(e.target.getLatLng());
+                                });
+                            }
+                            
+                            // Get location name
+                            updateSelectedLocation({lat, lng});
+                        },
+                        (error) => {
+                            console.error('Error getting location:', error);
+                            showToast('Error getting your current location. Using default location.', 'error');
+                        },
+                        { 
+                            enableHighAccuracy: true,
+                            timeout: 5000, // Shorter timeout (5 seconds)
+                            maximumAge: 0
+                        }
+                    );
+                }
+                
+                // Update location when map is clicked
+                locationPickerMap.on('click', function(e) {
                     if (locationMarker) {
-                        locationMarker.setLatLng([lat, lng]);
+                        locationMarker.setLatLng(e.latlng);
                     } else {
-                        locationMarker = L.marker([lat, lng], {
+                        locationMarker = L.marker(e.latlng, {
                             draggable: true
                         }).addTo(locationPickerMap);
                         
@@ -271,38 +442,19 @@ function initLocationMenu() {
                         });
                     }
                     
-                    // Get location name
-                    updateSelectedLocation({lat, lng});
-                },
-                (error) => {
-                    console.error('Error getting location:', error);
-                    showToast('Error getting your current location. Using default location.', 'error');
-                },
-                { 
-                    enableHighAccuracy: true,
-                    timeout: 5000, // Shorter timeout (5 seconds)
-                    maximumAge: 0
-                }
-            );
-        }
-        
-        // Update location when map is clicked
-        locationPickerMap.on('click', function(e) {
-            if (locationMarker) {
-                locationMarker.setLatLng(e.latlng);
-            } else {
-                locationMarker = L.marker(e.latlng, {
-                    draggable: true
-                }).addTo(locationPickerMap);
-                
-                // Update location info when marker is dragged
-                locationMarker.on('dragend', function(e) {
-                    updateSelectedLocation(e.target.getLatLng());
+                    updateSelectedLocation(e.latlng);
                 });
+                
+                // Force another resize after a delay to ensure the map displays correctly
+                setTimeout(() => {
+                    locationPickerMap.invalidateSize(true);
+                }, 500);
+                
+            } catch (error) {
+                console.error('Error initializing map:', error);
+                showToast('Error initializing map. Please try again.', 'error');
             }
-            
-            updateSelectedLocation(e.latlng);
-        });
+        }, 100);
     }
     
     // Update selected location display
@@ -373,7 +525,7 @@ function initLocationMenu() {
     });
     
     // Real-time search suggestions
-    locationSearchInput.addEventListener('input', debounce(handleSearchInput, 300));
+    locationSearchInput.addEventListener('input', debounce(handleSearchInput, 150));
     locationSearchInput.addEventListener('keypress', (e) => {
         if (e.key === 'Enter') {
             searchLocation();
@@ -390,12 +542,12 @@ function initLocationMenu() {
     // Handle input for real-time search suggestions
     function handleSearchInput() {
         const query = locationSearchInput.value.trim();
-        if (query.length < 3) {
+        if (query.length < 2) {
             suggestionsContainer.classList.remove('active');
             return;
         }
         
-        // Show loading in suggestions
+        // Show loading in suggestions immediately
         suggestionsContainer.innerHTML = '<div class="suggestion-item">Searching...</div>';
         suggestionsContainer.classList.add('active');
         
@@ -419,23 +571,25 @@ function initLocationMenu() {
                             const lat = parseFloat(location.lat);
                             const lng = parseFloat(location.lon);
                             
-                            locationPickerMap.setView([lat, lng], 15);
-                            
-                            // Update marker
-                            if (locationMarker) {
-                                locationMarker.setLatLng([lat, lng]);
-                            } else {
-                                locationMarker = L.marker([lat, lng], {
-                                    draggable: true
-                                }).addTo(locationPickerMap);
+                            if (locationPickerMap) {
+                                locationPickerMap.setView([lat, lng], 15);
                                 
-                                locationMarker.on('dragend', function(e) {
-                                    updateSelectedLocation(e.target.getLatLng());
-                                });
+                                // Update marker
+                                if (locationMarker) {
+                                    locationMarker.setLatLng([lat, lng]);
+                                } else {
+                                    locationMarker = L.marker([lat, lng], {
+                                        draggable: true
+                                    }).addTo(locationPickerMap);
+                                    
+                                    locationMarker.on('dragend', function(e) {
+                                        updateSelectedLocation(e.target.getLatLng());
+                                    });
+                                }
+                                
+                                // Update selected location
+                                updateSelectedLocation({lat, lng});
                             }
-                            
-                            // Update selected location
-                            updateSelectedLocation({lat, lng});
                         });
                         
                         suggestionsContainer.appendChild(suggestionItem);
@@ -611,8 +765,12 @@ function initLocationMenu() {
             currentLocAddress.textContent = "Please wait";
             
             // Show loading in the button
+            const useCurrentLocationBtn = document.getElementById('use-current-location');
             useCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Detecting location...';
             useCurrentLocationBtn.disabled = true;
+            
+            // Immediately start location detection - no waiting
+            console.log("Starting geolocation detection...");
             
             // Set a timeout to handle very slow location fetching
             const locationTimeout = setTimeout(() => {
@@ -621,8 +779,40 @@ function initLocationMenu() {
                 useCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-location-arrow"></i> Try Again';
                 useCurrentLocationBtn.disabled = false;
                 showToast('Location detection timed out', 'error');
-            }, 15000); // 15 second timeout
+            }, 10000); // 10 second timeout
             
+            // Check for cached location first (only use very recent caches - last 2 min)
+            const cachedLocation = localStorage.getItem('currentDetectedLocation');
+            let cachedLocationObj = null;
+            
+            try {
+                if (cachedLocation) {
+                    cachedLocationObj = JSON.parse(cachedLocation);
+                    // Only use cache if it's less than 2 minutes old (reduced from 5)
+                    const cacheTime = new Date(cachedLocationObj.timestamp || 0);
+                    const now = new Date();
+                    const cacheAge = (now.getTime() - cacheTime.getTime()) / 1000 / 60; // in minutes
+                    
+                    if (cacheAge < 2) {
+                        // Use cached location
+                        clearTimeout(locationTimeout);
+                        
+                        currentLocArea.textContent = cachedLocationObj.area || "Location found";
+                        currentLocAddress.textContent = cachedLocationObj.display_name || `${cachedLocationObj.lat.toFixed(6)}, ${cachedLocationObj.lng.toFixed(6)}`;
+                        
+                        useCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Use This Location';
+                        useCurrentLocationBtn.disabled = false;
+                        
+                        window.currentDetectedLocation = cachedLocationObj;
+                        return;
+                    }
+                }
+            } catch (e) {
+                console.error("Error parsing cached location:", e);
+                // Continue with geolocation
+            }
+            
+            // Call geolocation API with shorter timeout
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     // Clear the timeout since we got a result
@@ -643,8 +833,13 @@ function initLocationMenu() {
                     const basicLocation = {
                         lat, 
                         lng,
-                        display_name: `Location at ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+                        display_name: `Location at ${lat.toFixed(6)}, ${lng.toFixed(6)}`,
+                        timestamp: new Date().toISOString()
                     };
+                    
+                    // Cache this basic location immediately
+                    localStorage.setItem('currentDetectedLocation', JSON.stringify(basicLocation));
+                    window.currentDetectedLocation = basicLocation;
                     
                     // Reverse geocode to get address
                     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
@@ -682,8 +877,12 @@ function initLocationMenu() {
                                     short_name: shortAddress,
                                     area,
                                     city,
-                                    postcode
+                                    postcode,
+                                    timestamp: new Date().toISOString()
                                 };
+                                
+                                // Cache the enhanced location data
+                                localStorage.setItem('currentDetectedLocation', JSON.stringify(locationObj));
                                 
                                 // Store the current location for use when the button is clicked
                                 window.currentDetectedLocation = locationObj;
@@ -704,6 +903,7 @@ function initLocationMenu() {
                     switch(error.code) {
                         case error.PERMISSION_DENIED:
                             currentLocAddress.textContent = "Location access denied";
+                            showToast("Please enable location access in your browser settings", "error");
                             break;
                         case error.POSITION_UNAVAILABLE:
                             currentLocAddress.textContent = "Location unavailable";
@@ -718,12 +918,10 @@ function initLocationMenu() {
                     // Reset button
                     useCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-location-arrow"></i> Try Again';
                     useCurrentLocationBtn.disabled = false;
-                    
-                    showToast('Error getting your location: ' + error.message, 'error');
                 },
                 { 
                     enableHighAccuracy: true,
-                    timeout: 10000, // 10 second timeout
+                    timeout: 6000, // Further reduced from 8 second to 6 second timeout
                     maximumAge: 0
                 }
             );

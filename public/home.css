@@ -1246,15 +1246,18 @@ html, body {
 .location-search {
     display: flex;
     margin-bottom: 15px;
+    position: relative;
+    z-index: 10;
 }
 
 .location-search input {
     flex: 1;
-    padding: 10px 15px;
+    padding: 12px 15px;
     border: 1px solid #ddd;
     border-radius: 8px 0 0 8px;
-    outline: none;
     font-size: 14px;
+    outline: none;
+    transition: border-color 0.2s;
 }
 
 .location-search input:focus {
@@ -1262,22 +1265,35 @@ html, body {
 }
 
 .location-search button {
-    width: 40px;
+    padding: 12px 15px;
     background-color: #805AD5;
     color: white;
     border: none;
     border-radius: 0 8px 8px 0;
     cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    transition: background-color 0.2s;
 }
 
 #location-map {
-    height: 200px;
+    height: 250px;
     border-radius: 8px;
     margin-bottom: 15px;
     border: 1px solid #ddd;
+    width: 100%;
+    position: relative;
+    z-index: 1;
+    opacity: 1;
+    transition: height 0.3s ease;
+}
+
+/* Fix for Leaflet controls */
+#location-map .leaflet-control-container {
+    z-index: 1000;
+}
+
+#location-map .leaflet-top, 
+#location-map .leaflet-bottom {
+    z-index: 1000;
 }
 
 .selected-location-details {
@@ -1352,7 +1368,7 @@ html, body {
     }
     
     #location-map {
-        height: 180px;
+        height: 200px;
     }
 }
 
@@ -2503,22 +2519,36 @@ html, body {
     right: 0;
     background-color: white;
     border-radius: 0 0 8px 8px;
-    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-    max-height: 200px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    max-height: 250px;
     overflow-y: auto;
-    z-index: 10;
+    z-index: 100;
     display: none;
+    border: 1px solid #e0e0e0;
+    border-top: none;
+    margin-top: -1px;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: opacity 0.2s ease, transform 0.2s ease;
 }
 
 .location-suggestions.active {
     display: block;
+    opacity: 1;
+    transform: translateY(0);
 }
 
 .suggestion-item {
-    padding: 10px 15px;
+    padding: 12px 15px;
     cursor: pointer;
     border-bottom: 1px solid #f0f0f0;
     font-size: 14px;
+    line-height: 1.4;
+    transition: background-color 0.2s ease;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    color: #000;
 }
 
 .suggestion-item:hover {
