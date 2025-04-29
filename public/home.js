@@ -172,6 +172,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 localStorage.setItem('currentDetectedLocation', JSON.stringify(basicLocation));
                 window.currentDetectedLocation = basicLocation;
                 
+                // Store in userLocation for stores to use immediately
+                localStorage.setItem('userLocation', JSON.stringify(basicLocation));
+                
+                // Load stores based on basic location immediately
+                loadNearbyStores();
+                
                 // Also try to get the address in the background
                 fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
                     .then(response => response.json())
@@ -205,6 +211,22 @@ document.addEventListener('DOMContentLoaded', () => {
                                 // Cache the enhanced location data
                                 localStorage.setItem('currentDetectedLocation', JSON.stringify(locationObj));
                                 window.currentDetectedLocation = locationObj;
+                                
+                                // Update userLocation with enhanced data
+                                localStorage.setItem('userLocation', JSON.stringify(locationObj));
+                                
+                                // Update UI with location data
+                                const userLocationElement = document.getElementById('user-location');
+                                if (userLocationElement) {
+                                    if (area) {
+                                        userLocationElement.textContent = `${area}${postcode ? ', ' + postcode : ''}`;
+                                    } else if (shortAddress) {
+                                        userLocationElement.textContent = shortAddress;
+                                    }
+                                }
+                                
+                                // Refresh stores with the better location data
+                                loadNearbyStores();
                             }
                         }
                     })
@@ -240,7 +262,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initialize category scrolling
     initCategoryScroll();
     
-    // Load nearby stores
+    // Load nearby stores regardless of location state
+    // This ensures something is shown even before location is detected
     loadNearbyStores();
 });
 
@@ -1050,6 +1073,26 @@ function reverseGeocode(lat, lon) {
                 console.log('Address data:', data.address); // Log the full address data for debugging
                 userLocation.textContent = display;
                 
+                // Store location for use by nearby stores
+                const parts = data.display_name.split(', ');
+                const shortAddress = parts.slice(0, 3).join(', ');
+                const locationData = {
+                    lat,
+                    lng: lon,
+                    display_name: data.display_name,
+                    short_name: shortAddress,
+                    area,
+                    postcode: pincode,
+                    city: data.address.city || data.address.town || data.address.village || '',
+                    timestamp: new Date().toISOString()
+                };
+                
+                // Store in localStorage for other functions to use
+                localStorage.setItem('userLocation', JSON.stringify(locationData));
+                
+                // Load nearby stores with this location
+                loadNearbyStores();
+                
                 // Add animation class
                 locationDisplay.classList.add('updated');
                 
@@ -1059,6 +1102,17 @@ function reverseGeocode(lat, lon) {
                 }, 1000);
             } else {
                 userLocation.textContent = 'Location found';
+                
+                // Still store basic location and load stores
+                const locationData = {
+                    lat,
+                    lng: lon,
+                    display_name: `Location at ${lat.toFixed(6)}, ${lon.toFixed(6)}`,
+                    timestamp: new Date().toISOString()
+                };
+                
+                localStorage.setItem('userLocation', JSON.stringify(locationData));
+                loadNearbyStores();
             }
             
             // Show the location display
@@ -1067,6 +1121,17 @@ function reverseGeocode(lat, lon) {
         .catch(error => {
             console.error('Error with reverse geocoding:', error);
             document.getElementById('user-location').textContent = 'Location found';
+            
+            // Even with error, still store basic location and load stores
+            const locationData = {
+                lat,
+                lng: lon,
+                display_name: `Location at ${lat.toFixed(6)}, ${lon.toFixed(6)}`,
+                timestamp: new Date().toISOString()
+            };
+            
+            localStorage.setItem('userLocation', JSON.stringify(locationData));
+            loadNearbyStores();
         });
 }
 
@@ -2111,7 +2176,23 @@ function deg2rad(deg) {
 
 // Helper to get user location (simplified)
 function getUserLocation() {
-    // This would normally come from the geolocation API
-    // For now, we'll return null or check if it's saved in localStorage
-    return JSON.parse(localStorage.getItem('userLocation')) || null;
+    try {
+        // First check if we have a user-selected location
+        const userLocation = localStorage.getItem('userLocation');
+        if (userLocation) {
+            return JSON.parse(userLocation);
+        }
+        
+        // If no selected location, use the detected location
+        const detectedLocation = localStorage.getItem('currentDetectedLocation');
+        if (detectedLocation) {
+            return JSON.parse(detectedLocation);
+        }
+        
+        // If no stored location, return null
+        return null;
+    } catch (e) {
+        console.error('Error getting user location:', e);
+        return null;
+    }
 }
