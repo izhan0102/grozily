@@ -69,6 +69,75 @@
                     <div id="location-display" class="location-display">
                         <i class="fa-solid fa-location-dot"></i>
                         <span id="user-location">Fetching location...</span>
+                        <i class="fa-solid fa-chevron-down"></i>
+                    </div>
+                    <!-- Location Dropdown Menu -->
+                    <div id="location-menu" class="location-menu">
+                        <div class="location-menu-header">
+                            <h3>Select Your Location</h3>
+                            <button id="close-location-menu" class="close-btn">
+                                <i class="fa-solid fa-times"></i>
+                            </button>
+                        </div>
+                        <div class="location-menu-content">
+                            <div class="location-tabs">
+                                <button id="current-location-tab" class="location-tab active">Current Location</button>
+                                <button id="saved-location-tab" class="location-tab">Saved Locations</button>
+                                <button id="add-location-tab" class="location-tab">Add New</button>
+                            </div>
+                            
+                            <div id="current-location-content" class="location-tab-content active">
+                                <p class="location-instruction">Using your current device location:</p>
+                                <div id="current-location-details" class="location-details">
+                                    <div class="location-item current">
+                                        <i class="fa-solid fa-location-crosshairs"></i>
+                                        <div class="location-info">
+                                            <h4 id="current-loc-area">Detecting your location...</h4>
+                                            <p id="current-loc-address">Please wait while we find your location</p>
+                                        </div>
+                                    </div>
+                                </div>
+                                <button id="use-current-location" class="location-action-btn">
+                                    <i class="fa-solid fa-location-arrow"></i>
+                                    Use Current Location
+                                </button>
+                            </div>
+                            
+                            <div id="saved-location-content" class="location-tab-content">
+                                <p class="location-instruction">Your saved locations:</p>
+                                <div id="saved-locations-list" class="location-details">
+                                    <div class="location-empty">
+                                        <i class="fa-solid fa-map-marker-slash"></i>
+                                        <p>No saved locations yet</p>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="add-location-content" class="location-tab-content">
+                                <p class="location-instruction">Find a location on the map or search:</p>
+                                <div class="location-search">
+                                    <input type="text" id="location-search-input" placeholder="Search for area, street name...">
+                                    <button id="location-search-btn">
+                                        <i class="fa-solid fa-search"></i>
+                                    </button>
+                                </div>
+                                <div id="location-map"></div>
+                                <div class="selected-location-details">
+                                    <p>Selected Location:</p>
+                                    <h4 id="selected-location-text">Move map to select a location</h4>
+                                </div>
+                                <div class="location-action-buttons">
+                                    <button id="save-location-btn" class="location-action-btn">
+                                        <i class="fa-solid fa-save"></i>
+                                        Save This Location
+                                    </button>
+                                    <button id="use-selected-location" class="location-action-btn secondary">
+                                        <i class="fa-solid fa-check"></i>
+                                        Use Without Saving
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
