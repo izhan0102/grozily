@@ -2498,9 +2498,9 @@ html, body {
 /* Add search suggestions styles */
 .location-suggestions {
     position: absolute;
-    top: 44px; /* Height of search input + padding */
+    top: 100%; /* Position below the search bar */
     left: 0;
-    right: 40px; /* Width of search button */
+    right: 0;
     background-color: white;
     border-radius: 0 0 8px 8px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);

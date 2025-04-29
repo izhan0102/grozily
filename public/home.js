@@ -234,16 +234,6 @@ function initLocationMenu() {
         tabContent.classList.add('active');
     }
     
-    // Use current location button
-    useCurrentLocationBtn.addEventListener('click', () => {
-        useCurrentDeviceLocation();
-    });
-    
-    // Location map and selection functionality
-    let locationPickerMap = null;
-    let locationMarker = null;
-    let selectedLocation = null;
-    
     // Initialize location picker map
     function initLocationPickerMap() {
         if (locationPickerMap !== null) {
@@ -286,6 +276,12 @@ function initLocationMenu() {
                 },
                 (error) => {
                     console.error('Error getting location:', error);
+                    showToast('Error getting your current location. Using default location.', 'error');
+                },
+                { 
+                    enableHighAccuracy: true,
+                    timeout: 5000, // Shorter timeout (5 seconds)
+                    maximumAge: 0
                 }
             );
         }
@@ -614,10 +610,41 @@ function initLocationMenu() {
             currentLocArea.textContent = "Getting your location...";
             currentLocAddress.textContent = "Please wait";
             
+            // Show loading in the button
+            useCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Detecting location...';
+            useCurrentLocationBtn.disabled = true;
+            
+            // Set a timeout to handle very slow location fetching
+            const locationTimeout = setTimeout(() => {
+                currentLocArea.textContent = "Location detection timed out";
+                currentLocAddress.textContent = "Try again or use the map to select location";
+                useCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-location-arrow"></i> Try Again';
+                useCurrentLocationBtn.disabled = false;
+                showToast('Location detection timed out', 'error');
+            }, 15000); // 15 second timeout
+            
             navigator.geolocation.getCurrentPosition(
                 (position) => {
+                    // Clear the timeout since we got a result
+                    clearTimeout(locationTimeout);
+                    
                     const lat = position.coords.latitude;
                     const lng = position.coords.longitude;
+                    
+                    // Immediately update some UI while we fetch the address
+                    currentLocArea.textContent = "Location found!";
+                    currentLocAddress.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
+                    
+                    // Update button state
+                    useCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-location-crosshairs"></i> Use This Location';
+                    useCurrentLocationBtn.disabled = false;
+                    
+                    // Set basic location immediately
+                    const basicLocation = {
+                        lat, 
+                        lng,
+                        display_name: `Location at ${lat.toFixed(6)}, ${lng.toFixed(6)}`
+                    };
                     
                     // Reverse geocode to get address
                     fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`)
@@ -647,7 +674,7 @@ function initLocationMenu() {
                                 currentLocArea.textContent = area || city || shortAddress;
                                 currentLocAddress.textContent = data.display_name;
                                 
-                                // Set user location
+                                // Set user location with full address info
                                 const locationObj = {
                                     lat, 
                                     lng, 
@@ -658,33 +685,67 @@ function initLocationMenu() {
                                     postcode
                                 };
                                 
-                                setUserLocation(locationObj);
-                                
-                                // Close location menu
-                                locationMenu.classList.remove('active');
-                                locationDisplay.classList.remove('active');
+                                // Store the current location for use when the button is clicked
+                                window.currentDetectedLocation = locationObj;
                             }
                         })
                         .catch(error => {
                             console.error('Error with reverse geocoding:', error);
-                            currentLocArea.textContent = "Current Location";
-                            currentLocAddress.textContent = `${lat.toFixed(6)}, ${lng.toFixed(6)}`;
-                            
-                            // Set basic location
-                            setUserLocation({lat, lng});
+                            // We already have the basic location set
                         });
                 },
                 (error) => {
+                    // Clear the timeout since we got an error
+                    clearTimeout(locationTimeout);
+                    
                     console.error('Error getting location:', error);
                     currentLocArea.textContent = "Location error";
-                    currentLocAddress.textContent = "Please allow location access";
-                    showToast('Error getting your location. Please allow location access.', 'error');
+                    
+                    switch(error.code) {
+                        case error.PERMISSION_DENIED:
+                            currentLocAddress.textContent = "Location access denied";
+                            break;
+                        case error.POSITION_UNAVAILABLE:
+                            currentLocAddress.textContent = "Location unavailable";
+                            break;
+                        case error.TIMEOUT:
+                            currentLocAddress.textContent = "Location request timed out";
+                            break;
+                        default:
+                            currentLocAddress.textContent = "Unable to detect location";
+                    }
+                    
+                    // Reset button
+                    useCurrentLocationBtn.innerHTML = '<i class="fa-solid fa-location-arrow"></i> Try Again';
+                    useCurrentLocationBtn.disabled = false;
+                    
+                    showToast('Error getting your location: ' + error.message, 'error');
+                },
+                { 
+                    enableHighAccuracy: true,
+                    timeout: 10000, // 10 second timeout
+                    maximumAge: 0
                 }
             );
         } else {
             showToast('Geolocation is not supported by your browser', 'error');
         }
     }
+    
+    // Update the event listener for the current location button
+    useCurrentLocationBtn.addEventListener('click', () => {
+        // If we already have a detected location, use it directly
+        if (window.currentDetectedLocation) {
+            setUserLocation(window.currentDetectedLocation);
+            locationMenu.classList.remove('active');
+            locationDisplay.classList.remove('active');
+            // Clear the stored location after using it
+            window.currentDetectedLocation = null;
+        } else {
+            // Otherwise detect location again
+            useCurrentDeviceLocation();
+        }
+    });
     
     // Set user location in UI and storage
     function setUserLocation(location) {
