@@ -146,6 +146,9 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // Initialize category scrolling
     initCategoryScroll();
+    
+    // Load nearby stores
+    loadNearbyStores();
 });
 
 // Initialize Leaflet map and get user location
@@ -1133,4 +1136,159 @@ function addToCart(product) {
             console.error('Error adding to cart:', error);
             showToast('Error adding item to cart', 'error');
         });
+}
+
+// Add this function to load nearby stores from Firebase
+function loadNearbyStores() {
+    const storesContainer = document.getElementById('stores-container');
+    const noStoresMessage = document.getElementById('no-stores-message');
+    
+    // First clear the loading state
+    storesContainer.innerHTML = '<div class="stores-loading"><div class="spinner"></div><p>Finding stores near you...</p></div>';
+    
+    // Get user location (assuming we already have it from earlier in the app)
+    const userLocation = getUserLocation();
+    
+    // Load vendors as stores since we don't have a separate stores node
+    firebase.database().ref('vendors').once('value')
+        .then(snapshot => {
+            displayStores(snapshot);
+        })
+        .catch(error => {
+            console.error("Error fetching vendors/stores:", error);
+            storesContainer.innerHTML = '<p class="error-message">Failed to load stores. Please try again later.</p>';
+        });
+    
+    function displayStores(snapshot) {
+        // Clear loading state
+        storesContainer.innerHTML = '';
+        
+        if (!snapshot.exists() || snapshot.numChildren() === 0) {
+            storesContainer.style.display = 'none';
+            noStoresMessage.style.display = 'flex';
+            return;
+        }
+        
+        noStoresMessage.style.display = 'none';
+        storesContainer.style.display = 'flex';
+        
+        let storeCount = 0;
+        snapshot.forEach(storeSnapshot => {
+            storeCount++;
+            const vendor = storeSnapshot.val();
+            const vendorId = storeSnapshot.key;
+            
+            // Create store card
+            const storeCard = document.createElement('div');
+            storeCard.className = 'store-card';
+            storeCard.setAttribute('data-store-id', vendorId);
+            
+            // Calculate distance if we have user location
+            let distanceText = '';
+            if (userLocation && vendor.location) {
+                // Try to parse location if it's a string
+                let vendorLocation = vendor.location;
+                if (typeof vendor.location === 'string') {
+                    // Try to extract lat/lng from string format (simple parsing)
+                    const locationParts = vendor.location.split(',').map(part => parseFloat(part.trim()));
+                    if (locationParts.length === 2 && !isNaN(locationParts[0]) && !isNaN(locationParts[1])) {
+                        vendorLocation = {
+                            lat: locationParts[0],
+                            lng: locationParts[1]
+                        };
+                    }
+                }
+                
+                if (vendorLocation && vendorLocation.lat && vendorLocation.lng) {
+                    const distance = calculateDistance(
+                        userLocation.lat, userLocation.lng,
+                        vendorLocation.lat, vendorLocation.lng
+                    );
+                    distanceText = `<span class="store-distance">${distance.toFixed(1)} km away</span>`;
+                }
+            }
+            
+            // Determine store icon color based on index
+            const colorIndex = storeCount % 8 || 8;
+            const colorClass = `store-color-${colorIndex}`;
+            
+            // Extract location/area name
+            let areaName = 'No location';
+            if (typeof vendor.location === 'string') {
+                // Simple extraction - get first part before comma
+                const parts = vendor.location.split(',');
+                if (parts.length > 0) {
+                    areaName = parts[0].trim();
+                }
+            }
+            
+            // Set the HTML content
+            storeCard.innerHTML = `
+                <div class="store-image">
+                    ${vendor.imageURL ? 
+                        `<img src="${vendor.imageURL}" alt="${vendor.storeName || vendor.name}">` : 
+                        `<div class="store-icon ${colorClass}">
+                            <i class="fa-solid fa-store"></i>
+                         </div>`
+                    }
+                </div>
+                <div class="store-info">
+                    <h3>${vendor.storeName || vendor.name}</h3>
+                    <p class="store-owner">Owner: ${vendor.name || 'Unknown'}</p>
+                    <p class="store-address">
+                        <i class="fa-solid fa-location-dot"></i>
+                        ${areaName}
+                    </p>
+                    ${distanceText}
+                </div>
+                <div class="store-arrow">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
+            `;
+            
+            // Add click event to the entire card
+            storeCard.addEventListener('click', () => {
+                window.location.href = `store-detail.html?id=${vendorId}`;
+            });
+            
+            // Add click event specifically to the arrow
+            const arrowElement = storeCard.querySelector('.store-arrow');
+            if (arrowElement) {
+                arrowElement.addEventListener('click', (e) => {
+                    e.stopPropagation(); // Prevent the card click from triggering
+                    window.location.href = `store-detail.html?id=${vendorId}`;
+                });
+            }
+            
+            storesContainer.appendChild(storeCard);
+            
+            // Limit to 5 stores for simplicity
+            if (storeCount >= 5) return;
+        });
+    }
+}
+
+// Helper function to calculate distance (haversine formula)
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // Radius of the earth in km
+    const dLat = deg2rad(lat2 - lat1);
+    const dLon = deg2rad(lon2 - lon1);
+    const a = 
+        Math.sin(dLat/2) * Math.sin(dLat/2) +
+        Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+        Math.sin(dLon/2) * Math.sin(dLon/2); 
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+    const distance = R * c; // Distance in km
+    return distance;
+}
+
+function deg2rad(deg) {
+    return deg * (Math.PI/180);
+}
+
+// Helper to get user location (simplified)
+function getUserLocation() {
+    // This would normally come from the geolocation API
+    // For now, we'll return null or check if it's saved in localStorage
+    return JSON.parse(localStorage.getItem('userLocation')) || null;
 }

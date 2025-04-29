@@ -2133,3 +2133,169 @@ html, body {
         transform: translateY(0);
     }
 }
+
+/* Nearest Stores Styles - Updated Layout */
+.nearest-stores-container {
+    padding: 15px;
+    margin-bottom: 15px;
+}
+
+.stores-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.store-card {
+    background-color: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s, box-shadow 0.2s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    position: relative;
+    padding-right: 40px;
+}
+
+.store-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+}
+
+.store-image {
+    height: 80px;
+    width: 80px;
+    min-width: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f0f0f0;
+    overflow: hidden;
+    border-radius: 10px 0 0 10px;
+}
+
+.store-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.store-icon {
+    font-size: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 100%;
+    height: 100%;
+    color: white;
+}
+
+.store-info {
+    padding: 12px;
+    flex-grow: 1;
+}
+
+.store-info h3 {
+    margin: 0 0 5px 0;
+    font-size: 16px;
+    font-weight: 500;
+}
+
+.store-owner {
+    font-size: 13px;
+    color: #555;
+    margin: 0 0 5px 0;
+}
+
+.store-address {
+    font-size: 13px;
+    color: #555;
+    margin: 0 0 5px 0;
+    display: flex;
+    align-items: center;
+}
+
+.store-address i {
+    margin-right: 5px;
+    color: #666;
+    font-size: 12px;
+}
+
+.store-distance {
+    display: inline-block;
+    font-size: 12px;
+    background-color: #f0f0f0;
+    padding: 3px 8px;
+    border-radius: 12px;
+    color: #444;
+    margin-top: 5px;
+}
+
+.stores-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 30px;
+}
+
+.error-message {
+    text-align: center;
+    color: #e53935;
+    padding: 20px;
+}
+
+/* Store Icon Colors */
+.store-color-1 { background-color: #4CAF50; }
+.store-color-2 { background-color: #2196F3; }
+.store-color-3 { background-color: #9C27B0; }
+.store-color-4 { background-color: #FF9800; }
+.store-color-5 { background-color: #E91E63; }
+.store-color-6 { background-color: #00BCD4; }
+.store-color-7 { background-color: #795548; }
+.store-color-8 { background-color: #607D8B; }
+
+@media (max-width: 600px) {
+    .store-card {
+        flex-direction: row;
+    }
+    
+    .store-image {
+        height: 70px;
+        width: 70px;
+        min-width: 70px;
+    }
+    
+    .store-icon {
+        font-size: 30px;
+    }
+}
+
+.store-arrow {
+    position: absolute;
+    right: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 28px;
+    height: 28px;
+    background-color: #f0f0f0;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+    transition: all 0.2s ease;
+}
+
+.store-card:hover .store-arrow {
+    background-color: #e0e0e0;
+    color: #333;
+    transform: translateY(-50%) translateX(3px);
+}
+
+.store-arrow i {
+    font-size: 14px;
+}

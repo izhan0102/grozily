@@ -22,7 +22,6 @@
 </head>
 <body onload="window.scrollTo(0, 0);" id="top">
     <a id="top-anchor"></a>
-    <div class="background-pattern"></div>
     <div class="app-container">
         <header class="app-header">
             <div class="header-content">
@@ -78,8 +77,6 @@
         <!-- Hidden map container -->
         <div id="map-container" style="display: none; height: 0; width: 0;"></div>
         
-        <h2 id="greeting-message" class="direct-greeting">Good morning, <span id="greeting-name">User</span>!</h2>
-        
         <div class="ad-container">
             <div class="ad-card">
                 <img src="https://media.gettyimages.com/id/1222811180/photo/digital-marketing.jpg?s=612x612&w=0&k=20&c=qBv1W2rZZedjBna94aR5GDEgsEcmHrRpoqLvb727Weo=" alt="Digital Marketing Advertisement">
@@ -87,74 +84,28 @@
             </div>
         </div>
 
+        <!-- Nearest Stores Section -->
+        <div class="nearest-stores-container">
+            <div class="section-header">
+                <h2>Nearest Stores</h2>
+                <a href="stores.html" class="view-all">View All</a>
+            </div>
+            <div id="stores-container" class="stores-grid">
+                <div class="stores-loading">
+                    <div class="spinner"></div>
+                    <p>Finding stores near you...</p>
+                </div>
+            </div>
+            <div id="no-stores-message" class="placeholder-message" style="display: none;">
+                <div class="placeholder-icon">
+                    <i class="fa-solid fa-store-slash"></i>
+                </div>
+                <h3>No Stores Found</h3>
+                <p>We couldn't find any stores near your location</p>
+            </div>
+        </div>
+
         <main class="app-content">
-            <section class="categories-section">
-                <div class="section-header">
-                    <h2>Categories</h2>
-                    <a href="shop.html" class="view-all">View All</a>
-                </div>
-                <div class="categories-scroll-container">
-                    <div class="categories-scroll">
-                        <a href="categories/staples.html" class="category-card">
-                            <div class="category-icon">
-                                <i class="fa-solid fa-wheat-awn"></i>
-                            </div>
-                            <h3>Staples & Grains</h3>
-                        </a>
-                        <a href="categories/beverages.html" class="category-card">
-                            <div class="category-icon">
-                                <i class="fa-solid fa-mug-hot"></i>
-                            </div>
-                            <h3>Beverages</h3>
-                        </a>
-                        <a href="categories/snacks.html" class="category-card">
-                            <div class="category-icon">
-                                <i class="fa-solid fa-cookie-bite"></i>
-                            </div>
-                            <h3>Snacks</h3>
-                        </a>
-                        <a href="categories/personal-care.html" class="category-card">
-                            <div class="category-icon">
-                                <i class="fa-solid fa-soap"></i>
-                            </div>
-                            <h3>Personal Care</h3>
-                        </a>
-                        <a href="categories/fruits-vegetables.html" class="category-card">
-                            <div class="category-icon">
-                                <i class="fa-solid fa-apple-whole"></i>
-                            </div>
-                            <h3>Fruits & Vegetables</h3>
-                        </a>
-                        <a href="categories/dairy-eggs.html" class="category-card">
-                            <div class="category-icon">
-                                <i class="fa-solid fa-egg"></i>
-                            </div>
-                            <h3>Dairy & Eggs</h3>
-                        </a>
-                        <a href="categories/bakery.html" class="category-card">
-                            <div class="category-icon">
-                                <i class="fa-solid fa-bread-slice"></i>
-                            </div>
-                            <h3>Bakery & Breads</h3>
-                        </a>
-                    </div>
-                </div>
-            </section>
-
-            <!-- Featured Products Section -->
-            <section class="products-section">
-                <div class="section-header">
-                    <h2>Featured Products</h2>
-                    <a href="shop.html" class="view-all">View All</a>
-                </div>
-                <div class="products-container" id="products-container">
-                    <div class="products-loading">
-                        <div class="spinner"></div>
-                        <p>Loading products...</p>
-                    </div>
-                </div>
-            </section>
-
             <div class="placeholder-message no-container" id="products-placeholder" style="display: none;">
                 <div class="placeholder-icon">
                     <i class="fa-solid fa-basket-shopping"></i>
