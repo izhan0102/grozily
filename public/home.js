@@ -179,7 +179,6 @@ function initLeafletMap() {
                 switch(error.code) {
                     case error.PERMISSION_DENIED:
                         userLocationElement.textContent = 'Location access denied';
-                        showToast('Please enable location services for better experience', 'info');
                         break;
                     case error.POSITION_UNAVAILABLE:
                         userLocationElement.textContent = 'Location unavailable';
