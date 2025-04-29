@@ -1366,16 +1366,16 @@ toastMessage.addEventListener('click', () => {
 
 // Show loading overlay
 function showLoading() {
-    if (window.showLoading) {
-        window.showLoading();
-    }
+    // Loader.js has been removed, so we'll implement a simpler version
+    console.log('Loading started');
+    // You can implement a simple loading indicator here if needed
 }
 
 // Hide loading overlay
 function hideLoading() {
-    if (window.hideLoading) {
-        window.hideLoading();
-    }
+    // Loader.js has been removed, so we'll implement a simpler version
+    console.log('Loading complete');
+    // You can implement a simple loading indicator here if needed
 }
 
 // Handle back button for mobile app-like experience
