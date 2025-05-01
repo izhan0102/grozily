@@ -2083,23 +2083,19 @@ function loadNearbyStores() {
                     
                     // Format distance nicely (show in meters if less than 1km)
                     let distanceClass = '';
-                    let distanceIcon = '';
                     
                     if (distance < 1) {
                         const meters = Math.round(distance * 1000);
                         distanceClass = 'distance-close';
-                        distanceIcon = '<i class="fas fa-walking"></i>';
-                        distanceText = `<span class="store-distance ${distanceClass}">${distanceIcon} ${meters} m away</span>`;
+                        distanceText = `<span class="store-distance ${distanceClass}">${meters} m away</span>`;
                     } else if (distance < 5) {
                         // For distances less than 5km, show one decimal place
                         distanceClass = 'distance-medium';
-                        distanceIcon = '<i class="fas fa-bicycle"></i>';
-                        distanceText = `<span class="store-distance ${distanceClass}">${distanceIcon} ${distance.toFixed(1)} km away</span>`;
+                        distanceText = `<span class="store-distance ${distanceClass}">${distance.toFixed(1)} km away</span>`;
                     } else {
                         // For longer distances, round to whole number
                         distanceClass = 'distance-far';
-                        distanceIcon = '<i class="fas fa-car"></i>';
-                        distanceText = `<span class="store-distance ${distanceClass}">${distanceIcon} ${Math.round(distance)} km away</span>`;
+                        distanceText = `<span class="store-distance ${distanceClass}">${Math.round(distance)} km away</span>`;
                     }
                 } 
                 // Fallback to older location format if available
@@ -2125,23 +2121,19 @@ function loadNearbyStores() {
                         
                         // Format distance nicely
                         let distanceClass = '';
-                        let distanceIcon = '';
                         
                         if (distance < 1) {
                             const meters = Math.round(distance * 1000);
                             distanceClass = 'distance-close';
-                            distanceIcon = '<i class="fas fa-walking"></i>';
-                            distanceText = `<span class="store-distance ${distanceClass}">${distanceIcon} ${meters} m away</span>`;
+                            distanceText = `<span class="store-distance ${distanceClass}">${meters} m away</span>`;
                         } else if (distance < 5) {
                             // For distances less than 5km, show one decimal place
                             distanceClass = 'distance-medium';
-                            distanceIcon = '<i class="fas fa-bicycle"></i>';
-                            distanceText = `<span class="store-distance ${distanceClass}">${distanceIcon} ${distance.toFixed(1)} km away</span>`;
+                            distanceText = `<span class="store-distance ${distanceClass}">${distance.toFixed(1)} km away</span>`;
                         } else {
                             // For longer distances, round to whole number
                             distanceClass = 'distance-far';
-                            distanceIcon = '<i class="fas fa-car"></i>';
-                            distanceText = `<span class="store-distance ${distanceClass}">${distanceIcon} ${Math.round(distance)} km away</span>`;
+                            distanceText = `<span class="store-distance ${distanceClass}">${Math.round(distance)} km away</span>`;
                         }
                     }
                 }
