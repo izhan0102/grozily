@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Vendor Dashboard - Grozily</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <!-- Leaflet CSS and JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <style>
         * {
             margin: 0;
@@ -543,7 +546,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-            margin-top: 8px;
+            margin-top: 10px;
         }
 
         .day-label {
@@ -644,6 +647,159 @@
                 flex: 1;
                 justify-content: center;
             }
+        }
+
+        /* Location picker styles */
+        .location-section {
+            margin-bottom: 20px;
+        }
+
+        .location-picker {
+            border: 1px solid #E2E8F0;
+            border-radius: 10px;
+            padding: 15px;
+            background-color: #F8FAFC;
+            margin-top: 10px;
+        }
+
+        .location-search {
+            display: flex;
+            margin-bottom: 15px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .location-search input {
+            flex: 1;
+            padding: 12px 15px;
+            border: 1px solid #ddd;
+            border-radius: 8px 0 0 8px;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .location-search input:focus {
+            border-color: #805AD5;
+        }
+
+        .location-search button {
+            padding: 12px 15px;
+            background-color: #805AD5;
+            color: white;
+            border: none;
+            border-radius: 0 8px 8px 0;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .location-suggestions {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background-color: white;
+            border-radius: 0 0 8px 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 100;
+            display: none;
+            border: 1px solid #e0e0e0;
+            border-top: none;
+            margin-top: -1px;
+            opacity: 0;
+            transform: translateY(-5px);
+            transition: opacity 0.2s ease, transform 0.2s ease;
+        }
+
+        .location-suggestions.active {
+            display: block;
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .suggestion-item {
+            padding: 12px 15px;
+            cursor: pointer;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 14px;
+            line-height: 1.4;
+            transition: background-color 0.2s ease;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            color: #000;
+        }
+
+        .suggestion-item:hover {
+            background-color: #f9f5ff;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .current-location-btn {
+            margin-bottom: 15px;
+        }
+
+        .current-location-btn button {
+            width: 100%;
+            padding: 12px;
+            background-color: #4A5568;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 14px;
+            transition: background-color 0.2s;
+        }
+
+        .current-location-btn button:hover {
+            background-color: #2D3748;
+        }
+
+        .location-map {
+            height: 250px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid #ddd;
+            width: 100%;
+            position: relative;
+            z-index: 1;
+            opacity: 1;
+            transition: height 0.3s ease;
+        }
+
+        .selected-location {
+            margin-top: 15px;
+        }
+
+        .selected-location p {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .selected-location h4 {
+            font-size: 15px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        /* Leaflet map controls */
+        .location-map .leaflet-control-container {
+            z-index: 1000;
+        }
+
+        .location-map .leaflet-top, 
+        .location-map .leaflet-bottom {
+            z-index: 1000;
         }
     </style>
 </head>
@@ -821,9 +977,43 @@
                             <option value="Other">Other</option>
                         </select>
                     </div>
+                    
+                    <!-- Shop Location Section -->
+                    <div class="form-group location-section">
+                        <label for="location">Shop Location</label>
+                        
+                        <div class="location-picker">
+                            <div class="location-search">
+                                <input type="text" id="location-search" placeholder="Search for an area or address">
+                                <button type="button" id="location-search-btn">
+                                    <i class="fas fa-search"></i>
+                                </button>
+                            </div>
+                            
+                            <div class="location-suggestions" id="location-suggestions"></div>
+                            
+                            <div class="current-location-btn">
+                                <button type="button" id="use-current-location">
+                                    <i class="fas fa-location-arrow"></i>
+                                    Use My Current Location
+                                </button>
+                            </div>
+                            
+                            <div id="location-map" class="location-map"></div>
+                            
+                            <div class="selected-location">
+                                <p>Selected Location:</p>
+                                <h4 id="selected-location-text">No location selected</h4>
+                                
+                                <input type="hidden" id="location-lat">
+                                <input type="hidden" id="location-lng">
+                            </div>
+                        </div>
+                    </div>
+                    
                     <div class="form-row">
                         <div class="form-group">
-                            <label for="location">Location</label>
+                            <label for="location">Address</label>
                             <input type="text" id="location" required>
                         </div>
                         <div class="form-group">
@@ -831,6 +1021,7 @@
                             <input type="text" id="pin-code" pattern="[0-9]{6}" required>
                         </div>
                     </div>
+                    
                     <div class="form-row">
                         <div class="form-group">
                             <label for="opening-time">Opening Time</label>
@@ -841,6 +1032,7 @@
                             <input type="time" id="closing-time" required>
                         </div>
                     </div>
+                    
                     <div class="form-group">
                         <label>Open Days</label>
                         <div class="days-selection">
@@ -940,6 +1132,12 @@
         // Current vendor data
         let currentUser = null;
         let currentVendorData = null;
+        
+        // Location picker variables
+        let locationPickerMap = null;
+        let locationMarker = null;
+        let selectedLocation = null;
+        let debounceTimeout = null;
 
         // Show/Hide Loader
         function showLoader() {
@@ -1056,6 +1254,17 @@
             document.getElementById('opening-time').value = vendor.openingTime || '09:00';
             document.getElementById('closing-time').value = vendor.closingTime || '18:00';
             
+            // Set location data if available
+            if (vendor.locationLat && vendor.locationLng) {
+                document.getElementById('location-lat').value = vendor.locationLat;
+                document.getElementById('location-lng').value = vendor.locationLng;
+                document.getElementById('selected-location-text').textContent = vendor.locationDisplay || 'Location selected';
+            } else {
+                document.getElementById('location-lat').value = '';
+                document.getElementById('location-lng').value = '';
+                document.getElementById('selected-location-text').textContent = 'No location selected';
+            }
+            
             // Handle open days
             const openDays = vendor.openDays || ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
             dayLabels.forEach(label => {
@@ -1119,6 +1328,11 @@
         // Handle profile button click
         profileBtn.addEventListener('click', () => {
             profileModal.classList.add('show');
+            
+            // Initialize location picker when modal is opened
+            setTimeout(() => {
+                initLocationPicker();
+            }, 300);
         });
 
         // Close profile modal
@@ -1157,6 +1371,11 @@
             
             showLoader();
             
+            // Get location data from hidden inputs
+            const locationLat = document.getElementById('location-lat').value;
+            const locationLng = document.getElementById('location-lng').value;
+            const locationDisplay = document.getElementById('selected-location-text').textContent;
+            
             // Get updated profile data
             const updatedProfile = {
                 name: document.getElementById('owner-name').value,
@@ -1169,6 +1388,13 @@
                 openDays: getSelectedDays(),
                 updatedAt: new Date().toISOString()
             };
+            
+            // Include location coordinates if available
+            if (locationLat && locationLng) {
+                updatedProfile.locationLat = locationLat;
+                updatedProfile.locationLng = locationLng;
+                updatedProfile.locationDisplay = locationDisplay;
+            }
             
             // Update in Firebase
             firebase.database().ref(`vendors/${currentUser.uid}`).update(updatedProfile)
@@ -1267,6 +1493,348 @@
                 }
             });
         });
+
+        // Initialize location picker
+        function initLocationPicker() {
+            // Initialize map only when modal is shown (for proper sizing)
+            const locationMapDiv = document.getElementById('location-map');
+            
+            if (!locationPickerMap) {
+                // Create map with a small delay to ensure container is visible
+                setTimeout(() => {
+                    try {
+                        // Create map
+                        locationPickerMap = L.map('location-map').setView([28.6139, 77.2090], 13); // Default to Delhi
+                        
+                        // Add tile layer
+                        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                            attribution: '&copy; OpenStreetMap contributors'
+                        }).addTo(locationPickerMap);
+                        
+                        // Force a resize after map creation
+                        locationPickerMap.invalidateSize(true);
+                        
+                        // If we have stored coordinates, use them
+                        if (currentVendorData && currentVendorData.locationLat && currentVendorData.locationLng) {
+                            const lat = parseFloat(currentVendorData.locationLat);
+                            const lng = parseFloat(currentVendorData.locationLng);
+                            
+                            if (!isNaN(lat) && !isNaN(lng)) {
+                                locationPickerMap.setView([lat, lng], 15);
+                                
+                                // Add marker
+                                locationMarker = L.marker([lat, lng], {
+                                    draggable: true
+                                }).addTo(locationPickerMap);
+                                
+                                // Update location info when marker is dragged
+                                locationMarker.on('dragend', function(e) {
+                                    updateSelectedLocation(e.target.getLatLng());
+                                });
+                                
+                                // Set selected location
+                                updateSelectedLocation({lat, lng});
+                            }
+                        }
+                        
+                        // Update location when map is clicked
+                        locationPickerMap.on('click', function(e) {
+                            if (locationMarker) {
+                                locationMarker.setLatLng(e.latlng);
+                            } else {
+                                locationMarker = L.marker(e.latlng, {
+                                    draggable: true
+                                }).addTo(locationPickerMap);
+                                
+                                // Update location info when marker is dragged
+                                locationMarker.on('dragend', function(e) {
+                                    updateSelectedLocation(e.target.getLatLng());
+                                });
+                            }
+                            
+                            updateSelectedLocation(e.latlng);
+                        });
+                        
+                    } catch (error) {
+                        console.error('Error initializing map:', error);
+                        alert('Error initializing map. Please try again.');
+                    }
+                }, 300);
+            } else {
+                // Just resize the existing map
+                setTimeout(() => {
+                    locationPickerMap.invalidateSize(true);
+                }, 100);
+            }
+            
+            // Setup location search
+            setupLocationSearch();
+            
+            // Setup current location button
+            setupCurrentLocationButton();
+        }
+        
+        // Setup location search functionality
+        function setupLocationSearch() {
+            const locationSearch = document.getElementById('location-search');
+            const locationSearchBtn = document.getElementById('location-search-btn');
+            const suggestionsContainer = document.getElementById('location-suggestions');
+            
+            // Search when button is clicked
+            locationSearchBtn.addEventListener('click', () => {
+                searchLocation(locationSearch.value);
+            });
+            
+            // Search when Enter key is pressed
+            locationSearch.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    searchLocation(locationSearch.value);
+                }
+            });
+            
+            // Show real-time suggestions as user types
+            locationSearch.addEventListener('input', function() {
+                // Debounce to avoid too many API requests
+                clearTimeout(debounceTimeout);
+                debounceTimeout = setTimeout(() => {
+                    const query = this.value.trim();
+                    if (query.length < 3) {
+                        suggestionsContainer.classList.remove('active');
+                        return;
+                    }
+                    
+                    // Show loading in suggestions
+                    suggestionsContainer.innerHTML = '<div class="suggestion-item">Searching...</div>';
+                    suggestionsContainer.classList.add('active');
+                    
+                    // Search for locations using Nominatim
+                    fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}&limit=5`)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data && data.length > 0) {
+                                suggestionsContainer.innerHTML = '';
+                                data.forEach(location => {
+                                    const suggestionItem = document.createElement('div');
+                                    suggestionItem.className = 'suggestion-item';
+                                    suggestionItem.textContent = location.display_name;
+                                    
+                                    // Use this suggestion when clicked
+                                    suggestionItem.addEventListener('click', () => {
+                                        locationSearch.value = location.display_name;
+                                        suggestionsContainer.classList.remove('active');
+                                        
+                                        // Update map and marker
+                                        const lat = parseFloat(location.lat);
+                                        const lng = parseFloat(location.lon);
+                                        
+                                        if (locationPickerMap) {
+                                            locationPickerMap.setView([lat, lng], 15);
+                                            
+                                            // Update or add marker
+                                            if (locationMarker) {
+                                                locationMarker.setLatLng([lat, lng]);
+                                            } else {
+                                                locationMarker = L.marker([lat, lng], {
+                                                    draggable: true
+                                                }).addTo(locationPickerMap);
+                                                
+                                                locationMarker.on('dragend', function(e) {
+                                                    updateSelectedLocation(e.target.getLatLng());
+                                                });
+                                            }
+                                            
+                                            // Update selected location
+                                            updateSelectedLocation({lat, lng});
+                                        }
+                                    });
+                                    
+                                    suggestionsContainer.appendChild(suggestionItem);
+                                });
+                            } else {
+                                suggestionsContainer.innerHTML = '<div class="suggestion-item">No results found</div>';
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error searching for locations:', error);
+                            suggestionsContainer.innerHTML = '<div class="suggestion-item">Error searching</div>';
+                        });
+                }, 300);
+            });
+            
+            // Close suggestions when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!suggestionsContainer.contains(e.target) && e.target !== locationSearch) {
+                    suggestionsContainer.classList.remove('active');
+                }
+            });
+        }
+        
+        // Setup current location button
+        function setupCurrentLocationButton() {
+            const useCurrentLocationBtn = document.getElementById('use-current-location');
+            
+            useCurrentLocationBtn.addEventListener('click', () => {
+                if (!navigator.geolocation) {
+                    alert('Geolocation is not supported by your browser');
+                    return;
+                }
+                
+                // Change button state
+                useCurrentLocationBtn.disabled = true;
+                useCurrentLocationBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Detecting...';
+                
+                navigator.geolocation.getCurrentPosition(
+                    // Success callback
+                    (position) => {
+                        const lat = position.coords.latitude;
+                        const lng = position.coords.longitude;
+                        
+                        // Reset button
+                        useCurrentLocationBtn.disabled = false;
+                        useCurrentLocationBtn.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
+                        
+                        // Update map with location
+                        if (locationPickerMap) {
+                            locationPickerMap.setView([lat, lng], 15);
+                            
+                            // Update or add marker
+                            if (locationMarker) {
+                                locationMarker.setLatLng([lat, lng]);
+                            } else {
+                                locationMarker = L.marker([lat, lng], {
+                                    draggable: true
+                                }).addTo(locationPickerMap);
+                                
+                                // Update location info when marker is dragged
+                                locationMarker.on('dragend', function(e) {
+                                    updateSelectedLocation(e.target.getLatLng());
+                                });
+                            }
+                            
+                            // Update selected location
+                            updateSelectedLocation({lat, lng});
+                        }
+                    },
+                    // Error callback
+                    (error) => {
+                        // Reset button
+                        useCurrentLocationBtn.disabled = false;
+                        useCurrentLocationBtn.innerHTML = '<i class="fas fa-location-arrow"></i> Use My Current Location';
+                        
+                        let errorMsg = 'Could not detect your location.';
+                        switch(error.code) {
+                            case error.PERMISSION_DENIED:
+                                errorMsg = 'Location access was denied. Please enable location access in your browser.';
+                                break;
+                            case error.POSITION_UNAVAILABLE:
+                                errorMsg = 'Location information is unavailable.';
+                                break;
+                            case error.TIMEOUT:
+                                errorMsg = 'Location request timed out.';
+                                break;
+                        }
+                        
+                        alert(errorMsg);
+                    },
+                    // Options
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            });
+        }
+        
+        // Update selected location and display
+        function updateSelectedLocation(latlng) {
+            selectedLocation = latlng;
+            
+            // Update hidden inputs
+            document.getElementById('location-lat').value = latlng.lat;
+            document.getElementById('location-lng').value = latlng.lng;
+            
+            // Update display text
+            const selectedLocationText = document.getElementById('selected-location-text');
+            selectedLocationText.textContent = "Getting location name...";
+            
+            // Reverse geocode to get address
+            fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.display_name) {
+                        const parts = data.display_name.split(', ');
+                        // Take first 3 parts for a shorter display
+                        const shortAddress = parts.slice(0, 3).join(', ');
+                        selectedLocationText.textContent = shortAddress;
+                        
+                        // Auto-fill address and PIN code if available
+                        if (data.address) {
+                            // Try to extract PIN code
+                            if (data.address.postcode) {
+                                document.getElementById('pin-code').value = data.address.postcode;
+                            }
+                            
+                            // Create a formatted address
+                            let formattedAddress = '';
+                            
+                            if (data.address.road) formattedAddress += data.address.road + ', ';
+                            if (data.address.suburb) formattedAddress += data.address.suburb + ', ';
+                            if (data.address.city_district) formattedAddress += data.address.city_district + ', ';
+                            if (data.address.city) formattedAddress += data.address.city;
+                            
+                            document.getElementById('location').value = formattedAddress.trim();
+                        }
+                    } else {
+                        selectedLocationText.textContent = `Location at ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error with reverse geocoding:', error);
+                    selectedLocationText.textContent = `Location at ${latlng.lat.toFixed(6)}, ${latlng.lng.toFixed(6)}`;
+                });
+        }
+        
+        // Search for location
+        function searchLocation(query) {
+            if (!query || query.trim() === '') return;
+            
+            fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query)}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data && data.length > 0) {
+                        const location = data[0];
+                        const lat = parseFloat(location.lat);
+                        const lng = parseFloat(location.lon);
+                        
+                        // Update map view
+                        locationPickerMap.setView([lat, lng], 15);
+                        
+                        // Update or add marker
+                        if (locationMarker) {
+                            locationMarker.setLatLng([lat, lng]);
+                        } else {
+                            locationMarker = L.marker([lat, lng], {
+                                draggable: true
+                            }).addTo(locationPickerMap);
+                            
+                            // Update location info when marker is dragged
+                            locationMarker.on('dragend', function(e) {
+                                updateSelectedLocation(e.target.getLatLng());
+                            });
+                        }
+                        
+                        // Update selected location
+                        updateSelectedLocation({lat, lng});
+                    } else {
+                        alert('No locations found for your search');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error searching for location:', error);
+                    alert('Error searching for location');
+                });
+        }
     </script>
 </body>
 </html> 
