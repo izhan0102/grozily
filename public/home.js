@@ -2030,6 +2030,12 @@ function addToCart(product) {
 function loadNearbyStores() {
     const storesContainer = document.getElementById('stores-container');
     const noStoresMessage = document.getElementById('no-stores-message');
+    const sectionTitle = document.querySelector('.nearest-stores-container .section-header h2');
+    
+    // Update section title to reflect the 1.5 km radius
+    if (sectionTitle) {
+        sectionTitle.textContent = "Stores Within 1.5 km";
+    }
     
     // First clear the loading state
     storesContainer.innerHTML = '<div class="stores-loading"><div class="spinner"></div><p>Finding stores near you...</p></div>';
@@ -2057,148 +2063,196 @@ function loadNearbyStores() {
             return;
         }
         
+        // Get user location for distance calculation
+        const userLocation = getUserLocation();
+        
+        // If we don't have user location, display all stores
+        if (!userLocation || !userLocation.lat || !userLocation.lng) {
+            displayAllStores(snapshot);
+            return;
+        }
+        
+        // Filter stores by distance (1.5 km radius)
+        const MAX_DISTANCE = 1.5; // km
+        let nearbyStores = [];
+        
+        snapshot.forEach(storeSnapshot => {
+            const vendor = storeSnapshot.val();
+            const vendorId = storeSnapshot.key;
+            let distance = 999; // Default to a large distance
+            
+            // Check for modern location format (locationLat/locationLng)
+            if (vendor.locationLat && vendor.locationLng) {
+                distance = calculateDistance(
+                    userLocation.lat, userLocation.lng,
+                    parseFloat(vendor.locationLat), parseFloat(vendor.locationLng)
+                );
+            } 
+            // Fallback to older location format if available
+            else if (vendor.location) {
+                // Try to parse location if it's a string
+                let vendorLocation = vendor.location;
+                if (typeof vendor.location === 'string') {
+                    // Try to extract lat/lng from string format (simple parsing)
+                    const locationParts = vendor.location.split(',').map(part => parseFloat(part.trim()));
+                    if (locationParts.length === 2 && !isNaN(locationParts[0]) && !isNaN(locationParts[1])) {
+                        vendorLocation = {
+                            lat: locationParts[0],
+                            lng: locationParts[1]
+                        };
+                    }
+                }
+                
+                if (vendorLocation && vendorLocation.lat && vendorLocation.lng) {
+                    distance = calculateDistance(
+                        userLocation.lat, userLocation.lng,
+                        vendorLocation.lat, vendorLocation.lng
+                    );
+                }
+            }
+            
+            // Only include stores within the MAX_DISTANCE
+            if (distance <= MAX_DISTANCE) {
+                nearbyStores.push({
+                    vendor,
+                    vendorId,
+                    distance
+                });
+            }
+        });
+        
+        // Sort by distance (closest first)
+        nearbyStores.sort((a, b) => a.distance - b.distance);
+        
+        // Check if we have any nearby stores
+        if (nearbyStores.length === 0) {
+            storesContainer.style.display = 'none';
+            noStoresMessage.style.display = 'flex';
+            // Update the message to be more specific
+            const noStoresTitle = noStoresMessage.querySelector('h3');
+            const noStoresText = noStoresMessage.querySelector('p');
+            if (noStoresTitle) noStoresTitle.textContent = 'No Nearby Stores';
+            if (noStoresText) noStoresText.textContent = 'We couldn\'t find any stores within 1.5 km of your location';
+            return;
+        }
+        
+        // Display nearby stores
         noStoresMessage.style.display = 'none';
         storesContainer.style.display = 'flex';
         
+        // Limit to 5 stores
+        const storeLimit = Math.min(nearbyStores.length, 5);
+        
+        for (let i = 0; i < storeLimit; i++) {
+            const { vendor, vendorId, distance } = nearbyStores[i];
+            displayStoreCard(vendor, vendorId, distance, i + 1);
+        }
+    }
+    
+    // Helper function to display a store card
+    function displayStoreCard(vendor, vendorId, distance, storeCount) {
+        // Create store card
+        const storeCard = document.createElement('div');
+        storeCard.className = 'store-card';
+        storeCard.setAttribute('data-store-id', vendorId);
+        
+        // Format the distance text
+        let distanceText = '';
+        let distanceClass = '';
+        
+        if (distance !== null) {
+            if (distance < 1) {
+                const meters = Math.round(distance * 1000);
+                distanceClass = 'distance-close';
+                distanceText = `<span class="store-distance ${distanceClass}">${meters} m away</span>`;
+            } else {
+                // For distances between 1-1.5 km, show one decimal place
+                distanceClass = 'distance-medium';
+                distanceText = `<span class="store-distance ${distanceClass}">${distance.toFixed(1)} km away</span>`;
+            }
+        }
+        
+        // Extract location/area name with better handling
+        let areaName = 'No location';
+        if (vendor.locationDisplay) {
+            // Use the stored display name if available
+            areaName = vendor.locationDisplay;
+        } else if (vendor.location && typeof vendor.location === 'string') {
+            // Simple extraction - get first part before comma
+            const parts = vendor.location.split(',');
+            if (parts.length > 0) {
+                areaName = parts[0].trim();
+            }
+        }
+        
+        // Determine store icon color based on index
+        const colorIndex = storeCount % 8 || 8;
+        const colorClass = `store-color-${colorIndex}`;
+        
+        // Set the HTML content
+        storeCard.innerHTML = `
+            <div class="store-image">
+                ${vendor.imageURL ? 
+                    `<img src="${vendor.imageURL}" alt="${vendor.storeName || vendor.name}">` : 
+                    `<div class="store-icon ${colorClass}">
+                        <i class="fa-solid fa-store"></i>
+                     </div>`
+                }
+            </div>
+            <div class="store-info">
+                <h3>${vendor.storeName || vendor.name}</h3>
+                <p class="store-owner">Owner: ${vendor.name || 'Unknown'}</p>
+                <p class="store-address">
+                    <i class="fa-solid fa-location-dot"></i>
+                    ${areaName}
+                </p>
+                ${distanceText}
+            </div>
+            <div class="store-arrow">
+                <i class="fa-solid fa-chevron-right"></i>
+            </div>
+        `;
+        
+        // Add click event to the entire card
+        storeCard.addEventListener('click', () => {
+            window.location.href = `store-detail.html?id=${vendorId}`;
+        });
+        
+        // Add click event specifically to the arrow
+        const arrowElement = storeCard.querySelector('.store-arrow');
+        if (arrowElement) {
+            arrowElement.addEventListener('click', (e) => {
+                e.stopPropagation(); // Prevent the card click from triggering
+                window.location.href = `store-detail.html?id=${vendorId}`;
+            });
+        }
+        
+        storesContainer.appendChild(storeCard);
+    }
+    
+    // Helper function to display all stores when user location is not available
+    function displayAllStores(snapshot) {
         let storeCount = 0;
         snapshot.forEach(storeSnapshot => {
             storeCount++;
             const vendor = storeSnapshot.val();
             const vendorId = storeSnapshot.key;
             
-            // Create store card
-            const storeCard = document.createElement('div');
-            storeCard.className = 'store-card';
-            storeCard.setAttribute('data-store-id', vendorId);
+            // Display store without distance information
+            displayStoreCard(vendor, vendorId, null, storeCount);
             
-            // Calculate distance if we have user location
-            let distanceText = '';
-            if (userLocation && userLocation.lat && userLocation.lng) {
-                // Check for modern location format (locationLat/locationLng)
-                if (vendor.locationLat && vendor.locationLng) {
-                    const distance = calculateDistance(
-                        userLocation.lat, userLocation.lng,
-                        parseFloat(vendor.locationLat), parseFloat(vendor.locationLng)
-                    );
-                    
-                    // Format distance nicely (show in meters if less than 1km)
-                    let distanceClass = '';
-                    
-                    if (distance < 1) {
-                        const meters = Math.round(distance * 1000);
-                        distanceClass = 'distance-close';
-                        distanceText = `<span class="store-distance ${distanceClass}">${meters} m away</span>`;
-                    } else if (distance < 5) {
-                        // For distances less than 5km, show one decimal place
-                        distanceClass = 'distance-medium';
-                        distanceText = `<span class="store-distance ${distanceClass}">${distance.toFixed(1)} km away</span>`;
-                    } else {
-                        // For longer distances, round to whole number
-                        distanceClass = 'distance-far';
-                        distanceText = `<span class="store-distance ${distanceClass}">${Math.round(distance)} km away</span>`;
-                    }
-                } 
-                // Fallback to older location format if available
-                else if (vendor.location) {
-                    // Try to parse location if it's a string
-                    let vendorLocation = vendor.location;
-                    if (typeof vendor.location === 'string') {
-                        // Try to extract lat/lng from string format (simple parsing)
-                        const locationParts = vendor.location.split(',').map(part => parseFloat(part.trim()));
-                        if (locationParts.length === 2 && !isNaN(locationParts[0]) && !isNaN(locationParts[1])) {
-                            vendorLocation = {
-                                lat: locationParts[0],
-                                lng: locationParts[1]
-                            };
-                        }
-                    }
-                    
-                    if (vendorLocation && vendorLocation.lat && vendorLocation.lng) {
-                        const distance = calculateDistance(
-                            userLocation.lat, userLocation.lng,
-                            vendorLocation.lat, vendorLocation.lng
-                        );
-                        
-                        // Format distance nicely
-                        let distanceClass = '';
-                        
-                        if (distance < 1) {
-                            const meters = Math.round(distance * 1000);
-                            distanceClass = 'distance-close';
-                            distanceText = `<span class="store-distance ${distanceClass}">${meters} m away</span>`;
-                        } else if (distance < 5) {
-                            // For distances less than 5km, show one decimal place
-                            distanceClass = 'distance-medium';
-                            distanceText = `<span class="store-distance ${distanceClass}">${distance.toFixed(1)} km away</span>`;
-                        } else {
-                            // For longer distances, round to whole number
-                            distanceClass = 'distance-far';
-                            distanceText = `<span class="store-distance ${distanceClass}">${Math.round(distance)} km away</span>`;
-                        }
-                    }
-                }
-            }
-            
-            // Extract location/area name with better handling
-            let areaName = 'No location';
-            if (vendor.locationDisplay) {
-                // Use the stored display name if available
-                areaName = vendor.locationDisplay;
-            } else if (vendor.location && typeof vendor.location === 'string') {
-                // Simple extraction - get first part before comma
-                const parts = vendor.location.split(',');
-                if (parts.length > 0) {
-                    areaName = parts[0].trim();
-                }
-            }
-            
-            // Determine store icon color based on index
-            const colorIndex = storeCount % 8 || 8;
-            const colorClass = `store-color-${colorIndex}`;
-            
-            // Set the HTML content
-            storeCard.innerHTML = `
-                <div class="store-image">
-                    ${vendor.imageURL ? 
-                        `<img src="${vendor.imageURL}" alt="${vendor.storeName || vendor.name}">` : 
-                        `<div class="store-icon ${colorClass}">
-                            <i class="fa-solid fa-store"></i>
-                         </div>`
-                    }
-                </div>
-                <div class="store-info">
-                    <h3>${vendor.storeName || vendor.name}</h3>
-                    <p class="store-owner">Owner: ${vendor.name || 'Unknown'}</p>
-                    <p class="store-address">
-                        <i class="fa-solid fa-location-dot"></i>
-                        ${areaName}
-                    </p>
-                    ${distanceText}
-                </div>
-                <div class="store-arrow">
-                    <i class="fa-solid fa-chevron-right"></i>
-                </div>
-            `;
-            
-            // Add click event to the entire card
-            storeCard.addEventListener('click', () => {
-                window.location.href = `store-detail.html?id=${vendorId}`;
-            });
-            
-            // Add click event specifically to the arrow
-            const arrowElement = storeCard.querySelector('.store-arrow');
-            if (arrowElement) {
-                arrowElement.addEventListener('click', (e) => {
-                    e.stopPropagation(); // Prevent the card click from triggering
-                    window.location.href = `store-detail.html?id=${vendorId}`;
-                });
-            }
-            
-            storesContainer.appendChild(storeCard);
-            
-            // Limit to 5 stores for simplicity
+            // Limit to 5 stores
             if (storeCount >= 5) return;
         });
+        
+        // Show the stores if any were found
+        if (storeCount > 0) {
+            noStoresMessage.style.display = 'none';
+            storesContainer.style.display = 'flex';
+        } else {
+            storesContainer.style.display = 'none';
+            noStoresMessage.style.display = 'flex';
+        }
     }
 }
 
