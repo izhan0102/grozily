@@ -2439,10 +2439,37 @@ html, body {
     display: inline-block;
     font-size: 12px;
     background-color: #f0f0f0;
-    padding: 3px 8px;
+    padding: 4px 10px;
     border-radius: 12px;
     color: #444;
-    margin-top: 5px;
+    margin-top: 8px;
+    font-weight: 500;
+    transition: all 0.2s ease;
+    border: 1px solid rgba(0,0,0,0.05);
+}
+
+/* Distance color categories */
+.distance-close {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border-color: rgba(46, 125, 50, 0.2);
+}
+
+.distance-medium {
+    background-color: #fff8e1;
+    color: #ff8f00;
+    border-color: rgba(255, 143, 0, 0.2);
+}
+
+.distance-far {
+    background-color: #ffebee;
+    color: #c62828;
+    border-color: rgba(198, 40, 40, 0.2);
+}
+
+.store-distance i {
+    margin-right: 4px;
+    font-size: 11px;
 }
 
 .stores-loading {

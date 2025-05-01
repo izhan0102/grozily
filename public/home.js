@@ -2073,42 +2073,96 @@ function loadNearbyStores() {
             
             // Calculate distance if we have user location
             let distanceText = '';
-            if (userLocation && vendor.location) {
-                // Try to parse location if it's a string
-                let vendorLocation = vendor.location;
-                if (typeof vendor.location === 'string') {
-                    // Try to extract lat/lng from string format (simple parsing)
-                    const locationParts = vendor.location.split(',').map(part => parseFloat(part.trim()));
-                    if (locationParts.length === 2 && !isNaN(locationParts[0]) && !isNaN(locationParts[1])) {
-                        vendorLocation = {
-                            lat: locationParts[0],
-                            lng: locationParts[1]
-                        };
-                    }
-                }
-                
-                if (vendorLocation && vendorLocation.lat && vendorLocation.lng) {
+            if (userLocation && userLocation.lat && userLocation.lng) {
+                // Check for modern location format (locationLat/locationLng)
+                if (vendor.locationLat && vendor.locationLng) {
                     const distance = calculateDistance(
                         userLocation.lat, userLocation.lng,
-                        vendorLocation.lat, vendorLocation.lng
+                        parseFloat(vendor.locationLat), parseFloat(vendor.locationLng)
                     );
-                    distanceText = `<span class="store-distance">${distance.toFixed(1)} km away</span>`;
+                    
+                    // Format distance nicely (show in meters if less than 1km)
+                    let distanceClass = '';
+                    let distanceIcon = '';
+                    
+                    if (distance < 1) {
+                        const meters = Math.round(distance * 1000);
+                        distanceClass = 'distance-close';
+                        distanceIcon = '<i class="fas fa-walking"></i>';
+                        distanceText = `<span class="store-distance ${distanceClass}">${distanceIcon} ${meters} m away</span>`;
+                    } else if (distance < 5) {
+                        // For distances less than 5km, show one decimal place
+                        distanceClass = 'distance-medium';
+                        distanceIcon = '<i class="fas fa-bicycle"></i>';
+                        distanceText = `<span class="store-distance ${distanceClass}">${distanceIcon} ${distance.toFixed(1)} km away</span>`;
+                    } else {
+                        // For longer distances, round to whole number
+                        distanceClass = 'distance-far';
+                        distanceIcon = '<i class="fas fa-car"></i>';
+                        distanceText = `<span class="store-distance ${distanceClass}">${distanceIcon} ${Math.round(distance)} km away</span>`;
+                    }
+                } 
+                // Fallback to older location format if available
+                else if (vendor.location) {
+                    // Try to parse location if it's a string
+                    let vendorLocation = vendor.location;
+                    if (typeof vendor.location === 'string') {
+                        // Try to extract lat/lng from string format (simple parsing)
+                        const locationParts = vendor.location.split(',').map(part => parseFloat(part.trim()));
+                        if (locationParts.length === 2 && !isNaN(locationParts[0]) && !isNaN(locationParts[1])) {
+                            vendorLocation = {
+                                lat: locationParts[0],
+                                lng: locationParts[1]
+                            };
+                        }
+                    }
+                    
+                    if (vendorLocation && vendorLocation.lat && vendorLocation.lng) {
+                        const distance = calculateDistance(
+                            userLocation.lat, userLocation.lng,
+                            vendorLocation.lat, vendorLocation.lng
+                        );
+                        
+                        // Format distance nicely
+                        let distanceClass = '';
+                        let distanceIcon = '';
+                        
+                        if (distance < 1) {
+                            const meters = Math.round(distance * 1000);
+                            distanceClass = 'distance-close';
+                            distanceIcon = '<i class="fas fa-walking"></i>';
+                            distanceText = `<span class="store-distance ${distanceClass}">${distanceIcon} ${meters} m away</span>`;
+                        } else if (distance < 5) {
+                            // For distances less than 5km, show one decimal place
+                            distanceClass = 'distance-medium';
+                            distanceIcon = '<i class="fas fa-bicycle"></i>';
+                            distanceText = `<span class="store-distance ${distanceClass}">${distanceIcon} ${distance.toFixed(1)} km away</span>`;
+                        } else {
+                            // For longer distances, round to whole number
+                            distanceClass = 'distance-far';
+                            distanceIcon = '<i class="fas fa-car"></i>';
+                            distanceText = `<span class="store-distance ${distanceClass}">${distanceIcon} ${Math.round(distance)} km away</span>`;
+                        }
+                    }
                 }
             }
             
-            // Determine store icon color based on index
-            const colorIndex = storeCount % 8 || 8;
-            const colorClass = `store-color-${colorIndex}`;
-            
-            // Extract location/area name
+            // Extract location/area name with better handling
             let areaName = 'No location';
-            if (typeof vendor.location === 'string') {
+            if (vendor.locationDisplay) {
+                // Use the stored display name if available
+                areaName = vendor.locationDisplay;
+            } else if (vendor.location && typeof vendor.location === 'string') {
                 // Simple extraction - get first part before comma
                 const parts = vendor.location.split(',');
                 if (parts.length > 0) {
                     areaName = parts[0].trim();
                 }
             }
+            
+            // Determine store icon color based on index
+            const colorIndex = storeCount % 8 || 8;
+            const colorClass = `store-color-${colorIndex}`;
             
             // Set the HTML content
             storeCard.innerHTML = `
@@ -2156,8 +2210,15 @@ function loadNearbyStores() {
     }
 }
 
-// Helper function to calculate distance (haversine formula)
+// Helper function to calculate distance (Haversine formula)
 function calculateDistance(lat1, lon1, lat2, lon2) {
+    // Validate coordinates
+    if (!lat1 || !lon1 || !lat2 || !lon2 || 
+        isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
+        console.warn('Invalid coordinates for distance calculation', { lat1, lon1, lat2, lon2 });
+        return 999; // Return a large number for invalid coordinates
+    }
+    
     const R = 6371; // Radius of the earth in km
     const dLat = deg2rad(lat2 - lat1);
     const dLon = deg2rad(lon2 - lon1);
@@ -2167,6 +2228,13 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
         Math.sin(dLon/2) * Math.sin(dLon/2); 
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
     const distance = R * c; // Distance in km
+    
+    // Sanity check for unreasonable values (e.g. due to bad data)
+    if (isNaN(distance) || distance < 0 || distance > 20000) {
+        console.warn('Calculated distance is invalid', distance);
+        return 999;
+    }
+    
     return distance;
 }
 
