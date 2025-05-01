@@ -2032,9 +2032,9 @@ function loadNearbyStores() {
     const noStoresMessage = document.getElementById('no-stores-message');
     const sectionTitle = document.querySelector('.nearest-stores-container .section-header h2');
     
-    // Update section title to reflect the 1.5 km radius
+    // Update section title to original text
     if (sectionTitle) {
-        sectionTitle.textContent = "Stores Within 1.5 km";
+        sectionTitle.textContent = "Nearest Stores";
     }
     
     // First clear the loading state
