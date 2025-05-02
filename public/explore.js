@@ -356,12 +356,12 @@ function displayTopProducts() {
     const topProductsToShow = sortedProducts.slice(0, 8);
     
     // Clear loading indicator
-    topProductItems.innerHTML = '';
-    
+            topProductItems.innerHTML = '';
+
     // Render each product
     topProductsToShow.forEach(product => {
-        renderProductItem(product, topProductItems);
-    });
+                    renderProductItem(product, topProductItems);
+                });
     
     console.log(`Displayed ${topProductsToShow.length} top products`);
 }
@@ -563,15 +563,15 @@ function updateSearchSuggestions(query, products, stores) {
                     ${locationText}
                 </div>
             `;
-            
-            // Add click handler
-            item.addEventListener('click', () => {
+                
+                // Add click handler
+                item.addEventListener('click', () => {
                 window.location.href = `store-detail.html?id=${store.id}`;
+                });
+                
+                suggestionsList.appendChild(item);
             });
             
-            suggestionsList.appendChild(item);
-        });
-        
         // Add "See all stores" if there are more
         if (stores.length > maxItemsPerCategory) {
             const seeAllStores = document.createElement('div');
