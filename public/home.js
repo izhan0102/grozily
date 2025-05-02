@@ -2172,6 +2172,16 @@ function loadNearbyStores() {
             }
         }
         
+        // Check if store is open now
+        const storeOpenStatus = isStoreOpen(vendor);
+        let openStatusHTML = '';
+        
+        if (storeOpenStatus !== null) {
+            openStatusHTML = storeOpenStatus 
+                ? '<span class="store-status status-open">Open Now</span>' 
+                : '<span class="store-status status-closed">Closed</span>';
+        }
+        
         // Extract location/area name with better handling
         let areaName = 'No location';
         if (vendor.locationDisplay) {
@@ -2206,7 +2216,10 @@ function loadNearbyStores() {
                     <i class="fa-solid fa-location-dot"></i>
                     ${areaName}
                 </p>
-                ${distanceText}
+                <div class="store-info-row">
+                    ${openStatusHTML}
+                    ${distanceText}
+                </div>
             </div>
             <div class="store-arrow">
                 <i class="fa-solid fa-chevron-right"></i>
@@ -2309,4 +2322,44 @@ function getUserLocation() {
         console.error('Error getting user location:', e);
         return null;
     }
+}
+
+// Helper function to check if a store is currently open
+function isStoreOpen(vendor) {
+    // Return null if opening hours are not set
+    if (!vendor.openingTime || !vendor.closingTime) {
+        return null;
+    }
+    
+    // Get current date and time
+    const now = new Date();
+    const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' }); // e.g., "Monday"
+    
+    // Check if store is open today
+    if (vendor.openDays && Array.isArray(vendor.openDays)) {
+        if (!vendor.openDays.includes(currentDay)) {
+            return false; // Closed today
+        }
+    } else {
+        // Default open days if not specified (Mon-Sat)
+        const defaultOpenDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+        if (!defaultOpenDays.includes(currentDay)) {
+            return false; // Closed today
+        }
+    }
+    
+    // Check if current time is within opening hours
+    const currentHour = now.getHours();
+    const currentMinute = now.getMinutes();
+    const currentTime = currentHour * 60 + currentMinute; // Convert to minutes for easier comparison
+    
+    // Parse opening and closing times
+    const [openHour, openMinute] = vendor.openingTime.split(':').map(Number);
+    const [closeHour, closeMinute] = vendor.closingTime.split(':').map(Number);
+    
+    const openingTime = openHour * 60 + (openMinute || 0);
+    const closingTime = closeHour * 60 + (closeMinute || 0);
+    
+    // Check if current time is between opening and closing times
+    return currentTime >= openingTime && currentTime <= closingTime;
 }

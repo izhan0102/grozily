@@ -2609,3 +2609,30 @@ html, body {
     color: #e53935;
     padding: 20px;
 }
+
+.store-status {
+    display: inline-block;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-right: 8px;
+    font-weight: 500;
+}
+
+.status-open {
+    background-color: #e8f5e9;
+    color: #2e7d32;
+    border: 1px solid rgba(46, 125, 50, 0.2);
+}
+
+.status-closed {
+    background-color: #ffebee;
+    color: #c62828;
+    border: 1px solid rgba(198, 40, 40, 0.2);
+}
+
+.store-info-row {
+    display: flex;
+    align-items: center;
+    margin-top: 4px;
+}
