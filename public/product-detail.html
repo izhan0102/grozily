@@ -409,6 +409,42 @@
         .app-content {
             padding: 15px;
         }
+        
+        /* Floating Cart Button */
+        .floating-cart-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
+            background-color: #FF6B6B;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            cursor: pointer;
+            z-index: 99;
+            transition: all 0.3s ease;
+            border: none;
+            text-decoration: none;
+        }
+        
+        .floating-cart-btn i {
+            font-size: 24px;
+        }
+        
+        .floating-cart-btn:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.25);
+            background-color: #ff5252;
+        }
+        
+        .floating-cart-btn:active {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -462,6 +498,10 @@
             </a>
         </nav>
     </div>
+
+    <a href="cart.html" class="floating-cart-btn">
+        <i class="fas fa-shopping-cart"></i>
+    </a>
 
     <div id="toast-message" class="toast-message">Added to cart</div>
 
