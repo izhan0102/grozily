@@ -636,6 +636,8 @@
         const productsCount = document.getElementById('products-count');
         const productsContainer = document.getElementById('products-container');
         const toast = document.getElementById('toast');
+        const storeOpenStatus = document.getElementById('store-open-status');
+        const storeDistance = document.getElementById('store-distance');
         const storeClosedMessage = document.getElementById('store-closed-message');
         const orderBtn = document.getElementById('order-btn');
         
@@ -709,10 +711,12 @@
         
         // Load store details
         function loadStoreDetails(storeId) {
+            console.log('Loading store details for:', storeId);
             if (window.showLoading) window.showLoading();
             
             firebase.database().ref(`vendors/${storeId}`).once('value')
                 .then((snapshot) => {
+                    console.log('Store data received:', snapshot.exists());
                     if (!snapshot.exists()) {
                         showToast('Store not found', 'error');
                         setTimeout(() => {
@@ -723,57 +727,74 @@
                     }
                     
                     const store = snapshot.val();
+                    console.log('Store data:', store);
                     storeData = store;
                     
+                    // Update UI elements with store details
+                    if (storeName) storeName.textContent = store.storeName || store.name || 'Store';
+                    if (storeCategory) storeCategory.textContent = store.shopCategory || 'Grocery Store';
+                    if (storeAvatar) storeAvatar.textContent = (store.storeName || store.name || 'S').charAt(0).toUpperCase();
                     document.title = `${store.storeName || store.name || 'Store'} - Grozily`;
-                    storeName.textContent = store.storeName || store.name || 'Store';
-                    storeCategory.textContent = store.shopCategory || 'Grocery Store';
-                    storeAvatar.textContent = (store.storeName || store.name || 'S').charAt(0).toUpperCase();
                     
-                    productsStat.textContent = store.productCount || '0';
-                    ratingStat.textContent = store.rating ? parseFloat(store.rating).toFixed(1) : '0.0';
-                    reviewsStat.textContent = store.reviewCount || '0';
+                    // Update stats
+                    if (productsStat) productsStat.textContent = store.productCount || '0';
+                    if (ratingStat) ratingStat.textContent = store.rating ? parseFloat(store.rating).toFixed(1) : '0.0';
+                    if (reviewsStat) reviewsStat.textContent = store.reviewCount || '0';
                     
-                    ownerValue.textContent = store.name || 'Not available';
+                    // Update owner info
+                    if (ownerValue) ownerValue.textContent = store.name || 'Not available';
                     
-                    if (store.phone) {
-                        phoneValue.textContent = store.phone;
-                        storePhone = store.phone;
-                    } else {
-                        phoneValue.textContent = 'Not available';
+                    // Update phone
+                    if (phoneValue) {
+                        if (store.phone) {
+                            phoneValue.textContent = store.phone;
+                            storePhone = store.phone;
+                        } else {
+                            phoneValue.textContent = 'Not available';
+                        }
                     }
                     
-                    if (store.address) {
-                        let fullAddress = '';
-                        if (store.address.line1) fullAddress += store.address.line1;
-                        if (store.address.line2) fullAddress += ', ' + store.address.line2;
-                        if (store.address.area) fullAddress += ', ' + store.address.area;
-                        if (store.address.city) fullAddress += ', ' + store.address.city;
-                        if (store.address.state) fullAddress += ', ' + store.address.state;
-                        
-                        addressValue.textContent = fullAddress || store.location || 'Not available';
-                    } else {
-                        addressValue.textContent = store.location || 'Not available';
+                    // Update address and pincode
+                    if (addressValue) {
+                        if (store.address) {
+                            let fullAddress = '';
+                            if (store.address.line1) fullAddress += store.address.line1;
+                            if (store.address.line2) fullAddress += ', ' + store.address.line2;
+                            if (store.address.area) fullAddress += ', ' + store.address.area;
+                            if (store.address.city) fullAddress += ', ' + store.address.city;
+                            if (store.address.state) fullAddress += ', ' + store.address.state;
+                            
+                            addressValue.textContent = fullAddress || store.location || 'Not available';
+                        } else {
+                            addressValue.textContent = store.location || 'Not available';
+                        }
                     }
                     
-                    pincodeValue.textContent = store.pinCode || store.address?.pinCode || 'Not available';
-                    
-                    if (store.openingTime && store.closingTime) {
-                        const openingTime = formatTo12Hour(store.openingTime);
-                        const closingTime = formatTo12Hour(store.closingTime);
-                        hoursValue.textContent = `${openingTime} - ${closingTime}`;
-                    } else {
-                        hoursValue.textContent = 'Not available';
+                    if (pincodeValue) {
+                        pincodeValue.textContent = store.pinCode || store.address?.pinCode || 'Not available';
                     }
                     
+                    // Update business hours
+                    if (hoursValue) {
+                        if (store.openingTime && store.closingTime) {
+                            const openingTime = formatTo12Hour(store.openingTime);
+                            const closingTime = formatTo12Hour(store.closingTime);
+                            hoursValue.textContent = `${openingTime} - ${closingTime}`;
+                        } else {
+                            hoursValue.textContent = 'Not available';
+                        }
+                    }
+                    
+                    // Check if store is open now
                     isOpen = isStoreOpen(store);
+                    console.log('Store open status:', isOpen);
                     
+                    // Update UI based on open status
                     updateStoreOpenStatus(isOpen);
-                    
                     updateStoreDistance(store);
-                    
                     updateOrderButtonState(isOpen);
                     
+                    // Load products
                     loadStoreProducts(storeId);
                 })
                 .catch((error) => {
@@ -785,25 +806,28 @@
         
         // Update store open status
         function updateStoreOpenStatus(isStoreOpenStatus) {
+            if (!storeOpenStatus) return;
+            
             if (isStoreOpenStatus === null) {
-                storeOpenStatus.parentElement.classList.remove('status-open', 'status-closed');
                 storeOpenStatus.textContent = 'Hours not set';
                 return;
             }
             
             if (isStoreOpenStatus) {
+                storeOpenStatus.textContent = 'Open Now';
                 storeOpenStatus.parentElement.classList.add('status-open');
                 storeOpenStatus.parentElement.classList.remove('status-closed');
-                storeOpenStatus.textContent = 'Open Now';
             } else {
+                storeOpenStatus.textContent = 'Closed';
                 storeOpenStatus.parentElement.classList.add('status-closed');
                 storeOpenStatus.parentElement.classList.remove('status-open');
-                storeOpenStatus.textContent = 'Closed';
             }
         }
         
         // Update store distance
         function updateStoreDistance(store) {
+            if (!storeDistance) return;
+            
             const userLocation = getUserLocation();
             
             if (!userLocation || !userLocation.lat || !userLocation.lng) {
@@ -841,7 +865,9 @@
             if (distance !== null) {
                 const distanceInfo = formatDistance(distance);
                 storeDistance.textContent = distanceInfo.text;
-                storeDistance.parentElement.classList.add(distanceInfo.class);
+                if (storeDistance.parentElement) {
+                    storeDistance.parentElement.classList.add(distanceInfo.class);
+                }
             } else {
                 storeDistance.textContent = 'Unknown distance';
             }
@@ -849,6 +875,8 @@
         
         // Update order button state
         function updateOrderButtonState(isStoreOpenStatus) {
+            if (!orderBtn || !storeClosedMessage) return;
+            
             if (isStoreOpenStatus === false) {
                 orderBtn.disabled = true;
                 orderBtn.innerHTML = '<i class="fas fa-clock"></i> Store Closed';
