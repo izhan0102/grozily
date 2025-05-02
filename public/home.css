@@ -2435,17 +2435,38 @@ html, body {
     font-size: 12px;
 }
 
+.store-info-row {
+    display: flex;
+    align-items: center;
+    margin-top: 4px;
+    flex-wrap: nowrap;
+}
+
+.store-status {
+    display: inline-flex;
+    font-size: 12px;
+    padding: 2px 8px;
+    border-radius: 12px;
+    margin-right: 8px;
+    font-weight: 500;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+}
+
 .store-distance {
-    display: inline-block;
+    display: inline-flex;
     font-size: 12px;
     background-color: #f0f0f0;
     padding: 4px 10px;
     border-radius: 12px;
     color: #444;
-    margin-top: 8px;
     font-weight: 500;
     transition: all 0.2s ease;
     border: 1px solid rgba(0,0,0,0.05);
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
 }
 
 /* Distance color categories */
@@ -2610,15 +2631,6 @@ html, body {
     padding: 20px;
 }
 
-.store-status {
-    display: inline-block;
-    font-size: 12px;
-    padding: 2px 8px;
-    border-radius: 12px;
-    margin-right: 8px;
-    font-weight: 500;
-}
-
 .status-open {
     background-color: #e8f5e9;
     color: #2e7d32;
@@ -2629,10 +2641,4 @@ html, body {
     background-color: #ffebee;
     color: #c62828;
     border: 1px solid rgba(198, 40, 40, 0.2);
-}
-
-.store-info-row {
-    display: flex;
-    align-items: center;
-    margin-top: 4px;
 }
