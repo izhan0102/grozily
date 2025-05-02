@@ -112,6 +112,66 @@
             z-index: 10;
         }
 
+        .store-status-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .store-open-status {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .status-open {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border: 1px solid rgba(46, 125, 50, 0.2);
+        }
+
+        .status-closed {
+            background-color: #ffebee;
+            color: #c62828;
+            border: 1px solid rgba(198, 40, 40, 0.2);
+        }
+
+        .store-distance {
+            display: inline-flex;
+            align-items: center;
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 14px;
+            background-color: #f0f0f0;
+            color: #444;
+            font-weight: 500;
+            border: 1px solid rgba(0,0,0,0.05);
+        }
+
+        .distance-close {
+            background-color: #e8f5e9;
+            color: #2e7d32;
+            border-color: rgba(46, 125, 50, 0.2);
+        }
+
+        .distance-medium {
+            background-color: #fff8e1;
+            color: #ff8f00;
+            border-color: rgba(255, 143, 0, 0.2);
+        }
+
+        .distance-far {
+            background-color: #ffebee;
+            color: #c62828;
+            border-color: rgba(198, 40, 40, 0.2);
+        }
+
         .store-stat {
             display: flex;
             justify-content: space-around;
@@ -344,33 +404,121 @@
         .toast.error {
             background-color: #E53E3E;
         }
+
+        .order-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 30px;
+            background-color: var(--primary);
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            border: none;
+            cursor: pointer;
+            margin: 16px auto;
+            box-shadow: 0 4px 12px rgba(128, 90, 213, 0.3);
+            transition: all 0.3s ease;
+        }
+
+        .order-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(128, 90, 213, 0.4);
+        }
+
+        .order-btn:active {
+            transform: translateY(0);
+        }
+
+        .order-btn:disabled {
+            background-color: #d1d1d1;
+            color: #888;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .store-closed-message {
+            background-color: #ffebee;
+            color: #c62828;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            text-align: center;
+            margin: 16px 0;
+            display: none;
+        }
+
+        /* Add loading products spinner styles */
+        .loading-products {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 30px 0;
+            grid-column: 1 / -1;
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(128, 90, 213, 0.2);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loading-products p {
+            color: #666;
+            font-size: 14px;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="store-header">
             <div class="top-nav">
-                <button class="back-btn" id="back-btn">
+                <button id="back-btn" class="back-btn">
                     <i class="fas fa-arrow-left"></i>
                 </button>
+                <div class="contact-btn">
+                    <i class="fas fa-phone"></i>
+                </div>
             </div>
-            <div class="store-avatar" id="store-avatar">A</div>
-            <h1 class="store-name" id="store-name">Loading...</h1>
-            <p class="store-category" id="store-category">Loading...</p>
+            <div class="store-avatar" id="store-avatar">S</div>
+            <h1 class="store-name" id="store-name">Store Name</h1>
+            <div class="store-category" id="store-category">Category</div>
         </div>
 
         <div class="store-info-card">
+            <div class="store-status-container">
+                <div class="store-open-status">
+                    <span id="store-open-status">Loading...</span>
+                </div>
+                <div class="store-distance">
+                    <span id="store-distance">Loading...</span>
+                </div>
+            </div>
+
             <div class="store-stat">
                 <div class="stat-item">
-                    <div class="stat-value" id="products-stat">...</div>
+                    <div class="stat-value" id="products-stat">0</div>
                     <div class="stat-label">Products</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" id="rating-stat">...</div>
+                    <div class="stat-value" id="rating-stat">0.0</div>
                     <div class="stat-label">Rating</div>
                 </div>
                 <div class="stat-item">
-                    <div class="stat-value" id="reviews-stat">...</div>
+                    <div class="stat-value" id="reviews-stat">0</div>
                     <div class="stat-label">Reviews</div>
                 </div>
             </div>
@@ -385,12 +533,12 @@
                         <div class="detail-value" id="owner-value">Loading...</div>
                     </div>
                 </div>
-                <div class="detail-item" style="display: none;">
+                <div class="detail-item">
                     <div class="detail-icon">
                         <i class="fas fa-phone"></i>
                     </div>
                     <div class="detail-content">
-                        <div class="detail-label">Phone Number</div>
+                        <div class="detail-label">Phone</div>
                         <div class="detail-value" id="phone-value">Loading...</div>
                     </div>
                 </div>
@@ -408,7 +556,7 @@
                         <i class="fas fa-map-pin"></i>
                     </div>
                     <div class="detail-content">
-                        <div class="detail-label">PIN Code</div>
+                        <div class="detail-label">Pincode</div>
                         <div class="detail-value" id="pincode-value">Loading...</div>
                     </div>
                 </div>
@@ -427,14 +575,22 @@
         <div class="products-section">
             <div class="section-header">
                 <h2 class="section-title">
-                    <i class="fas fa-box" style="color: var(--primary);"></i>
-                    Products
-                    <span class="products-count" id="products-count">...</span>
+                    <i class="fas fa-shopping-basket"></i>
+                    Products <span id="products-count">(0)</span>
                 </h2>
             </div>
-            <div class="products-grid" id="products-container">
-                <div class="empty-products" style="grid-column: 1 / -1;">
-                    <i class="fas fa-spinner fa-spin"></i>
+            
+            <div id="store-closed-message" class="store-closed-message">
+                <i class="fas fa-clock"></i> This store is currently closed. You cannot place orders when the store is closed.
+            </div>
+            
+            <button id="order-btn" class="order-btn">
+                <i class="fas fa-shopping-cart"></i> Start Order
+            </button>
+            
+            <div id="products-container" class="products-grid">
+                <div class="loading-products">
+                    <div class="spinner"></div>
                     <p>Loading products...</p>
                 </div>
             </div>
@@ -480,10 +636,14 @@
         const productsCount = document.getElementById('products-count');
         const productsContainer = document.getElementById('products-container');
         const toast = document.getElementById('toast');
+        const storeClosedMessage = document.getElementById('store-closed-message');
+        const orderBtn = document.getElementById('order-btn');
         
         // Global variables
         let currentStoreId = null;
         let storePhone = '';
+        let storeData = null;
+        let isOpen = false;
         
         // Helper Functions
         function formatCurrency(price) {
@@ -514,9 +674,41 @@
             return urlParams.get('id');
         }
         
+        // Check if a store is currently open
+        function isStoreOpen(store) {
+            if (!store.openingTime || !store.closingTime) {
+                return null;
+            }
+            
+            const now = new Date();
+            const currentDay = now.toLocaleDateString('en-US', { weekday: 'long' });
+            
+            if (store.openDays && Array.isArray(store.openDays)) {
+                if (!store.openDays.includes(currentDay)) {
+                    return false;
+                }
+            } else {
+                const defaultOpenDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+                if (!defaultOpenDays.includes(currentDay)) {
+                    return false;
+                }
+            }
+            
+            const currentHour = now.getHours();
+            const currentMinute = now.getMinutes();
+            const currentTime = currentHour * 60 + currentMinute;
+            
+            const [openHour, openMinute] = store.openingTime.split(':').map(Number);
+            const [closeHour, closeMinute] = store.closingTime.split(':').map(Number);
+            
+            const openingTime = openHour * 60 + (openMinute || 0);
+            const closingTime = closeHour * 60 + (closeMinute || 0);
+            
+            return currentTime >= openingTime && currentTime <= closingTime;
+        }
+        
         // Load store details
         function loadStoreDetails(storeId) {
-            // Show loading state
             if (window.showLoading) window.showLoading();
             
             firebase.database().ref(`vendors/${storeId}`).once('value')
@@ -526,26 +718,24 @@
                         setTimeout(() => {
                             window.location.href = 'home.html';
                         }, 2000);
+                        if (window.hideLoading) window.hideLoading();
                         return;
                     }
                     
                     const store = snapshot.val();
+                    storeData = store;
                     
-                    // Set store info in header
                     document.title = `${store.storeName || store.name || 'Store'} - Grozily`;
                     storeName.textContent = store.storeName || store.name || 'Store';
                     storeCategory.textContent = store.shopCategory || 'Grocery Store';
                     storeAvatar.textContent = (store.storeName || store.name || 'S').charAt(0).toUpperCase();
                     
-                    // Set stats
                     productsStat.textContent = store.productCount || '0';
                     ratingStat.textContent = store.rating ? parseFloat(store.rating).toFixed(1) : '0.0';
                     reviewsStat.textContent = store.reviewCount || '0';
                     
-                    // Set store details
                     ownerValue.textContent = store.name || 'Not available';
                     
-                    // Set phone and contact button
                     if (store.phone) {
                         phoneValue.textContent = store.phone;
                         storePhone = store.phone;
@@ -553,7 +743,6 @@
                         phoneValue.textContent = 'Not available';
                     }
                     
-                    // Set address and pincode
                     if (store.address) {
                         let fullAddress = '';
                         if (store.address.line1) fullAddress += store.address.line1;
@@ -569,7 +758,6 @@
                     
                     pincodeValue.textContent = store.pinCode || store.address?.pinCode || 'Not available';
                     
-                    // Set business hours in 12-hour format
                     if (store.openingTime && store.closingTime) {
                         const openingTime = formatTo12Hour(store.openingTime);
                         const closingTime = formatTo12Hour(store.closingTime);
@@ -578,7 +766,14 @@
                         hoursValue.textContent = 'Not available';
                     }
                     
-                    // Load products
+                    isOpen = isStoreOpen(store);
+                    
+                    updateStoreOpenStatus(isOpen);
+                    
+                    updateStoreDistance(store);
+                    
+                    updateOrderButtonState(isOpen);
+                    
                     loadStoreProducts(storeId);
                 })
                 .catch((error) => {
@@ -586,6 +781,83 @@
                     showToast('Error loading store details', 'error');
                     if (window.hideLoading) window.hideLoading();
                 });
+        }
+        
+        // Update store open status
+        function updateStoreOpenStatus(isStoreOpenStatus) {
+            if (isStoreOpenStatus === null) {
+                storeOpenStatus.parentElement.classList.remove('status-open', 'status-closed');
+                storeOpenStatus.textContent = 'Hours not set';
+                return;
+            }
+            
+            if (isStoreOpenStatus) {
+                storeOpenStatus.parentElement.classList.add('status-open');
+                storeOpenStatus.parentElement.classList.remove('status-closed');
+                storeOpenStatus.textContent = 'Open Now';
+            } else {
+                storeOpenStatus.parentElement.classList.add('status-closed');
+                storeOpenStatus.parentElement.classList.remove('status-open');
+                storeOpenStatus.textContent = 'Closed';
+            }
+        }
+        
+        // Update store distance
+        function updateStoreDistance(store) {
+            const userLocation = getUserLocation();
+            
+            if (!userLocation || !userLocation.lat || !userLocation.lng) {
+                storeDistance.textContent = 'Unknown distance';
+                return;
+            }
+            
+            let distance = null;
+            
+            if (store.locationLat && store.locationLng) {
+                distance = calculateDistance(
+                    userLocation.lat, userLocation.lng,
+                    parseFloat(store.locationLat), parseFloat(store.locationLng)
+                );
+            } else if (store.location) {
+                let storeLocation = store.location;
+                if (typeof store.location === 'string') {
+                    const locationParts = store.location.split(',').map(part => parseFloat(part.trim()));
+                    if (locationParts.length === 2 && !isNaN(locationParts[0]) && !isNaN(locationParts[1])) {
+                        storeLocation = {
+                            lat: locationParts[0],
+                            lng: locationParts[1]
+                        };
+                    }
+                }
+                
+                if (storeLocation && storeLocation.lat && storeLocation.lng) {
+                    distance = calculateDistance(
+                        userLocation.lat, userLocation.lng,
+                        storeLocation.lat, storeLocation.lng
+                    );
+                }
+            }
+            
+            if (distance !== null) {
+                const distanceInfo = formatDistance(distance);
+                storeDistance.textContent = distanceInfo.text;
+                storeDistance.parentElement.classList.add(distanceInfo.class);
+            } else {
+                storeDistance.textContent = 'Unknown distance';
+            }
+        }
+        
+        // Update order button state
+        function updateOrderButtonState(isStoreOpenStatus) {
+            if (isStoreOpenStatus === false) {
+                orderBtn.disabled = true;
+                orderBtn.innerHTML = '<i class="fas fa-clock"></i> Store Closed';
+                storeClosedMessage.style.display = 'block';
+            } else {
+                orderBtn.disabled = false;
+                orderBtn.innerHTML = '<i class="fas fa-shopping-cart"></i> Start Order';
+                storeClosedMessage.style.display = 'none';
+            }
         }
         
         // Load store products
@@ -601,7 +873,6 @@
                         `;
                         productsCount.textContent = '0';
                         
-                        // Hide loading after loading products
                         if (window.hideLoading) window.hideLoading();
                         return;
                     }
@@ -613,18 +884,15 @@
                         products.push({ ...product, id: productId });
                     });
                     
-                    // Update products count
                     productsCount.textContent = products.length;
                     productsStat.textContent = products.length;
                     
-                    // Sort products by creation date (newest first)
                     products.sort((a, b) => {
                         const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
                         const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
                         return dateB - dateA;
                     });
                     
-                    // Render products
                     productsContainer.innerHTML = '';
                     products.forEach(product => {
                         const discountPercent = product.originalPrice && product.discountedPrice ? 
@@ -656,14 +924,12 @@
                         productsContainer.appendChild(productCard);
                     });
                     
-                    // Hide loading after loading products
                     if (window.hideLoading) window.hideLoading();
                 })
                 .catch((error) => {
                     console.error('Error loading store products:', error);
                     showToast('Error loading products', 'error');
                     
-                    // Hide loading after error
                     if (window.hideLoading) window.hideLoading();
                 });
         }
@@ -672,18 +938,14 @@
         function formatTo12Hour(timeString) {
             if (!timeString) return '';
             
-            // Handle various time formats
             let hours = 0;
             let minutes = 0;
             let period = 'AM';
             
-            // Extract hours and minutes from common formats
             if (timeString.includes(':')) {
-                // Format: "14:30" or "2:30 PM"
                 const parts = timeString.split(':');
                 hours = parseInt(parts[0], 10);
                 
-                // Handle minutes which might include AM/PM
                 if (parts[1].includes('AM') || parts[1].includes('PM')) {
                     const minParts = parts[1].split(' ');
                     minutes = parseInt(minParts[0], 10);
@@ -692,16 +954,13 @@
                     minutes = parseInt(parts[1], 10);
                 }
             } else if (timeString.includes('AM') || timeString.includes('PM')) {
-                // Format: "2 PM" or "2PM"
                 const parts = timeString.replace(/\s+/g, '').split(/AM|PM/);
                 hours = parseInt(parts[0], 10);
                 period = timeString.includes('AM') ? 'AM' : 'PM';
             } else {
-                // Assume simple hour format "14" or "2"
                 hours = parseInt(timeString, 10);
             }
             
-            // Convert to 12-hour format if needed
             if (hours > 12) {
                 hours = hours - 12;
                 period = 'PM';
@@ -712,7 +971,6 @@
                 period = 'AM';
             }
             
-            // Format the result
             if (isNaN(minutes) || minutes === 0) {
                 return `${hours} ${period}`;
             } else {
@@ -720,9 +978,72 @@
             }
         }
         
+        // Helper function to calculate distance between two coordinates
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            if (!lat1 || !lon1 || !lat2 || !lon2 || 
+                isNaN(lat1) || isNaN(lon1) || isNaN(lat2) || isNaN(lon2)) {
+                return null;
+            }
+            
+            const R = 6371;
+            const dLat = deg2rad(lat2 - lat1);
+            const dLon = deg2rad(lon2 - lon1);
+            const a = 
+                Math.sin(dLat/2) * Math.sin(dLat/2) +
+                Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) * 
+                Math.sin(dLon/2) * Math.sin(dLon/2); 
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a)); 
+            const distance = R * c;
+            
+            return distance;
+        }
+        
+        // Helper function to convert degrees to radians
+        function deg2rad(deg) {
+            return deg * (Math.PI/180);
+        }
+        
+        // Helper function to get user location from localStorage
+        function getUserLocation() {
+            try {
+                const userLocationStr = localStorage.getItem('userLocation');
+                if (userLocationStr) {
+                    return JSON.parse(userLocationStr);
+                }
+                return null;
+            } catch (error) {
+                console.error('Error getting user location:', error);
+                return null;
+            }
+        }
+        
+        // Helper function to format distance
+        function formatDistance(distance) {
+            if (distance === null) return 'Distance unavailable';
+            
+            let distanceText = '';
+            let distanceClass = '';
+            
+            if (distance < 1) {
+                const meters = Math.round(distance * 1000);
+                distanceClass = 'distance-close';
+                distanceText = `${meters} m away`;
+            } else if (distance < 5) {
+                distanceClass = 'distance-medium';
+                distanceText = `${distance.toFixed(1)} km away`;
+            } else {
+                distanceClass = 'distance-far';
+                distanceText = `${Math.round(distance)} km away`;
+            }
+            
+            return {
+                text: distanceText,
+                class: distanceClass
+            };
+        }
+        
         // Event Listeners
         document.addEventListener('DOMContentLoaded', () => {
-            // Get store ID from URL
             currentStoreId = getStoreIdFromUrl();
             
             if (!currentStoreId) {
@@ -733,12 +1054,21 @@
                 return;
             }
             
-            // Load store details
             loadStoreDetails(currentStoreId);
             
-            // Back button event
             backBtn.addEventListener('click', () => {
                 window.history.back();
+            });
+            
+            // Order button click event
+            orderBtn.addEventListener('click', () => {
+                if (isOpen === false) {
+                    showToast('This store is currently closed. You cannot place orders.', 'error');
+                    return;
+                }
+                
+                // Navigate to cart page with store ID
+                window.location.href = `cart.html?storeId=${currentStoreId}`;
             });
         });
     </script>
