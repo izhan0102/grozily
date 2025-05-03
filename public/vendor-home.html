@@ -2147,10 +2147,7 @@
                             statusHTML = `<span class="request-status approved">Approved</span>`;
                             const cartStatus = request.addedToCart ? 
                                 `<p><strong>Status:</strong> Added to customer's cart</p>` : 
-                                `<p><strong>Status:</strong> <span class="warning-text">Not yet in cart</span> 
-                                <button class="btn btn-sm btn-primary" onclick="forceAddToCart('${request.id}')">
-                                    <i class="fas fa-shopping-cart"></i> Force Add to Cart
-                                </button></p>`;
+                                `<p><strong>Status:</strong> <span class="warning-text">Not yet in cart</span>`;
                             
                             // Add recovery note if applicable
                             const recoveryNote = request.recoveryAttempt ? 

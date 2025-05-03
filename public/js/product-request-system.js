@@ -37,6 +37,8 @@ const ProductRequestSystem = (function() {
     let notificationListeners = [];
     let isInitialized = false;
     let pendingNotifications = [];
+    let processedNotifications = new Set(); // Track processed notification IDs
+    let requestProcessedStatus = {}; // Track which requests have been processed by status
     
     // DOM elements for notifications
     let notificationContainer = null;
@@ -344,9 +346,36 @@ const ProductRequestSystem = (function() {
             return;
         }
         
+        // Check if we've already processed this notification
+        if (processedNotifications.has(notificationId)) {
+            console.log('[ProductRequestSystem] Notification already processed, skipping:', notificationId);
+            return;
+        }
+        
         console.log('[ProductRequestSystem] Processing notification:', notification);
         
         const { type, title, message, requestId, status, price } = notification;
+        
+        // Also check if we've already processed a notification for this request with this status
+        const requestStatusKey = `${requestId}-${status}`;
+        if (requestProcessedStatus[requestStatusKey]) {
+            console.log('[ProductRequestSystem] Request already processed with this status, skipping:', requestStatusKey);
+            processedNotifications.add(notificationId);
+            
+            // Mark notification as read without showing it again
+            if (currentUser) {
+                firebase.database().ref(`notifications/${currentUser.uid}/${notificationId}`).update({
+                    read: true,
+                    readAt: firebase.database.ServerValue.TIMESTAMP,
+                    skipped: true
+                });
+            }
+            return;
+        }
+        
+        // Mark as processed immediately to prevent duplicates even in case of errors
+        processedNotifications.add(notificationId);
+        requestProcessedStatus[requestStatusKey] = true;
         
         // Show notification based on type
         if (type === 'product_request') {
@@ -407,9 +436,28 @@ const ProductRequestSystem = (function() {
             .once('value', function(snapshot) {
                 if (snapshot.exists()) {
                     console.log('[ProductRequestSystem] Found unread notifications');
+                    
+                    // Process notifications one at a time with a delay to prevent flooding
+                    const notificationArray = [];
                     snapshot.forEach(function(childSnapshot) {
-                        processNotification(childSnapshot.val(), childSnapshot.key);
+                        notificationArray.push({
+                            id: childSnapshot.key,
+                            data: childSnapshot.val()
+                        });
                     });
+                    
+                    // Sort notifications by creation time (oldest first)
+                    notificationArray.sort((a, b) => {
+                        const timeA = a.data.createdAt || 0;
+                        const timeB = b.data.createdAt || 0;
+                        return timeA - timeB;
+                    });
+                    
+                    // Process only the first notification now, to avoid overwhelming the user
+                    if (notificationArray.length > 0) {
+                        const notification = notificationArray[0];
+                        processNotification(notification.data, notification.id);
+                    }
                 } else {
                     console.log('[ProductRequestSystem] No unread notifications found');
                 }

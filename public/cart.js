@@ -618,7 +618,7 @@ function updateCartInDatabase() {
     }
     
     // Reference to user's cart in Firebase
-    const cartRef = database.ref(`carts/${userId}/items`);
+    const cartRef = database.ref(`carts/${userId}`);
     
     // Convert cart items array to object with item IDs as keys
     const cartItemsObj = {};
@@ -627,15 +627,17 @@ function updateCartInDatabase() {
         cartItemsObj[itemId] = item;
     });
     
-    // Update cart in database
-    cartRef.set(cartItemsObj)
-        .then(() => {
-            console.log('Cart updated successfully');
-        })
-        .catch(error => {
-            console.error('Error updating cart:', error);
-            showToast('Failed to update cart', 'error');
-        });
+    // Set to the correct structure with 'items' property
+    cartRef.set({
+        items: cartItemsObj
+    })
+    .then(() => {
+        console.log('Cart updated successfully');
+    })
+    .catch(error => {
+        console.error('Error updating cart:', error);
+        showToast('Failed to update cart', 'error');
+    });
 }
 
 // Apply discount
