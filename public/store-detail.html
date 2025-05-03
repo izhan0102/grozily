@@ -1331,7 +1331,8 @@
                 userEmail: user.email,
                 userName: user.displayName || user.email,
                 status: 'pending', // pending, approved, rejected
-                createdAt: firebase.database.ServerValue.TIMESTAMP
+                createdAt: firebase.database.ServerValue.TIMESTAMP,
+                imageURL: 'https://via.placeholder.com/300x300?text=Custom+Request' // Consistent image URL for custom requests
             };
             
             requestRef.set(requestData)

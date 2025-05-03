@@ -1411,6 +1411,9 @@
                     // Load product requests
                     loadProductRequests();
                     
+                    // Cleanup any buggy products that were added to store details
+                    cleanupBuggyProducts();
+                    
                     hideLoader();
                 })
                 .catch((error) => {
@@ -2088,8 +2091,15 @@
                             statusHTML = `<span class="request-status approved">Approved</span>`;
                             actionsHTML = `
                                 <div class="request-details">
-                                    <p><strong>Price:</strong> ₹${request.price.toFixed(2)}</p>
-                                    <p><strong>Added to cart:</strong> ${request.addedToCart ? 'Yes' : 'No'}</p>
+                                    <div style="display: flex; align-items: center; margin-bottom: 10px;">
+                                        <div style="width: 50px; height: 50px; background-color: #f8f9fa; border-radius: 5px; display: flex; align-items: center; justify-content: center; margin-right: 10px; overflow: hidden;">
+                                            <img src="https://via.placeholder.com/300x300?text=Custom+Request" alt="Product Icon" style="width: 100%; height: 100%; object-fit: cover;">
+                                        </div>
+                                        <div>
+                                            <p><strong>Price:</strong> ₹${request.price.toFixed(2)}</p>
+                                            <p><strong>Status:</strong> Added to customer's cart</p>
+                                        </div>
+                                    </div>
                                 </div>
                             `;
                         } else if (request.status === 'rejected') {
@@ -2166,7 +2176,12 @@
             // Get the current vendor and request details
             const currentUserId = firebase.auth().currentUser.uid;
             let requestData;
-            const vendorId = currentUserId; // Directly use the vendor's user ID as store ID
+            
+            // Show loading state
+            const submitBtn = document.querySelector(`#price-input-${requestId} .btn-primary`);
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            submitBtn.disabled = true;
             
             // Get the request data first
             firebase.database().ref(`product_requests/${requestId}`).once('value')
@@ -2177,41 +2192,22 @@
                         throw new Error('Request not found');
                     }
                     
-                    // Create a new product from the request
-                    const productRef = firebase.database().ref(`vendor_products/${vendorId}`).push();
-                    
-                    const productData = {
-                        name: requestData.productName,
-                        description: requestData.description || '',
-                        price: price,
-                        imageURL: 'https://via.placeholder.com/300x300?text=Custom+Product',
-                        category: 'Custom Request',
-                        isAvailable: true,
-                        isFromRequest: true,
-                        requestId: requestId,
-                        createdAt: firebase.database.ServerValue.TIMESTAMP
-                    };
-                    
-                    return productRef.set(productData);
-                })
-                .then(() => {
                     // Update the request status
                     return firebase.database().ref(`product_requests/${requestId}`).update({
                         status: 'approved',
                         price: price,
-                        updatedAt: firebase.database.ServerValue.TIMESTAMP,
-                        productId: vendorId  // Use this to link to the product
+                        updatedAt: firebase.database.ServerValue.TIMESTAMP
                     });
                 })
                 .then(() => {
-                    // Automatically add to user's cart
+                    // Directly add to user's cart without creating a store product
                     return firebase.database().ref(`carts/${requestData.userId}`).push({
                         productName: requestData.productName,
                         quantity: requestData.quantity,
                         price: price,
                         storeId: requestData.storeId,
                         storeName: requestData.storeName,
-                        imageURL: 'https://via.placeholder.com/300x300?text=Custom+Product',
+                        imageURL: requestData.imageURL || 'https://via.placeholder.com/300x300?text=Custom+Request',
                         isCustom: true,
                         requestId: requestId,
                         addedAt: firebase.database.ServerValue.TIMESTAMP
@@ -2224,6 +2220,10 @@
                     });
                 })
                 .then(() => {
+                    // Reset button state
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                    
                     // Reload the requests
                     loadProductRequests();
                     alert('Request approved and product added to customer\'s cart!');
@@ -2231,6 +2231,62 @@
                 .catch((error) => {
                     console.error('Error approving request:', error);
                     alert('Error approving request: ' + error.message);
+                    
+                    // Reset button state
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                });
+        }
+
+        // Clean up any buggy products that were added to store by mistake
+        function cleanupBuggyProducts() {
+            const currentUserId = firebase.auth().currentUser.uid;
+            
+            // Get all product requests that were approved
+            firebase.database().ref('product_requests')
+                .orderByChild('storeId')
+                .equalTo(currentUserId)
+                .once('value')
+                .then((snapshot) => {
+                    if (!snapshot.exists()) return;
+                    
+                    // For each approved request, remove the corresponding product from vendor_products
+                    const requestsToCheck = [];
+                    snapshot.forEach((childSnapshot) => {
+                        const request = childSnapshot.val();
+                        if (request.status === 'approved' && request.requestId) {
+                            requestsToCheck.push({
+                                id: childSnapshot.key,
+                                requestId: request.requestId
+                            });
+                        }
+                    });
+                    
+                    // Remove products that were added by bug
+                    if (requestsToCheck.length > 0) {
+                        return firebase.database().ref(`vendor_products/${currentUserId}`).once('value')
+                            .then((productsSnapshot) => {
+                                if (!productsSnapshot.exists()) return;
+                                
+                                const promises = [];
+                                productsSnapshot.forEach((productSnapshot) => {
+                                    const product = productSnapshot.val();
+                                    if (product.isFromRequest && product.requestId) {
+                                        // This was added by the bug, so remove it
+                                        promises.push(
+                                            firebase.database().ref(`vendor_products/${currentUserId}/${productSnapshot.key}`).remove()
+                                        );
+                                    }
+                                });
+                                
+                                if (promises.length > 0) {
+                                    return Promise.all(promises);
+                                }
+                            });
+                    }
+                })
+                .catch((error) => {
+                    console.error('Error cleaning up buggy products:', error);
                 });
         }
 
