@@ -1316,8 +1316,21 @@
             measurementId: "G-83S7ZWXEB9"
         };
         
-        // Initialize Firebase
+        // Initialize Firebase OPTIONAL - if you've initialized Firebase elsewhere
         firebase.initializeApp(firebaseConfig);
+        
+        // Load product requests when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            firebase.auth().onAuthStateChanged(user => {
+                if (user) {
+                    loadVendorData(user.uid);
+                    loadProductRequests(); 
+                    loadRecentOrders();
+                } else {
+                    window.location.href = "vendor-login.html";
+                }
+            });
+        });
 
         // DOM Elements
         const loader = document.getElementById('loader');
@@ -2201,20 +2214,27 @@
         // Function to reject a product request
         function rejectRequest(requestId) {
             if (confirm('Are you sure you want to reject this product request?')) {
-                // Update the status in Firebase
-                firebase.database().ref(`product_requests/${requestId}`).update({
-                    status: 'rejected',
-                    updatedAt: firebase.database.ServerValue.TIMESTAMP
-                })
-                .then(() => {
-                    // Reload the requests
-                    loadProductRequests();
-                    alert('Request rejected successfully.');
-                })
-                .catch((error) => {
-                    console.error('Error rejecting request:', error);
-                    alert('Error rejecting request: ' + error.message);
-                });
+                // Get optional reason
+                const reason = prompt('Please provide a reason for rejecting (optional):');
+                
+                // Use ProductRequestSystem to reject the request
+                ProductRequestSystem.rejectProductRequest(requestId, reason)
+                    .then(() => {
+                        // Show notification
+                        ProductRequestSystem.showNotification({
+                            title: 'Request Rejected',
+                            message: 'You have rejected this product request.',
+                            type: 'info',
+                            duration: 5000
+                        });
+                        
+                        // Reload the requests
+                        loadProductRequests();
+                    })
+                    .catch((error) => {
+                        console.error('Error rejecting request:', error);
+                        alert('Error rejecting request: ' + error.message);
+                    });
             }
         }
 
@@ -2228,94 +2248,24 @@
                 return;
             }
             
-            // Get the current vendor and request details
-            const currentUserId = firebase.auth().currentUser.uid;
-            let requestData;
-            
             // Show loading state
             const submitBtn = document.querySelector(`#price-input-${requestId} .btn-primary`);
             const originalBtnText = submitBtn.innerHTML;
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
             submitBtn.disabled = true;
             
-            // Get the request data first
-            firebase.database().ref(`product_requests/${requestId}`).once('value')
-                .then((snapshot) => {
-                    requestData = snapshot.val();
+            // Use ProductRequestSystem to approve the request
+            ProductRequestSystem.approveProductRequest(requestId, price)
+                .then(() => {
+                    console.log('Request approved successfully');
                     
-                    if (!requestData) {
-                        throw new Error('Request not found');
-                    }
-                    
-                    if (!requestData.userId) {
-                        throw new Error('User ID not found in request data');
-                    }
-                    
-                    console.log('Processing request:', requestId, 'for user:', requestData.userId);
-                    
-                    // Update the request status
-                    return firebase.database().ref(`product_requests/${requestId}`).update({
-                        status: 'approved',
-                        price: price,
-                        updatedAt: firebase.database.ServerValue.TIMESTAMP
+                    // Show success message
+                    ProductRequestSystem.showNotification({
+                        title: 'Request Approved',
+                        message: `You've approved this product request and added it to the customer's cart.`,
+                        type: 'success',
+                        duration: 5000
                     });
-                })
-                .then(() => {
-                    console.log('Request status updated, adding to cart for user:', requestData.userId);
-                    
-                    // Create cart item data
-                    const cartItemData = {
-                        productName: requestData.productName,
-                        quantity: parseInt(requestData.quantity) || 1,
-                        price: price,
-                        storeId: requestData.storeId,
-                        storeName: requestData.storeName,
-                        imageURL: requestData.imageURL || 'https://via.placeholder.com/300x300?text=Custom+Request',
-                        isCustom: true,
-                        requestId: requestId,
-                        addedAt: firebase.database.ServerValue.TIMESTAMP
-                    };
-                    
-                    // First check if user has a cart
-                    return firebase.database().ref(`carts/${requestData.userId}`).once('value')
-                        .then(cartSnapshot => {
-                            // If cart doesn't exist, create it with the new item
-                            if (!cartSnapshot.exists()) {
-                                return firebase.database().ref(`carts/${requestData.userId}`).push(cartItemData);
-                            } else {
-                                // Check if request is already in cart
-                                let alreadyInCart = false;
-                                cartSnapshot.forEach(childSnapshot => {
-                                    const cartItem = childSnapshot.val();
-                                    if (cartItem.requestId === requestId) {
-                                        alreadyInCart = true;
-                                    }
-                                });
-                                
-                                // If not already in cart, add it
-                                if (!alreadyInCart) {
-                                    return firebase.database().ref(`carts/${requestData.userId}`).push(cartItemData);
-                                } else {
-                                    console.log('Item already in cart, updating status only');
-                                    return Promise.resolve();
-                                }
-                            }
-                        });
-                })
-                .then(() => {
-                    console.log('Successfully added to cart, updating addedToCart flag');
-                    
-                    // Debug cart status after adding item
-                    debugCartIssue(requestData.userId);
-                    
-                    // Update the request to indicate it was added to cart
-                    return firebase.database().ref(`product_requests/${requestId}`).update({
-                        addedToCart: true
-                    });
-                })
-                .then(() => {
-                    // Show success alert with more details
-                    alert(`Request approved! Product "${requestData.productName}" has been added to the customer's cart at ₹${price}.`);
                     
                     // Reset button state
                     submitBtn.innerHTML = originalBtnText;
@@ -2326,44 +2276,7 @@
                 })
                 .catch((error) => {
                     console.error('Error approving request:', error);
-                    
-                    // Attempt recovery - force add to cart if that's where it failed
-                    if (requestData && requestData.userId) {
-                        console.log('Attempting recovery - forcing item to cart');
-                        
-                        // Create cart item
-                        const cartItemData = {
-                            productName: requestData.productName,
-                            quantity: parseInt(requestData.quantity) || 1,
-                            price: price,
-                            storeId: requestData.storeId,
-                            storeName: requestData.storeName,
-                            imageURL: requestData.imageURL || 'https://via.placeholder.com/300x300?text=Custom+Request',
-                            isCustom: true,
-                            requestId: requestId,
-                            addedAt: firebase.database.ServerValue.TIMESTAMP,
-                            recoveryAttempt: true
-                        };
-                        
-                        // Force create/update cart
-                        firebase.database().ref(`carts/${requestData.userId}`).push(cartItemData)
-                            .then(() => {
-                                firebase.database().ref(`product_requests/${requestId}`).update({
-                                    addedToCart: true,
-                                    status: 'approved',
-                                    price: price
-                                });
-                                
-                                alert('Recovery successful! The product has been added to the customer\'s cart.');
-                                loadProductRequests();
-                            })
-                            .catch(recoveryError => {
-                                console.error('Recovery failed:', recoveryError);
-                                alert('Error approving request: ' + error.message + '\nRecovery attempt also failed.');
-                            });
-                    } else {
-                        alert('Error approving request: ' + error.message);
-                    }
+                    alert('Error approving request: ' + error.message);
                     
                     // Reset button state
                     submitBtn.innerHTML = originalBtnText;
@@ -2649,5 +2562,8 @@
                 });
         }
     </script>
+    
+    <!-- Add the product request system JS -->
+    <script src="js/product-request-system.js"></script>
 </body>
 </html> 

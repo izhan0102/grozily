@@ -7,6 +7,29 @@
  * 3. Automatically adding approved products to customer carts
  */
 
+// Firebase configuration (in case Firebase isn't initialized elsewhere)
+try {
+    if (!firebase.apps.length) {
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+            authDomain: "grozily2.firebaseapp.com",
+            databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+            projectId: "grozily2",
+            storageBucket: "grozily2.firebasestorage.app",
+            messagingSenderId: "665300145710",
+            appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+            measurementId: "G-83S7ZWXEB9"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        console.log('[ProductRequestSystem] Firebase initialized');
+    } else {
+        console.log('[ProductRequestSystem] Firebase already initialized');
+    }
+} catch (error) {
+    console.error('[ProductRequestSystem] Error initializing Firebase:', error);
+}
+
 // Initialize the Product Request System
 const ProductRequestSystem = (function() {
     // Private variables
@@ -22,7 +45,7 @@ const ProductRequestSystem = (function() {
     function init() {
         if (isInitialized) return;
         
-        console.log('Initializing Product Request System...');
+        console.log('[ProductRequestSystem] Initializing...');
         
         // Create notification container if it doesn't exist
         createNotificationContainer();
@@ -31,7 +54,7 @@ const ProductRequestSystem = (function() {
         firebase.auth().onAuthStateChanged(function(user) {
             if (user) {
                 currentUser = user;
-                console.log('User authenticated:', user.uid);
+                console.log('[ProductRequestSystem] User authenticated:', user.uid);
                 
                 // Listen for notifications for this user
                 setupNotificationListener();
@@ -40,7 +63,7 @@ const ProductRequestSystem = (function() {
                 checkPendingRequests();
             } else {
                 currentUser = null;
-                console.log('User not authenticated');
+                console.log('[ProductRequestSystem] User not authenticated');
                 
                 // Clear any notification listeners
                 clearNotificationListeners();
@@ -48,6 +71,7 @@ const ProductRequestSystem = (function() {
         });
         
         isInitialized = true;
+        console.log('[ProductRequestSystem] Initialization complete');
     }
     
     // Create notification container
@@ -55,8 +79,11 @@ const ProductRequestSystem = (function() {
         // Check if container already exists
         if (document.getElementById('grozily-notification-container')) {
             notificationContainer = document.getElementById('grozily-notification-container');
+            console.log('[ProductRequestSystem] Using existing notification container');
             return;
         }
+        
+        console.log('[ProductRequestSystem] Creating notification container');
         
         // Create container
         notificationContainer = document.createElement('div');
@@ -72,6 +99,7 @@ const ProductRequestSystem = (function() {
         
         // Add to body
         document.body.appendChild(notificationContainer);
+        console.log('[ProductRequestSystem] Notification container added to DOM');
         
         // Create stylesheet for notifications
         const style = document.createElement('style');
@@ -182,11 +210,17 @@ const ProductRequestSystem = (function() {
             }
         `;
         document.head.appendChild(style);
+        console.log('[ProductRequestSystem] Notification styles added to DOM');
     }
     
     // Show notification
     function showNotification(options) {
-        if (!notificationContainer) createNotificationContainer();
+        console.log('[ProductRequestSystem] Showing notification:', options);
+        
+        if (!notificationContainer) {
+            console.log('[ProductRequestSystem] Creating notification container on demand');
+            createNotificationContainer();
+        }
         
         const { title, message, type = 'info', duration = 5000, actions = [] } = options;
         
@@ -234,10 +268,12 @@ const ProductRequestSystem = (function() {
         
         // Add to container
         notificationContainer.appendChild(notification);
+        console.log('[ProductRequestSystem] Notification added to container');
         
         // Trigger animation
         setTimeout(() => {
             notification.classList.add('show');
+            console.log('[ProductRequestSystem] Notification animation triggered');
         }, 10);
         
         // Auto close after duration
@@ -252,24 +288,33 @@ const ProductRequestSystem = (function() {
     
     // Close notification
     function closeNotification(notification) {
+        console.log('[ProductRequestSystem] Closing notification');
         notification.classList.remove('show');
         setTimeout(() => {
             notification.remove();
+            console.log('[ProductRequestSystem] Notification removed from DOM');
         }, 300);
     }
     
     // Setup notification listener for current user
     function setupNotificationListener() {
-        if (!currentUser) return;
+        if (!currentUser) {
+            console.log('[ProductRequestSystem] Cannot setup notification listener: No current user');
+            return;
+        }
+        
+        console.log('[ProductRequestSystem] Setting up notification listener for user:', currentUser.uid);
         
         // Clear existing listeners first
         clearNotificationListeners();
         
         // Listen for product request notifications
         const notificationsRef = firebase.database().ref(`notifications/${currentUser.uid}`);
+        console.log('[ProductRequestSystem] Listening at path:', `notifications/${currentUser.uid}`);
+        
         const notificationListener = notificationsRef.on('child_added', function(snapshot) {
             const notification = snapshot.val();
-            console.log('New notification received:', notification);
+            console.log('[ProductRequestSystem] New notification received:', notification);
             
             // Process notification
             processNotification(notification, snapshot.key);
@@ -279,10 +324,13 @@ const ProductRequestSystem = (function() {
             ref: notificationsRef,
             listener: notificationListener
         });
+        
+        console.log('[ProductRequestSystem] Notification listener setup complete');
     }
     
     // Clear notification listeners
     function clearNotificationListeners() {
+        console.log('[ProductRequestSystem] Clearing notification listeners');
         notificationListeners.forEach(listener => {
             listener.ref.off('child_added', listener.listener);
         });
@@ -291,13 +339,19 @@ const ProductRequestSystem = (function() {
     
     // Process a notification
     function processNotification(notification, notificationId) {
-        if (!notification) return;
+        if (!notification) {
+            console.log('[ProductRequestSystem] Received empty notification');
+            return;
+        }
+        
+        console.log('[ProductRequestSystem] Processing notification:', notification);
         
         const { type, title, message, requestId, status, price } = notification;
         
         // Show notification based on type
         if (type === 'product_request') {
             if (status === 'approved') {
+                console.log('[ProductRequestSystem] Showing approved request notification');
                 // Product request approved
                 showNotification({
                     title: title || 'Product Request Approved!',
@@ -316,6 +370,7 @@ const ProductRequestSystem = (function() {
                     ]
                 });
             } else if (status === 'rejected') {
+                console.log('[ProductRequestSystem] Showing rejected request notification');
                 // Product request rejected
                 showNotification({
                     title: title || 'Product Request Rejected',
@@ -328,6 +383,7 @@ const ProductRequestSystem = (function() {
         
         // Mark notification as read
         if (currentUser) {
+            console.log('[ProductRequestSystem] Marking notification as read:', notificationId);
             firebase.database().ref(`notifications/${currentUser.uid}/${notificationId}`).update({
                 read: true,
                 readAt: firebase.database.ServerValue.TIMESTAMP
@@ -337,7 +393,12 @@ const ProductRequestSystem = (function() {
     
     // Check for pending product requests that need action
     function checkPendingRequests() {
-        if (!currentUser) return;
+        if (!currentUser) {
+            console.log('[ProductRequestSystem] Cannot check pending requests: No current user');
+            return;
+        }
+        
+        console.log('[ProductRequestSystem] Checking for pending requests for user:', currentUser.uid);
         
         // Check for unread notifications
         firebase.database().ref(`notifications/${currentUser.uid}`)
@@ -345,18 +406,23 @@ const ProductRequestSystem = (function() {
             .equalTo(false)
             .once('value', function(snapshot) {
                 if (snapshot.exists()) {
-                    console.log('Found unread notifications');
+                    console.log('[ProductRequestSystem] Found unread notifications');
                     snapshot.forEach(function(childSnapshot) {
                         processNotification(childSnapshot.val(), childSnapshot.key);
                     });
+                } else {
+                    console.log('[ProductRequestSystem] No unread notifications found');
                 }
             });
     }
     
     // Submit a product request
     function submitProductRequest(requestData) {
+        console.log('[ProductRequestSystem] Submitting product request:', requestData);
+        
         return new Promise((resolve, reject) => {
             if (!currentUser) {
+                console.error('[ProductRequestSystem] User not authenticated');
                 reject(new Error('User not authenticated'));
                 return;
             }
@@ -364,6 +430,7 @@ const ProductRequestSystem = (function() {
             const { storeId, productName, description, quantity } = requestData;
             
             if (!storeId || !productName) {
+                console.error('[ProductRequestSystem] Missing required fields');
                 reject(new Error('Store ID and product name are required'));
                 return;
             }
@@ -373,6 +440,8 @@ const ProductRequestSystem = (function() {
                 .then((snapshot) => {
                     const store = snapshot.val();
                     const storeName = store ? store.storeName || store.name || 'Unknown Store' : 'Unknown Store';
+                    
+                    console.log('[ProductRequestSystem] Retrieved store data:', store ? store.storeName : 'Unknown');
                     
                     // Create request in Firebase
                     const requestRef = firebase.database().ref('product_requests').push();
@@ -391,14 +460,17 @@ const ProductRequestSystem = (function() {
                         imageURL: 'https://via.placeholder.com/300x300?text=Custom+Request'
                     };
                     
+                    console.log('[ProductRequestSystem] Saving request to Firebase with ID:', requestRef.key);
+                    
                     // Save request
                     return requestRef.set(request);
                 })
                 .then(() => {
+                    console.log('[ProductRequestSystem] Request submitted successfully');
                     resolve({ success: true });
                 })
                 .catch((error) => {
-                    console.error('Error submitting product request:', error);
+                    console.error('[ProductRequestSystem] Error submitting product request:', error);
                     reject(error);
                 });
         });
@@ -406,8 +478,11 @@ const ProductRequestSystem = (function() {
     
     // Approve a product request (vendor only)
     function approveProductRequest(requestId, price) {
+        console.log('[ProductRequestSystem] Approving product request:', requestId, 'with price:', price);
+        
         return new Promise((resolve, reject) => {
             if (!currentUser) {
+                console.error('[ProductRequestSystem] User not authenticated');
                 reject(new Error('User not authenticated'));
                 return;
             }
@@ -416,17 +491,21 @@ const ProductRequestSystem = (function() {
             firebase.database().ref(`product_requests/${requestId}`).once('value')
                 .then((snapshot) => {
                     if (!snapshot.exists()) {
+                        console.error('[ProductRequestSystem] Request not found:', requestId);
                         throw new Error('Request not found');
                     }
                     
                     const request = snapshot.val();
+                    console.log('[ProductRequestSystem] Retrieved request data:', request);
                     
                     // Check if this vendor owns this request
                     if (request.storeId !== currentUser.uid) {
+                        console.error('[ProductRequestSystem] Permission denied for request:', requestId);
                         throw new Error('You do not have permission to approve this request');
                     }
                     
                     // Update request status
+                    console.log('[ProductRequestSystem] Updating request status to approved');
                     return firebase.database().ref(`product_requests/${requestId}`).update({
                         status: 'approved',
                         price: price,
@@ -434,10 +513,12 @@ const ProductRequestSystem = (function() {
                     });
                 })
                 .then((requestSnapshot) => {
+                    console.log('[ProductRequestSystem] Getting updated request data');
                     return firebase.database().ref(`product_requests/${requestId}`).once('value');
                 })
                 .then((snapshot) => {
                     const request = snapshot.val();
+                    console.log('[ProductRequestSystem] Adding to customer cart. User ID:', request.userId);
                     
                     // Add to customer's cart
                     const cartItemData = {
@@ -452,13 +533,17 @@ const ProductRequestSystem = (function() {
                         addedAt: firebase.database.ServerValue.TIMESTAMP
                     };
                     
+                    console.log('[ProductRequestSystem] Cart item data:', cartItemData);
+                    
                     return firebase.database().ref(`carts/${request.userId}`).push(cartItemData);
                 })
                 .then(() => {
+                    console.log('[ProductRequestSystem] Item added to cart successfully, getting request data for notification');
                     return firebase.database().ref(`product_requests/${requestId}`).once('value');
                 })
                 .then((snapshot) => {
                     const request = snapshot.val();
+                    console.log('[ProductRequestSystem] Creating notification for user:', request.userId);
                     
                     // Create notification for customer
                     const notification = {
@@ -472,13 +557,33 @@ const ProductRequestSystem = (function() {
                         read: false
                     };
                     
+                    console.log('[ProductRequestSystem] Notification data:', notification);
                     return firebase.database().ref(`notifications/${request.userId}`).push(notification);
                 })
                 .then(() => {
+                    console.log('[ProductRequestSystem] Notification created successfully');
+                    
+                    // Debug: Check if the notification was actually saved
+                    return firebase.database().ref(`product_requests/${requestId}`).once('value');
+                })
+                .then((snapshot) => {
+                    const request = snapshot.val();
+                    console.log('[ProductRequestSystem] Final check - getting notification data for user', request.userId);
+                    
+                    return firebase.database().ref(`notifications/${request.userId}`).once('value');
+                })
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        console.log('[ProductRequestSystem] Notifications exist for user:', snapshot.val());
+                    } else {
+                        console.log('[ProductRequestSystem] No notifications found for user');
+                    }
+                    
+                    console.log('[ProductRequestSystem] Approval process completed successfully');
                     resolve({ success: true });
                 })
                 .catch((error) => {
-                    console.error('Error approving product request:', error);
+                    console.error('[ProductRequestSystem] Error approving product request:', error);
                     reject(error);
                 });
         });
@@ -486,8 +591,11 @@ const ProductRequestSystem = (function() {
     
     // Reject a product request (vendor only)
     function rejectProductRequest(requestId, reason) {
+        console.log('[ProductRequestSystem] Rejecting product request:', requestId, 'with reason:', reason);
+        
         return new Promise((resolve, reject) => {
             if (!currentUser) {
+                console.error('[ProductRequestSystem] User not authenticated');
                 reject(new Error('User not authenticated'));
                 return;
             }
@@ -498,17 +606,21 @@ const ProductRequestSystem = (function() {
             firebase.database().ref(`product_requests/${requestId}`).once('value')
                 .then((snapshot) => {
                     if (!snapshot.exists()) {
+                        console.error('[ProductRequestSystem] Request not found:', requestId);
                         throw new Error('Request not found');
                     }
                     
                     requestData = snapshot.val();
+                    console.log('[ProductRequestSystem] Retrieved request data:', requestData);
                     
                     // Check if this vendor owns this request
                     if (requestData.storeId !== currentUser.uid) {
+                        console.error('[ProductRequestSystem] Permission denied for request:', requestId);
                         throw new Error('You do not have permission to reject this request');
                     }
                     
                     // Update request status
+                    console.log('[ProductRequestSystem] Updating request status to rejected');
                     return firebase.database().ref(`product_requests/${requestId}`).update({
                         status: 'rejected',
                         rejectionReason: reason || '',
@@ -516,6 +628,8 @@ const ProductRequestSystem = (function() {
                     });
                 })
                 .then(() => {
+                    console.log('[ProductRequestSystem] Creating notification for user:', requestData.userId);
+                    
                     // Create notification for customer
                     const notification = {
                         type: 'product_request',
@@ -529,13 +643,27 @@ const ProductRequestSystem = (function() {
                         read: false
                     };
                     
+                    console.log('[ProductRequestSystem] Notification data:', notification);
                     return firebase.database().ref(`notifications/${requestData.userId}`).push(notification);
                 })
                 .then(() => {
+                    console.log('[ProductRequestSystem] Notification created successfully');
+                    
+                    // Debug: Check if the notification was actually saved
+                    return firebase.database().ref(`notifications/${requestData.userId}`).once('value');
+                })
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        console.log('[ProductRequestSystem] Notifications exist for user:', snapshot.val());
+                    } else {
+                        console.log('[ProductRequestSystem] No notifications found for user');
+                    }
+                    
+                    console.log('[ProductRequestSystem] Rejection process completed successfully');
                     resolve({ success: true });
                 })
                 .catch((error) => {
-                    console.error('Error rejecting product request:', error);
+                    console.error('[ProductRequestSystem] Error rejecting product request:', error);
                     reject(error);
                 });
         });
@@ -543,8 +671,11 @@ const ProductRequestSystem = (function() {
     
     // Get active requests for a vendor
     function getVendorRequests() {
+        console.log('[ProductRequestSystem] Getting vendor requests');
+        
         return new Promise((resolve, reject) => {
             if (!currentUser) {
+                console.error('[ProductRequestSystem] User not authenticated');
                 reject(new Error('User not authenticated'));
                 return;
             }
@@ -563,6 +694,9 @@ const ProductRequestSystem = (function() {
                                 ...childSnapshot.val()
                             });
                         });
+                        console.log('[ProductRequestSystem] Found', requests.length, 'requests for vendor');
+                    } else {
+                        console.log('[ProductRequestSystem] No requests found for vendor');
                     }
                     
                     // Sort by created date (newest first)
@@ -571,7 +705,7 @@ const ProductRequestSystem = (function() {
                     resolve(requests);
                 })
                 .catch((error) => {
-                    console.error('Error getting vendor requests:', error);
+                    console.error('[ProductRequestSystem] Error getting vendor requests:', error);
                     reject(error);
                 });
         });
@@ -579,8 +713,11 @@ const ProductRequestSystem = (function() {
     
     // Get requests made by the current user
     function getUserRequests() {
+        console.log('[ProductRequestSystem] Getting user requests');
+        
         return new Promise((resolve, reject) => {
             if (!currentUser) {
+                console.error('[ProductRequestSystem] User not authenticated');
                 reject(new Error('User not authenticated'));
                 return;
             }
@@ -599,6 +736,9 @@ const ProductRequestSystem = (function() {
                                 ...childSnapshot.val()
                             });
                         });
+                        console.log('[ProductRequestSystem] Found', requests.length, 'requests for user');
+                    } else {
+                        console.log('[ProductRequestSystem] No requests found for user');
                     }
                     
                     // Sort by created date (newest first)
@@ -607,7 +747,7 @@ const ProductRequestSystem = (function() {
                     resolve(requests);
                 })
                 .catch((error) => {
-                    console.error('Error getting user requests:', error);
+                    console.error('[ProductRequestSystem] Error getting user requests:', error);
                     reject(error);
                 });
         });
@@ -627,5 +767,6 @@ const ProductRequestSystem = (function() {
 
 // Auto initialize when document is ready
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('[ProductRequestSystem] Document ready, initializing system');
     ProductRequestSystem.init();
 }); 

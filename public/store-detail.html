@@ -822,6 +822,48 @@
         </div>
     </div>
 
+    <!-- Toast Message -->
+    <div id="toast-message" class="toast-message">
+        <div class="toast-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="toast-text">Item added to cart</div>
+    </div>
+
+    <!-- Product Request Modal -->
+    <div id="product-request-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Request a Product</h3>
+                <button type="button" class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="product-request-form">
+                    <div class="form-group">
+                        <label for="product-name">Product Name</label>
+                        <input type="text" id="product-name" placeholder="e.g. Organic Tomatoes" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-description">Description (Optional)</label>
+                        <textarea id="product-description" placeholder="Describe the product you're looking for..."></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-quantity">Quantity</label>
+                        <div class="quantity-selector">
+                            <button type="button" class="quantity-btn decrease">-</button>
+                            <input type="number" id="product-quantity" value="1" min="1" max="10">
+                            <button type="button" class="quantity-btn increase">+</button>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="secondary-button close-modal">Cancel</button>
+                        <button type="submit" class="primary-button">Submit Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
@@ -1315,47 +1357,41 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
             submitBtn.disabled = true;
 
-            // Create product request in Firebase directly
-            const requestRef = firebase.database().ref('product_requests').push();
-            
-            // Get store data from already loaded storeData
-            const storeName = storeData ? storeData.storeName || storeData.name || 'Unknown Store' : 'Unknown Store';
-            
-            const requestData = {
+            // Use ProductRequestSystem to submit the request
+            ProductRequestSystem.submitProductRequest({
                 productName: productName,
                 description: productDescription || '',
                 quantity: parseInt(productQuantity) || 1,
-                storeId: currentStoreId,
-                storeName: storeName,
-                userId: user.uid,
-                userEmail: user.email,
-                userName: user.displayName || user.email,
-                status: 'pending', // pending, approved, rejected
-                createdAt: firebase.database.ServerValue.TIMESTAMP,
-                imageURL: 'https://via.placeholder.com/300x300?text=Custom+Request' // Consistent image URL for custom requests
-            };
-            
-            requestRef.set(requestData)
-                .then(() => {
-                    // Reset form and close modal
-                    document.getElementById('request-product-form').reset();
-                    document.getElementById('request-product-modal').style.display = 'none';
-                    
-                    // Show success message
-                    showToast('Product request submitted successfully!', 'success');
-                    
-                    // Reset button state
-                    submitBtn.innerHTML = originalBtnText;
-                    submitBtn.disabled = false;
-                })
-                .catch((error) => {
-                    console.error('Error submitting product request:', error);
-                    showToast('Error submitting request. Please try again.', 'error');
-                    
-                    // Reset button state
-                    submitBtn.innerHTML = originalBtnText;
-                    submitBtn.disabled = false;
+                storeId: currentStoreId
+            })
+            .then(() => {
+                // Reset form and close modal
+                document.getElementById('request-product-form').reset();
+                document.getElementById('request-product-modal').style.display = 'none';
+                
+                // Show success message
+                showToast('Product request submitted successfully!', 'success');
+                
+                // Show notification
+                ProductRequestSystem.showNotification({
+                    title: 'Request Submitted',
+                    message: `Your request for "${productName}" has been sent to the vendor.`,
+                    type: 'info',
+                    duration: 5000
                 });
+                
+                // Reset button state
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            })
+            .catch((error) => {
+                console.error('Error submitting product request:', error);
+                showToast('Error submitting request. Please try again.', 'error');
+                
+                // Reset button state
+                submitBtn.innerHTML = originalBtnText;
+                submitBtn.disabled = false;
+            });
         });
     </script>
 
@@ -1363,5 +1399,8 @@
         <i class="fas fa-shopping-cart"></i>
     </a>
     
+    <!-- Add the product request system JS -->
+    <script src="js/product-request-system.js"></script>
+    <script src="store-detail.js"></script>
 </body>
 </html> 
