@@ -1315,30 +1315,26 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
             submitBtn.disabled = true;
 
-            // Get store name for the request
-            firebase.database().ref(`stores/${currentStoreId}`).once('value')
-                .then((snapshot) => {
-                    const store = snapshot.val();
-                    const storeName = store ? store.name : 'Unknown Store';
-
-                    // Create product request in Firebase
-                    const requestRef = firebase.database().ref('product_requests').push();
-                    
-                    const requestData = {
-                        productName: productName,
-                        description: productDescription || '',
-                        quantity: parseInt(productQuantity) || 1,
-                        storeId: currentStoreId,
-                        storeName: storeName,
-                        userId: user.uid,
-                        userEmail: user.email,
-                        userName: user.displayName || user.email,
-                        status: 'pending', // pending, approved, rejected
-                        createdAt: firebase.database.ServerValue.TIMESTAMP
-                    };
-                    
-                    return requestRef.set(requestData);
-                })
+            // Create product request in Firebase directly
+            const requestRef = firebase.database().ref('product_requests').push();
+            
+            // Get store data from already loaded storeData
+            const storeName = storeData ? storeData.storeName || storeData.name || 'Unknown Store' : 'Unknown Store';
+            
+            const requestData = {
+                productName: productName,
+                description: productDescription || '',
+                quantity: parseInt(productQuantity) || 1,
+                storeId: currentStoreId,
+                storeName: storeName,
+                userId: user.uid,
+                userEmail: user.email,
+                userName: user.displayName || user.email,
+                status: 'pending', // pending, approved, rejected
+                createdAt: firebase.database.ServerValue.TIMESTAMP
+            };
+            
+            requestRef.set(requestData)
                 .then(() => {
                     // Reset form and close modal
                     document.getElementById('request-product-form').reset();

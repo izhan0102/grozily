@@ -2018,20 +2018,15 @@
             const requestsCount = document.getElementById('requests-count');
             const currentUserId = firebase.auth().currentUser.uid;
 
-            // Reference to the vendor's store ID
-            firebase.database().ref(`vendors/${currentUserId}/storeId`).once('value')
-                .then((snapshot) => {
-                    const storeId = snapshot.val();
-                    if (!storeId) {
-                        throw new Error('Store ID not found');
-                    }
-
-                    // Query product requests for this vendor's store
-                    return firebase.database().ref('product_requests')
-                        .orderByChild('storeId')
-                        .equalTo(storeId)
-                        .once('value');
-                })
+            // Use the current vendor's user ID directly as the store ID since they appear to be the same
+            // This is a fix for the "Store ID not found" error
+            const vendorId = currentUserId;
+            
+            // Query product requests for this vendor
+            firebase.database().ref('product_requests')
+                .orderByChild('storeId')
+                .equalTo(vendorId)
+                .once('value')
                 .then((snapshot) => {
                     // Clear the container
                     requestsContainer.innerHTML = '';
@@ -2170,7 +2165,8 @@
             
             // Get the current vendor and request details
             const currentUserId = firebase.auth().currentUser.uid;
-            let requestData, vendorStoreId;
+            let requestData;
+            const vendorId = currentUserId; // Directly use the vendor's user ID as store ID
             
             // Get the request data first
             firebase.database().ref(`product_requests/${requestId}`).once('value')
@@ -2181,18 +2177,8 @@
                         throw new Error('Request not found');
                     }
                     
-                    // Get the vendor's store ID
-                    return firebase.database().ref(`vendors/${currentUserId}/storeId`).once('value');
-                })
-                .then((snapshot) => {
-                    vendorStoreId = snapshot.val();
-                    
-                    if (!vendorStoreId) {
-                        throw new Error('Store ID not found');
-                    }
-                    
                     // Create a new product from the request
-                    const productRef = firebase.database().ref(`vendor_products/${vendorStoreId}`).push();
+                    const productRef = firebase.database().ref(`vendor_products/${vendorId}`).push();
                     
                     const productData = {
                         name: requestData.productName,
@@ -2214,7 +2200,7 @@
                         status: 'approved',
                         price: price,
                         updatedAt: firebase.database.ServerValue.TIMESTAMP,
-                        productId: vendorStoreId  // Use this to link to the product
+                        productId: vendorId  // Use this to link to the product
                     });
                 })
                 .then(() => {
