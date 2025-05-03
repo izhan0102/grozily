@@ -328,6 +328,17 @@
             color: #718096;
         }
 
+        .activity-list .empty-activity {
+            text-align: center;
+            padding: 30px 20px;
+            color: #A0AEC0;
+        }
+
+        .activity-list .empty-activity i {
+            font-size: 40px;
+            margin-bottom: 15px;
+        }
+
         /* Bottom Navigation */
         .bottom-nav {
             display: flex;
@@ -801,6 +812,153 @@
         .location-map .leaflet-bottom {
             z-index: 1000;
         }
+
+        /* Product Requests Section */
+        .product-requests {
+            margin-bottom: 80px;
+        }
+
+        .badge {
+            display: inline-block;
+            background-color: #805AD5;
+            color: white;
+            border-radius: 12px;
+            padding: 2px 8px;
+            font-size: 12px;
+            margin-left: 8px;
+        }
+
+        .product-requests-list {
+            background-color: white;
+            border-radius: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+            overflow: hidden;
+        }
+
+        .request-card {
+            padding: 15px;
+            border-bottom: 1px solid #EDF2F7;
+            transition: background-color 0.2s;
+        }
+
+        .request-card:last-child {
+            border-bottom: none;
+        }
+
+        .request-card:hover {
+            background-color: #F7FAFC;
+        }
+
+        .request-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .request-title {
+            font-weight: 600;
+            font-size: 16px;
+            color: #2D3748;
+        }
+
+        .request-time {
+            font-size: 12px;
+            color: #718096;
+        }
+
+        .request-user {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 10px;
+            font-size: 13px;
+            color: #4A5568;
+        }
+
+        .request-user i {
+            color: #805AD5;
+        }
+
+        .request-details {
+            background-color: #F7FAFC;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            margin-bottom: 12px;
+        }
+
+        .request-details p {
+            margin-bottom: 5px;
+        }
+
+        .request-details p:last-child {
+            margin-bottom: 0;
+        }
+
+        .request-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .request-status {
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 500;
+            display: inline-block;
+            margin-left: auto;
+        }
+
+        .request-status.pending {
+            background-color: #FFF5F5;
+            color: #E53E3E;
+        }
+
+        .request-status.approved {
+            background-color: #F0FFF4;
+            color: #38A169;
+        }
+
+        .price-input-wrapper {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            background-color: white;
+            border: 1px solid #E2E8F0;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .price-input-wrapper span {
+            padding: 0 10px;
+            background-color: #EDF2F7;
+            color: #4A5568;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            height: 100%;
+        }
+
+        .price-input {
+            flex: 1;
+            border: none;
+            padding: 8px 12px;
+            font-size: 14px;
+            outline: none;
+        }
+
+        .empty-requests {
+            text-align: center;
+            padding: 40px 20px;
+            color: #A0AEC0;
+        }
+
+        .empty-requests i {
+            font-size: 40px;
+            margin-bottom: 15px;
+            display: block;
+        }
     </style>
 </head>
 <body>
@@ -910,6 +1068,21 @@
                             <div class="activity-title">Account Login</div>
                             <div class="activity-time" id="login-time">Just now</div>
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product Requests -->
+            <div class="product-requests">
+                <h2 class="section-title">
+                    <i class="fas fa-clipboard-list"></i>
+                    Product Requests
+                    <span class="badge" id="requests-count">0</span>
+                </h2>
+                <div class="product-requests-list" id="product-requests-list">
+                    <div class="empty-requests">
+                        <i class="fas fa-inbox"></i>
+                        <p>No product requests yet</p>
                     </div>
                 </div>
             </div>
@@ -1234,6 +1407,9 @@
 
                     // Load dashboard data
                     loadDashboardData(user.uid);
+                    
+                    // Load product requests
+                    loadProductRequests();
                     
                     hideLoader();
                 })
@@ -1834,6 +2010,269 @@
                     console.error('Error searching for location:', error);
                     alert('Error searching for location');
                 });
+        }
+
+        // Load product requests
+        function loadProductRequests() {
+            const requestsContainer = document.getElementById('product-requests-list');
+            const requestsCount = document.getElementById('requests-count');
+            const currentUserId = firebase.auth().currentUser.uid;
+
+            // Reference to the vendor's store ID
+            firebase.database().ref(`vendors/${currentUserId}/storeId`).once('value')
+                .then((snapshot) => {
+                    const storeId = snapshot.val();
+                    if (!storeId) {
+                        throw new Error('Store ID not found');
+                    }
+
+                    // Query product requests for this vendor's store
+                    return firebase.database().ref('product_requests')
+                        .orderByChild('storeId')
+                        .equalTo(storeId)
+                        .once('value');
+                })
+                .then((snapshot) => {
+                    // Clear the container
+                    requestsContainer.innerHTML = '';
+
+                    if (!snapshot.exists()) {
+                        requestsContainer.innerHTML = `
+                            <div class="empty-requests">
+                                <i class="fas fa-inbox"></i>
+                                <p>No product requests yet</p>
+                            </div>
+                        `;
+                        requestsCount.textContent = '0';
+                        return;
+                    }
+
+                    const requests = [];
+                    snapshot.forEach((childSnapshot) => {
+                        requests.push({
+                            id: childSnapshot.key,
+                            ...childSnapshot.val()
+                        });
+                    });
+
+                    // Sort requests by created time (newest first)
+                    requests.sort((a, b) => b.createdAt - a.createdAt);
+
+                    // Update request count badge
+                    requestsCount.textContent = requests.length;
+
+                    // Display the requests
+                    requests.forEach(request => {
+                        const timestamp = request.createdAt ? new Date(request.createdAt) : new Date();
+                        const timeString = formatTimeAgo(timestamp);
+
+                        const requestCard = document.createElement('div');
+                        requestCard.className = 'request-card';
+                        
+                        let statusHTML = '';
+                        let actionsHTML = '';
+                        
+                        if (request.status === 'pending') {
+                            statusHTML = `<span class="request-status pending">Pending</span>`;
+                            actionsHTML = `
+                                <div class="request-actions">
+                                    <button class="btn btn-danger" onclick="rejectRequest('${request.id}')">
+                                        <i class="fas fa-times"></i> Reject
+                                    </button>
+                                    <button class="btn btn-primary" onclick="showPriceInput('${request.id}')">
+                                        <i class="fas fa-check"></i> Approve
+                                    </button>
+                                </div>
+                                <div id="price-input-${request.id}" class="price-input-wrapper" style="display: none;">
+                                    <span>₹</span>
+                                    <input type="number" class="price-input" id="price-${request.id}" placeholder="Enter price" min="1" step="0.01">
+                                    <button class="btn btn-primary" onclick="approveRequest('${request.id}')">Submit</button>
+                                </div>
+                            `;
+                        } else if (request.status === 'approved') {
+                            statusHTML = `<span class="request-status approved">Approved</span>`;
+                            actionsHTML = `
+                                <div class="request-details">
+                                    <p><strong>Price:</strong> ₹${request.price.toFixed(2)}</p>
+                                    <p><strong>Added to cart:</strong> ${request.addedToCart ? 'Yes' : 'No'}</p>
+                                </div>
+                            `;
+                        } else if (request.status === 'rejected') {
+                            statusHTML = `<span class="request-status pending">Rejected</span>`;
+                        }
+
+                        requestCard.innerHTML = `
+                            <div class="request-header">
+                                <div class="request-title">${request.productName}</div>
+                                ${statusHTML}
+                            </div>
+                            <div class="request-user">
+                                <i class="fas fa-user"></i>
+                                <div>Requested by ${request.userName || 'Anonymous'}</div>
+                                <div class="request-time">${timeString}</div>
+                            </div>
+                            <div class="request-details">
+                                <p><strong>Quantity:</strong> ${request.quantity}</p>
+                                ${request.description ? `<p><strong>Description:</strong> ${request.description}</p>` : ''}
+                            </div>
+                            ${actionsHTML}
+                        `;
+                        
+                        requestsContainer.appendChild(requestCard);
+                    });
+                })
+                .catch((error) => {
+                    console.error('Error loading product requests:', error);
+                    requestsContainer.innerHTML = `
+                        <div class="empty-requests">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <p>Error loading requests: ${error.message}</p>
+                        </div>
+                    `;
+                });
+        }
+
+        // Function to show price input field when approving a request
+        function showPriceInput(requestId) {
+            const priceInput = document.getElementById(`price-input-${requestId}`);
+            priceInput.style.display = 'flex';
+        }
+
+        // Function to reject a product request
+        function rejectRequest(requestId) {
+            if (confirm('Are you sure you want to reject this product request?')) {
+                // Update the status in Firebase
+                firebase.database().ref(`product_requests/${requestId}`).update({
+                    status: 'rejected',
+                    updatedAt: firebase.database.ServerValue.TIMESTAMP
+                })
+                .then(() => {
+                    // Reload the requests
+                    loadProductRequests();
+                    alert('Request rejected successfully.');
+                })
+                .catch((error) => {
+                    console.error('Error rejecting request:', error);
+                    alert('Error rejecting request: ' + error.message);
+                });
+            }
+        }
+
+        // Function to approve a product request
+        function approveRequest(requestId) {
+            const priceInput = document.getElementById(`price-${requestId}`);
+            const price = parseFloat(priceInput.value);
+            
+            if (isNaN(price) || price <= 0) {
+                alert('Please enter a valid price.');
+                return;
+            }
+            
+            // Get the current vendor and request details
+            const currentUserId = firebase.auth().currentUser.uid;
+            let requestData, vendorStoreId;
+            
+            // Get the request data first
+            firebase.database().ref(`product_requests/${requestId}`).once('value')
+                .then((snapshot) => {
+                    requestData = snapshot.val();
+                    
+                    if (!requestData) {
+                        throw new Error('Request not found');
+                    }
+                    
+                    // Get the vendor's store ID
+                    return firebase.database().ref(`vendors/${currentUserId}/storeId`).once('value');
+                })
+                .then((snapshot) => {
+                    vendorStoreId = snapshot.val();
+                    
+                    if (!vendorStoreId) {
+                        throw new Error('Store ID not found');
+                    }
+                    
+                    // Create a new product from the request
+                    const productRef = firebase.database().ref(`vendor_products/${vendorStoreId}`).push();
+                    
+                    const productData = {
+                        name: requestData.productName,
+                        description: requestData.description || '',
+                        price: price,
+                        imageURL: 'https://via.placeholder.com/300x300?text=Custom+Product',
+                        category: 'Custom Request',
+                        isAvailable: true,
+                        isFromRequest: true,
+                        requestId: requestId,
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    };
+                    
+                    return productRef.set(productData);
+                })
+                .then(() => {
+                    // Update the request status
+                    return firebase.database().ref(`product_requests/${requestId}`).update({
+                        status: 'approved',
+                        price: price,
+                        updatedAt: firebase.database.ServerValue.TIMESTAMP,
+                        productId: vendorStoreId  // Use this to link to the product
+                    });
+                })
+                .then(() => {
+                    // Automatically add to user's cart
+                    return firebase.database().ref(`carts/${requestData.userId}`).push({
+                        productName: requestData.productName,
+                        quantity: requestData.quantity,
+                        price: price,
+                        storeId: requestData.storeId,
+                        storeName: requestData.storeName,
+                        imageURL: 'https://via.placeholder.com/300x300?text=Custom+Product',
+                        isCustom: true,
+                        requestId: requestId,
+                        addedAt: firebase.database.ServerValue.TIMESTAMP
+                    });
+                })
+                .then(() => {
+                    // Update the request to indicate it was added to cart
+                    return firebase.database().ref(`product_requests/${requestId}`).update({
+                        addedToCart: true
+                    });
+                })
+                .then(() => {
+                    // Reload the requests
+                    loadProductRequests();
+                    alert('Request approved and product added to customer\'s cart!');
+                })
+                .catch((error) => {
+                    console.error('Error approving request:', error);
+                    alert('Error approving request: ' + error.message);
+                });
+        }
+
+        // Helper function to format time ago
+        function formatTimeAgo(date) {
+            const now = new Date();
+            const diffInSeconds = Math.floor((now - date) / 1000);
+            
+            if (diffInSeconds < 60) {
+                return 'Just now';
+            }
+            
+            const diffInMinutes = Math.floor(diffInSeconds / 60);
+            if (diffInMinutes < 60) {
+                return `${diffInMinutes} ${diffInMinutes === 1 ? 'minute' : 'minutes'} ago`;
+            }
+            
+            const diffInHours = Math.floor(diffInMinutes / 60);
+            if (diffInHours < 24) {
+                return `${diffInHours} ${diffInHours === 1 ? 'hour' : 'hours'} ago`;
+            }
+            
+            const diffInDays = Math.floor(diffInHours / 24);
+            if (diffInDays < 7) {
+                return `${diffInDays} ${diffInDays === 1 ? 'day' : 'days'} ago`;
+            }
+            
+            return date.toLocaleDateString();
         }
     </script>
 </body>

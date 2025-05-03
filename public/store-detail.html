@@ -526,6 +526,169 @@
             color: #666;
             font-size: 14px;
         }
+
+        /* Request Product Button */
+        .request-product-btn {
+            background-color: #805AD5;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(128, 90, 213, 0.3);
+            transition: all 0.2s;
+        }
+
+        .request-product-btn i {
+            margin-right: 8px;
+        }
+
+        .request-product-btn:hover {
+            background-color: #6b46c1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(128, 90, 213, 0.4);
+        }
+
+        /* Request Product Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 999;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.6);
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from {opacity: 0}
+            to {opacity: 1}
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 10% auto;
+            padding: 25px;
+            border: 1px solid #eee;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 15px;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.2);
+            animation: slideIn 0.3s;
+        }
+
+        @keyframes slideIn {
+            from {transform: translateY(-50px); opacity: 0;}
+            to {transform: translateY(0); opacity: 1;}
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .modal-header h3 {
+            color: #333;
+            font-size: 20px;
+            margin: 0;
+        }
+
+        .close-modal {
+            color: #aaa;
+            background: none;
+            border: none;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.2s;
+        }
+
+        .close-modal:hover {
+            color: #805AD5;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: #444;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            border-color: #805AD5;
+            outline: none;
+        }
+
+        .form-group textarea {
+            min-height: 100px;
+            resize: vertical;
+        }
+
+        .form-actions {
+            display: flex;
+            justify-content: flex-end;
+            gap: 15px;
+            margin-top: 30px;
+        }
+
+        .cancel-btn,
+        .submit-btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .cancel-btn {
+            background-color: #f1f1f1;
+            color: #333;
+        }
+
+        .cancel-btn:hover {
+            background-color: #e0e0e0;
+        }
+
+        .submit-btn {
+            background-color: #805AD5;
+            color: white;
+        }
+
+        .submit-btn:hover {
+            background-color: #6b46c1;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(128, 90, 213, 0.3);
+        }
+
+        .submit-btn:active {
+            transform: translateY(0);
+        }
     </style>
 </head>
 <body>
@@ -612,6 +775,9 @@
                     <i class="fas fa-shopping-basket"></i>
                     Products <span id="products-count">(0)</span>
                 </h2>
+                <button id="request-product-btn" class="request-product-btn">
+                    <i class="fas fa-plus-circle"></i> Request Product
+                </button>
             </div>
             
             <div id="products-container" class="products-grid">
@@ -624,6 +790,37 @@
     </div>
 
     <div class="toast" id="toast">Message goes here</div>
+    
+    <!-- Request Product Modal -->
+    <div id="request-product-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>Request Product</h3>
+                <button class="close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p>Can't find what you're looking for? Request it from the store!</p>
+                <form id="request-product-form">
+                    <div class="form-group">
+                        <label for="product-name">Product Name*</label>
+                        <input type="text" id="product-name" placeholder="Enter product name" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-description">Description (Optional)</label>
+                        <textarea id="product-description" placeholder="Describe the product (brand, size, etc.)"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="product-quantity">Quantity*</label>
+                        <input type="number" id="product-quantity" min="1" value="1" required>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="cancel-btn">Cancel</button>
+                        <button type="submit" class="submit-btn">Submit Request</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
@@ -663,6 +860,7 @@
         const toast = document.getElementById('toast');
         const storeOpenStatus = document.getElementById('store-open-status');
         const storeDistance = document.getElementById('store-distance');
+        const requestProductBtn = document.getElementById('request-product-btn');
         
         // Global variables
         let currentStoreId = null;
@@ -1075,6 +1273,92 @@
             backBtn.addEventListener('click', () => {
                 window.history.back();
             });
+
+            requestProductBtn.addEventListener('click', () => {
+                document.getElementById('request-product-modal').style.display = 'block';
+            });
+        });
+
+        // Close modal
+        document.querySelector('.close-modal').addEventListener('click', () => {
+            document.getElementById('request-product-modal').style.display = 'none';
+        });
+
+        document.querySelector('.cancel-btn').addEventListener('click', () => {
+            document.getElementById('request-product-modal').style.display = 'none';
+        });
+
+        // Submit form
+        document.getElementById('request-product-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const productName = document.getElementById('product-name').value;
+            const productDescription = document.getElementById('product-description').value;
+            const productQuantity = document.getElementById('product-quantity').value;
+
+            if (!productName.trim()) {
+                showToast('Please enter a product name', 'error');
+                return;
+            }
+
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                showToast('You must be logged in to request products', 'error');
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+                return;
+            }
+
+            // Show loading state
+            const submitBtn = document.querySelector('.submit-btn');
+            const originalBtnText = submitBtn.innerHTML;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Submitting...';
+            submitBtn.disabled = true;
+
+            // Get store name for the request
+            firebase.database().ref(`stores/${currentStoreId}`).once('value')
+                .then((snapshot) => {
+                    const store = snapshot.val();
+                    const storeName = store ? store.name : 'Unknown Store';
+
+                    // Create product request in Firebase
+                    const requestRef = firebase.database().ref('product_requests').push();
+                    
+                    const requestData = {
+                        productName: productName,
+                        description: productDescription || '',
+                        quantity: parseInt(productQuantity) || 1,
+                        storeId: currentStoreId,
+                        storeName: storeName,
+                        userId: user.uid,
+                        userEmail: user.email,
+                        userName: user.displayName || user.email,
+                        status: 'pending', // pending, approved, rejected
+                        createdAt: firebase.database.ServerValue.TIMESTAMP
+                    };
+                    
+                    return requestRef.set(requestData);
+                })
+                .then(() => {
+                    // Reset form and close modal
+                    document.getElementById('request-product-form').reset();
+                    document.getElementById('request-product-modal').style.display = 'none';
+                    
+                    // Show success message
+                    showToast('Product request submitted successfully!', 'success');
+                    
+                    // Reset button state
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                })
+                .catch((error) => {
+                    console.error('Error submitting product request:', error);
+                    showToast('Error submitting request. Please try again.', 'error');
+                    
+                    // Reset button state
+                    submitBtn.innerHTML = originalBtnText;
+                    submitBtn.disabled = false;
+                });
         });
     </script>
 
