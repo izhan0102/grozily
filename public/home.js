@@ -60,6 +60,7 @@ const profileBtn = document.getElementById('profile-btn');
 const profileDropdown = document.getElementById('profile-dropdown-content');
 const viewProfileBtn = document.getElementById('view-profile-btn');
 const editProfileBtn = document.getElementById('edit-profile-btn');
+const aboutBtn = document.getElementById('about-btn');
 const logoutBtn = document.getElementById('logout-btn');
 const deleteAccountBtn = document.getElementById('delete-account-btn');
 
@@ -138,6 +139,13 @@ document.addEventListener('DOMContentLoaded', () => {
         e.stopPropagation();
         profileDropdown.classList.toggle('show');
     });
+    
+    // About button
+    if (aboutBtn) {
+        aboutBtn.addEventListener('click', () => {
+            window.location.href = 'about.html';
+        });
+    }
     
     // Initialize location menu
     initLocationMenu();
