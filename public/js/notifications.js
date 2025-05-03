@@ -41,15 +41,6 @@ const NotificationHandler = {
         this.permission = Notification.permission;
         console.log('[NotificationHandler] Current notification permission:', this.permission);
         
-        // If permission is already granted, send a test notification immediately
-        if (this.permission === 'granted') {
-            console.log('[NotificationHandler] Permission already granted, sending test notification');
-            // Short delay to ensure everything is initialized
-            setTimeout(() => {
-                this.sendTestNotification();
-            }, 1000);
-        }
-        
         // Check if user is logged in with Firebase
         if (typeof firebase !== 'undefined' && firebase.auth) {
             firebase.auth().onAuthStateChanged(user => {
@@ -62,26 +53,9 @@ const NotificationHandler = {
                     if (this.permission === 'default') {
                         // Delay asking for permission to avoid overwhelming the user
                         setTimeout(() => this.requestPermission(), 3000);
-                    } else if (this.permission === 'granted') {
-                        console.log('[NotificationHandler] Permission already granted');
-                        // Check if welcome notification has been sent
-                        if (!this.hasNotificationBeenSent('welcome')) {
-                            this.sendWelcomeNotification();
-                        }
                     }
                 }
             });
-        } else {
-            // Firebase not available, still ask for permission
-            if (this.permission === 'default') {
-                setTimeout(() => this.requestPermission(), 3000);
-            } else if (this.permission === 'granted') {
-                console.log('[NotificationHandler] Permission already granted');
-                // Check if welcome notification has been sent
-                if (!this.hasNotificationBeenSent('welcome')) {
-                    this.sendWelcomeNotification();
-                }
-            }
         }
         
         return true;
@@ -146,15 +120,6 @@ const NotificationHandler = {
                 if (permission === 'granted') {
                     // Save permission status in localStorage
                     localStorage.setItem('notificationPermission', 'granted');
-                    
-                    // Send welcome notification immediately
-                    this.sendWelcomeNotification();
-                    
-                    // Also send a test notification immediately
-                    this.sendTestNotification();
-                    
-                    // Register for Firebase messaging (if needed in the future)
-                    // this.registerForFirebaseMessaging();
                 } else {
                     console.log('[NotificationHandler] Permission not granted');
                     localStorage.setItem('notificationPermission', permission);
@@ -163,123 +128,6 @@ const NotificationHandler = {
             .catch(error => {
                 console.error('[NotificationHandler] Error requesting permission:', error);
             });
-    },
-    
-    // Send a welcome notification
-    sendWelcomeNotification: function() {
-        console.log('[NotificationHandler] Sending welcome notification');
-        
-        try {
-            // Get user's name if available
-            const userName = localStorage.getItem('userName') || 'there';
-            
-            const options = {
-                body: `Welcome to Grozily! We'll notify you about order updates and special offers.`,
-                icon: this.icons.default,
-                badge: this.icons.badge,
-                image: this.icons.welcome,
-                tag: 'welcome',
-                requireInteraction: true,
-                actions: [
-                    {
-                        action: 'explore',
-                        title: 'Explore App'
-                    },
-                    {
-                        action: 'settings',
-                        title: 'Settings'
-                    }
-                ],
-                data: {
-                    url: window.location.origin
-                },
-                vibrate: [200, 100, 200]
-            };
-            
-            // Create and show notification
-            const notification = new Notification(`Hello, ${userName}!`, options);
-            
-            // Notification click event
-            notification.onclick = function(event) {
-                event.preventDefault();
-                
-                // Check if action button was clicked
-                if (event.action === 'explore') {
-                    window.open('explore.html', '_blank');
-                } else if (event.action === 'settings') {
-                    window.open('profile.html', '_blank');
-                } else {
-                    // Default action: focus window or open new one
-                    if (window.focus) window.focus();
-                }
-                
-                // Close notification
-                notification.close();
-            };
-            
-            console.log('[NotificationHandler] Welcome notification sent');
-            
-            // Save notification sent status to prevent duplicate welcome notifications
-            this.saveNotificationSent('welcome');
-            
-            return true;
-        } catch (error) {
-            console.error('[NotificationHandler] Error sending notification:', error);
-            return false;
-        }
-    },
-    
-    // Send a test notification (added for immediate testing)
-    sendTestNotification: function() {
-        console.log('[NotificationHandler] Sending test notification');
-        
-        try {
-            const options = {
-                body: 'This is a test notification from Grozily. Your notification system is working!',
-                icon: this.icons.offer,
-                badge: this.icons.badge,
-                tag: 'test_notification',
-                requireInteraction: true,
-                vibrate: [200, 100, 200],
-                actions: [
-                    {
-                        action: 'dismiss',
-                        title: 'Dismiss'
-                    },
-                    {
-                        action: 'explore',
-                        title: 'Explore App'
-                    }
-                ]
-            };
-            
-            // Create and show notification
-            const notification = new Notification('🔔 Test Notification', options);
-            
-            // Notification click event
-            notification.onclick = function(event) {
-                event.preventDefault();
-                
-                // Check if action button was clicked
-                if (event.action === 'explore') {
-                    window.open('explore.html', '_blank');
-                } else if (event.action === 'dismiss') {
-                    notification.close();
-                } else {
-                    // Default action: focus window or open new one
-                    if (window.focus) window.focus();
-                }
-                
-                // Close notification
-                notification.close();
-            };
-            
-            console.log('[NotificationHandler] Test notification sent');
-            return true;
-        } catch (error) {
-            console.error('[NotificationHandler] Error sending test notification:', error);
-            return false;
-        }
     },
     
     // Track sent notifications in localStorage to prevent duplicates
@@ -349,45 +197,70 @@ const NotificationHandler = {
         }
         
         try {
-            // Set default options
-            const defaultOptions = {
-                icon: this.icons.default,
-                badge: this.icons.badge,
-                vibrate: [100, 50, 100]
-            };
+            // Check if we're on mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
             
-            // Merge default options with custom options
-            const notificationOptions = { ...defaultOptions, ...options };
-            
-            // Create and show notification
-            const notification = new Notification(title, notificationOptions);
-            
-            // Notification click event
-            notification.onclick = function(event) {
-                event.preventDefault();
+            if (isMobile && 'serviceWorker' in navigator) {
+                // Use service worker for mobile
+                navigator.serviceWorker.register('service-worker.js')
+                .then(function(registration) {
+                    // Show notification via service worker
+                    registration.showNotification(title, {
+                        ...options,
+                        icon: options.icon || this.icons.default,
+                        badge: options.badge || this.icons.badge,
+                        vibrate: options.vibrate || [100, 50, 100]
+                    });
+                    
+                    console.log('[NotificationHandler] Service Worker notification sent');
+                })
+                .catch(function(error) {
+                    console.error('[NotificationHandler] Service Worker registration failed:', error);
+                    return false;
+                });
                 
-                // Check if action button was clicked
-                if (event.action && options.actions) {
-                    // Find the matching action
-                    const action = options.actions.find(a => a.action === event.action);
-                    if (action && action.url) {
-                        window.open(action.url, '_blank');
+                return true;
+            } else {
+                // Set default options
+                const defaultOptions = {
+                    icon: this.icons.default,
+                    badge: this.icons.badge,
+                    vibrate: [100, 50, 100]
+                };
+                
+                // Merge default options with custom options
+                const notificationOptions = { ...defaultOptions, ...options };
+                
+                // Create and show notification
+                const notification = new Notification(title, notificationOptions);
+                
+                // Notification click event
+                notification.onclick = function(event) {
+                    event.preventDefault();
+                    
+                    // Check if action button was clicked
+                    if (event.action && options.actions) {
+                        // Find the matching action
+                        const action = options.actions.find(a => a.action === event.action);
+                        if (action && action.url) {
+                            window.open(action.url, '_blank');
+                        }
+                    } else if (options.url) {
+                        window.open(options.url, '_blank');
+                    } else if (window.focus) {
+                        window.focus();
                     }
-                } else if (options.url) {
-                    window.open(options.url, '_blank');
-                } else if (window.focus) {
-                    window.focus();
+                    
+                    notification.close();
+                };
+                
+                // Track notification
+                if (options.tag) {
+                    this.saveNotificationSent(options.tag, options.id);
                 }
                 
-                notification.close();
-            };
-            
-            // Track notification
-            if (options.tag) {
-                this.saveNotificationSent(options.tag, options.id);
+                return true;
             }
-            
-            return true;
         } catch (error) {
             console.error('[NotificationHandler] Error sending notification:', error);
             return false;
@@ -516,31 +389,7 @@ const NotificationHandler = {
 // Initialize when the page loads
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[NotificationHandler] Document ready, initializing notification system');
-    
-    // Initialize notification system immediately
     NotificationHandler.init();
-});
-
-// Also try to initialize on window load for reliability
-window.addEventListener('load', function() {
-    console.log('[NotificationHandler] Window loaded, ensuring notification system is initialized');
-    
-    // Check if already initialized
-    if (NotificationHandler.permission === 'default') {
-        console.log('[NotificationHandler] Permission still default, reinitializing');
-        NotificationHandler.init();
-        
-        // Force permission request after a delay if still not granted
-        setTimeout(function() {
-            if (Notification.permission === 'default') {
-                console.log('[NotificationHandler] Forcing permission request');
-                NotificationHandler.requestPermission();
-            } else if (Notification.permission === 'granted') {
-                console.log('[NotificationHandler] Permission already granted, sending test notification');
-                NotificationHandler.sendTestNotification();
-            }
-        }, 2000);
-    }
 });
 
 // Expose globally for direct access
