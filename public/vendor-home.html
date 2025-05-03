@@ -108,41 +108,7 @@
             overflow-y: auto;
         }
 
-        /* Welcome Banner */
-        .welcome-banner {
-            background-color: white;
-            border-radius: 15px;
-            padding: 20px;
-            margin-bottom: 25px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.05);
-            background-image: linear-gradient(to right, #805AD5, #6B46C1);
-            color: white;
-            position: relative;
-            overflow: hidden;
-        }
 
-        .welcome-banner::after {
-            content: '';
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 100px;
-            height: 100px;
-            background-image: url("data:image/svg+xml,%3Csvg width='100' height='100' viewBox='0 0 100 100' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Ccircle cx='50' cy='50' r='40' stroke='rgba(255,255,255,0.1)' stroke-width='20'/%3E%3C/svg%3E");
-            background-repeat: no-repeat;
-            background-position: center;
-            opacity: 0.3;
-        }
-
-        .welcome-text h2 {
-            font-size: 22px;
-            margin-bottom: 8px;
-        }
-
-        .welcome-text p {
-            font-size: 14px;
-            opacity: 0.8;
-        }
 
         /* Stats Section */
         .stats-section {
@@ -815,7 +781,48 @@
 
         /* Product Requests Section */
         .product-requests {
-            margin-bottom: 80px;
+            margin-bottom: 25px;
+        }
+
+        /* Update button styles to be more professional */
+        .clear-requests-btn, .reset-requests-btn {
+            background: none;
+            color: #718096;
+            border: 1px solid #E2E8F0;
+            border-radius: 4px;
+            padding: 6px 12px;
+            font-size: 12px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .clear-requests-btn {
+            color: #E53E3E;
+        }
+        
+        .reset-requests-btn {
+            color: #4299E1;
+        }
+
+        .clear-requests-btn:hover {
+            background-color: #FFF5F5;
+            color: #C53030;
+        }
+        
+        .reset-requests-btn:hover {
+            background-color: #EBF8FF;
+            color: #3182CE;
+        }
+
+        .section-title {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 15px;
         }
 
         .badge {
@@ -998,6 +1005,171 @@
             font-style: italic;
             margin-top: 5px;
         }
+
+        /* Improved Toast notification for in-page messages */
+        .vendor-toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            min-width: 300px;
+            max-width: 90%;
+            background-color: #2D3748;
+            color: white;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            z-index: 1000;
+            opacity: 0;
+            transform: translateX(50px);
+            transition: opacity 0.3s, transform 0.3s;
+            pointer-events: none;
+        }
+        
+        .vendor-toast.show {
+            opacity: 1;
+            transform: translateX(0);
+            pointer-events: auto;
+        }
+        
+        .vendor-toast-icon {
+            font-size: 20px;
+            flex-shrink: 0;
+        }
+        
+        .vendor-toast-content {
+            flex: 1;
+        }
+        
+        .vendor-toast-title {
+            font-weight: 600;
+            margin-bottom: 2px;
+            font-size: 14px;
+        }
+        
+        .vendor-toast-message {
+            font-size: 13px;
+            opacity: 0.9;
+        }
+        
+        .vendor-toast-close {
+            font-size: 16px;
+            color: rgba(255, 255, 255, 0.7);
+            cursor: pointer;
+            padding: 5px;
+            margin: -5px;
+            transition: color 0.2s;
+        }
+        
+        .vendor-toast-close:hover {
+            color: white;
+        }
+        
+        .vendor-toast.success {
+            background-color: #48BB78;
+        }
+        
+        .vendor-toast.error {
+            background-color: #F56565;
+        }
+        
+        .vendor-toast.info {
+            background-color: #4299E1;
+        }
+
+        /* Confirmation dialog styles */
+        .confirmation-dialog {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+        }
+
+        .confirmation-dialog.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .confirmation-content {
+            background-color: white;
+            border-radius: 8px;
+            width: 90%;
+            max-width: 350px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+            overflow: hidden;
+        }
+
+        .confirmation-header {
+            padding: 15px;
+            background-color: #F7FAFC;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid #EDF2F7;
+        }
+
+        .confirmation-icon {
+            color: #E53E3E;
+            font-size: 20px;
+        }
+
+        .confirmation-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .confirmation-body {
+            padding: 15px;
+            color: #4A5568;
+            font-size: 14px;
+        }
+
+        .confirmation-footer {
+            padding: 10px 15px;
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            border-top: 1px solid #EDF2F7;
+        }
+
+        .btn-cancel, .btn-confirm {
+            padding: 8px 16px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-cancel {
+            background-color: #EDF2F7;
+            color: #4A5568;
+        }
+
+        .btn-cancel:hover {
+            background-color: #E2E8F0;
+        }
+
+        .btn-confirm {
+            background-color: #E53E3E;
+            color: white;
+        }
+
+        .btn-confirm:hover {
+            background-color: #C53030;
+        }
     </style>
 </head>
 <body>
@@ -1023,14 +1195,6 @@
 
         <!-- Main Content -->
         <div class="main-content">
-            <!-- Welcome Banner -->
-            <div class="welcome-banner">
-                <div class="welcome-text">
-                    <h2>Welcome Back!</h2>
-                    <p id="last-login">Last login: Loading...</p>
-                </div>
-            </div>
-
             <!-- Stats Section -->
             <div class="stats-section">
                 <h2 class="section-title">
@@ -1117,6 +1281,14 @@
                     <i class="fas fa-clipboard-list"></i>
                     Product Requests
                     <span class="badge" id="requests-count">0</span>
+                    <div style="display: flex; gap: 8px; margin-left: auto;">
+                        <button id="reset-requests-btn" class="reset-requests-btn">
+                            <i class="fas fa-redo-alt"></i> Reset
+                        </button>
+                        <button id="clear-all-requests" class="clear-requests-btn">
+                            <i class="fas fa-trash-alt"></i> Clear All
+                        </button>
+                    </div>
                 </h2>
                 <div class="product-requests-list" id="product-requests-list">
                     <div class="empty-requests">
@@ -1298,6 +1470,39 @@
         <div class="loader"></div>
     </div>
 
+    <!-- Toast notification element -->
+    <div id="vendor-toast" class="vendor-toast">
+        <div class="vendor-toast-icon">
+            <i class="fas fa-info-circle"></i>
+        </div>
+        <div class="vendor-toast-content">
+            <div class="vendor-toast-title">Notification</div>
+            <div class="vendor-toast-message">This is a notification message.</div>
+        </div>
+        <div class="vendor-toast-close" id="toast-close">
+            <i class="fas fa-times"></i>
+        </div>
+    </div>
+
+    <!-- Confirmation dialog -->
+    <div id="confirmation-dialog" class="confirmation-dialog">
+        <div class="confirmation-content">
+            <div class="confirmation-header">
+                <div class="confirmation-icon">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="confirmation-title">Confirm Action</div>
+            </div>
+            <div class="confirmation-body">
+                Are you sure you want to clear all product requests? This will only remove them from your view.
+            </div>
+            <div class="confirmation-footer">
+                <button id="cancel-clear" class="btn-cancel">Cancel</button>
+                <button id="confirm-clear" class="btn-confirm">Clear All</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Firebase SDK -->
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
@@ -1319,15 +1524,54 @@
         // Initialize Firebase OPTIONAL - if you've initialized Firebase elsewhere
         firebase.initializeApp(firebaseConfig);
         
-        // Load product requests when page loads
+        // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            firebase.auth().onAuthStateChanged(user => {
+            console.log('DOM content loaded, initializing page...');
+            
+            // Set up the Clear All button
+            const clearAllBtn = document.getElementById('clear-all-requests');
+            if (clearAllBtn) {
+                clearAllBtn.addEventListener('click', function() {
+                    clearAllRequests();
+                });
+                console.log('Clear All button listener added');
+            } else {
+                console.error('Clear All button not found in DOM');
+            }
+            
+            // Set up the Reset button
+            const resetBtn = document.getElementById('reset-requests-btn');
+            if (resetBtn) {
+                resetBtn.addEventListener('click', function() {
+                    resetRequestsView();
+                });
+                console.log('Reset button listener added');
+            } else {
+                console.error('Reset button not found in DOM');
+            }
+            
+            // Check login status
+            firebase.auth().onAuthStateChanged(function(user) {
                 if (user) {
-                    loadVendorData(user.uid);
-                    loadProductRequests(); 
+                    console.log('User is logged in:', user.uid);
+                    document.getElementById('loader').style.display = 'none';
+                    
+                    // Load data
+                    loadVendorData();
+                    loadProductRequests();
                     loadRecentOrders();
+                    getRevenueData();
+                    
+                    // Add event listener for clear all requests button
+                    document.getElementById('clear-all-requests').addEventListener('click', clearAllRequests);
+                    
+                    // Set up event listeners
+                    document.getElementById('profile-btn').addEventListener('click', function() {
+                        document.getElementById('profile-modal').classList.add('show');
+                    });
                 } else {
-                    window.location.href = "vendor-login.html";
+                    // User is not logged in, redirect to login page
+                    window.location.href = 'vendor-login.html';
                 }
             });
         });
@@ -1337,7 +1581,6 @@
         const vendorInitial = document.getElementById('vendor-initial');
         const storeName = document.getElementById('store-name');
         const vendorName = document.getElementById('vendor-name');
-        const lastLogin = document.getElementById('last-login');
         const totalProducts = document.getElementById('total-products');
         const totalOrders = document.getElementById('total-orders');
         const totalRevenue = document.getElementById('total-revenue');
@@ -1449,9 +1692,8 @@
                         vendorInitial.textContent = vendor.name.charAt(0).toUpperCase();
                     }
                     
-                    // Format last login date
+                    // Format time for activity log
                     const lastLoginTime = new Date(user.metadata.lastSignInTime);
-                    lastLogin.textContent = `Last login: ${formatDate(lastLoginTime)}`;
                     loginTime.textContent = timeAgo(lastLoginTime);
                     
                     // Fill profile form
@@ -2072,6 +2314,27 @@
 
         // Load product requests
         function loadProductRequests() {
+            console.log('Loading product requests...');
+            
+            // Check if requests were cleared by the user
+            const requestsCleared = localStorage.getItem('requestsCleared') === 'true';
+            console.log('requestsCleared flag in localStorage:', requestsCleared);
+            
+            if (requestsCleared) {
+                console.log('Requests were previously cleared, showing empty state');
+                const requestsContainer = document.getElementById('product-requests-list');
+                const requestsCount = document.getElementById('requests-count');
+                
+                requestsContainer.innerHTML = `
+                    <div class="empty-requests">
+                        <i class="fas fa-inbox"></i>
+                        <p>No product requests yet</p>
+                    </div>
+                `;
+                requestsCount.textContent = '0';
+                return;
+            }
+            
             const requestsContainer = document.getElementById('product-requests-list');
             const requestsCount = document.getElementById('requests-count');
             const currentUserId = firebase.auth().currentUser.uid;
@@ -2647,6 +2910,150 @@
                 .catch(error => {
                     console.error('Error checking for cart issues:', error);
                 });
+        }
+
+        // Function to clear all product requests (frontend only)
+        function clearAllRequests() {
+            console.log('clearAllRequests function called');
+            
+            // Show custom confirmation dialog
+            const confirmationDialog = document.getElementById('confirmation-dialog');
+            confirmationDialog.classList.add('show');
+            
+            // Set up event listeners for the dialog buttons
+            const cancelButton = document.getElementById('cancel-clear');
+            const confirmButton = document.getElementById('confirm-clear');
+            
+            // Remove any existing event listeners
+            const newCancelButton = cancelButton.cloneNode(true);
+            const newConfirmButton = confirmButton.cloneNode(true);
+            cancelButton.parentNode.replaceChild(newCancelButton, cancelButton);
+            confirmButton.parentNode.replaceChild(newConfirmButton, confirmButton);
+            
+            // Handle cancel
+            newCancelButton.addEventListener('click', function() {
+                confirmationDialog.classList.remove('show');
+                console.log('User cancelled clearing requests');
+            });
+            
+            // Handle confirm
+            newConfirmButton.addEventListener('click', function() {
+                confirmationDialog.classList.remove('show');
+                
+                try {
+                    console.log('User confirmed clearing all requests');
+                    
+                    const requestsContainer = document.getElementById('product-requests-list');
+                    const requestsCount = document.getElementById('requests-count');
+                    
+                    if (!requestsContainer || !requestsCount) {
+                        console.error('Required DOM elements not found');
+                        return;
+                    }
+                    
+                    // Clear the container
+                    requestsContainer.innerHTML = `
+                        <div class="empty-requests">
+                            <i class="fas fa-inbox"></i>
+                            <p>No product requests yet</p>
+                        </div>
+                    `;
+                    
+                    // Reset the count
+                    requestsCount.textContent = '0';
+                    
+                    // Store in localStorage that requests were cleared
+                    localStorage.setItem('requestsCleared', 'true');
+                    console.log('Requests cleared and localStorage flag set');
+                    
+                    // Show in-page notification
+                    showToast(
+                        'Requests Cleared',
+                        'All product requests have been cleared from your view.',
+                        'info'
+                    );
+                } catch (error) {
+                    console.error('Error in clearAllRequests:', error);
+                    showToast('Error', error.message, 'error');
+                }
+            });
+        }
+        
+        // Show notification function
+        function showNotification(title, message, type = 'success') {
+            if (typeof ProductRequestSystem !== 'undefined' && ProductRequestSystem.showNotification) {
+                ProductRequestSystem.showNotification({
+                    title: title,
+                    message: message,
+                    type: type,
+                    duration: 3000
+                });
+            } else {
+                alert(`${title}: ${message}`);
+            }
+        }
+
+        // Function to reset the requests view - clear localStorage flag and reload
+        function resetRequestsView() {
+            console.log('Resetting requests view...');
+            
+            // Remove the flag from localStorage
+            localStorage.removeItem('requestsCleared');
+            console.log('requestsCleared flag removed from localStorage');
+            
+            // Show in-page notification
+            showToast(
+                'Requests Reset',
+                'Requests view has been reset. Loading requests again.',
+                'success'
+            );
+            
+            // Load product requests again
+            loadProductRequests();
+        }
+
+        // Function to show in-page toast notification
+        function showToast(title, message, type = 'info') {
+            const toast = document.getElementById('vendor-toast');
+            const toastTitle = toast.querySelector('.vendor-toast-title');
+            const toastMessage = toast.querySelector('.vendor-toast-message');
+            const toastIcon = toast.querySelector('.vendor-toast-icon i');
+            const closeBtn = document.getElementById('toast-close');
+            
+            // Set content
+            toastTitle.textContent = title;
+            toastMessage.textContent = message;
+            
+            // Set icon based on type
+            toast.className = 'vendor-toast'; // Reset classes
+            toast.classList.add(type); // Add type class
+            
+            // Set proper icon
+            if (type === 'success') {
+                toastIcon.className = 'fas fa-check-circle';
+            } else if (type === 'error') {
+                toastIcon.className = 'fas fa-exclamation-circle';
+            } else if (type === 'info') {
+                toastIcon.className = 'fas fa-info-circle';
+            }
+            
+            // Close button handler
+            closeBtn.onclick = function() {
+                toast.classList.remove('show');
+            };
+            
+            // Show toast
+            toast.classList.add('show');
+            
+            // Hide after 3 seconds
+            let toastTimeout = setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+            
+            // Clear timeout if close button is clicked
+            closeBtn.addEventListener('click', function() {
+                clearTimeout(toastTimeout);
+            });
         }
     </script>
     
