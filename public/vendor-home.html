@@ -959,6 +959,45 @@
             margin-bottom: 15px;
             display: block;
         }
+        
+        /* Processing and warning styles */
+        .warning-text {
+            color: #e53e3e;
+            font-weight: 500;
+        }
+        
+        .request-card.processing {
+            position: relative;
+            pointer-events: none;
+            opacity: 0.7;
+        }
+        
+        .request-card.processing::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            z-index: 10;
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 12px;
+            margin-left: 5px;
+        }
+        
+        .debug-note {
+            color: #718096;
+            font-style: italic;
+            margin-top: 5px;
+        }
     </style>
 </head>
 <body>
@@ -1413,6 +1452,9 @@
                     
                     // Cleanup any buggy products that were added to store details
                     cleanupBuggyProducts();
+                    
+                    // Auto-fix cart issues
+                    autoFixCartIssues();
                     
                     hideLoader();
                 })
@@ -2066,6 +2108,7 @@
 
                         const requestCard = document.createElement('div');
                         requestCard.className = 'request-card';
+                        requestCard.setAttribute('data-request-id', request.id);
                         
                         let statusHTML = '';
                         let actionsHTML = '';
@@ -2089,15 +2132,27 @@
                             `;
                         } else if (request.status === 'approved') {
                             statusHTML = `<span class="request-status approved">Approved</span>`;
+                            const cartStatus = request.addedToCart ? 
+                                `<p><strong>Status:</strong> Added to customer's cart</p>` : 
+                                `<p><strong>Status:</strong> <span class="warning-text">Not yet in cart</span> 
+                                <button class="btn btn-sm btn-primary" onclick="forceAddToCart('${request.id}')">
+                                    <i class="fas fa-shopping-cart"></i> Force Add to Cart
+                                </button></p>`;
+                            
+                            // Add recovery note if applicable
+                            const recoveryNote = request.recoveryAttempt ? 
+                                `<p class="debug-note"><small>(Added via recovery attempt)</small></p>` : '';
+                            
                             actionsHTML = `
                                 <div class="request-details">
                                     <div style="display: flex; align-items: center; margin-bottom: 10px;">
                                         <div style="width: 50px; height: 50px; background-color: #f8f9fa; border-radius: 5px; display: flex; align-items: center; justify-content: center; margin-right: 10px; overflow: hidden;">
-                                            <img src="https://via.placeholder.com/300x300?text=Custom+Request" alt="Product Icon" style="width: 100%; height: 100%; object-fit: cover;">
+                                            <img src="${request.imageURL || 'https://via.placeholder.com/300x300?text=Custom+Request'}" alt="Product Icon" style="width: 100%; height: 100%; object-fit: cover;">
                                         </div>
                                         <div>
                                             <p><strong>Price:</strong> ₹${request.price.toFixed(2)}</p>
-                                            <p><strong>Status:</strong> Added to customer's cart</p>
+                                            ${cartStatus}
+                                            ${recoveryNote}
                                         </div>
                                     </div>
                                 </div>
@@ -2192,6 +2247,12 @@
                         throw new Error('Request not found');
                     }
                     
+                    if (!requestData.userId) {
+                        throw new Error('User ID not found in request data');
+                    }
+                    
+                    console.log('Processing request:', requestId, 'for user:', requestData.userId);
+                    
                     // Update the request status
                     return firebase.database().ref(`product_requests/${requestId}`).update({
                         status: 'approved',
@@ -2200,10 +2261,12 @@
                     });
                 })
                 .then(() => {
-                    // Directly add to user's cart without creating a store product
-                    return firebase.database().ref(`carts/${requestData.userId}`).push({
+                    console.log('Request status updated, adding to cart for user:', requestData.userId);
+                    
+                    // Create cart item data
+                    const cartItemData = {
                         productName: requestData.productName,
-                        quantity: requestData.quantity,
+                        quantity: parseInt(requestData.quantity) || 1,
                         price: price,
                         storeId: requestData.storeId,
                         storeName: requestData.storeName,
@@ -2211,26 +2274,96 @@
                         isCustom: true,
                         requestId: requestId,
                         addedAt: firebase.database.ServerValue.TIMESTAMP
-                    });
+                    };
+                    
+                    // First check if user has a cart
+                    return firebase.database().ref(`carts/${requestData.userId}`).once('value')
+                        .then(cartSnapshot => {
+                            // If cart doesn't exist, create it with the new item
+                            if (!cartSnapshot.exists()) {
+                                return firebase.database().ref(`carts/${requestData.userId}`).push(cartItemData);
+                            } else {
+                                // Check if request is already in cart
+                                let alreadyInCart = false;
+                                cartSnapshot.forEach(childSnapshot => {
+                                    const cartItem = childSnapshot.val();
+                                    if (cartItem.requestId === requestId) {
+                                        alreadyInCart = true;
+                                    }
+                                });
+                                
+                                // If not already in cart, add it
+                                if (!alreadyInCart) {
+                                    return firebase.database().ref(`carts/${requestData.userId}`).push(cartItemData);
+                                } else {
+                                    console.log('Item already in cart, updating status only');
+                                    return Promise.resolve();
+                                }
+                            }
+                        });
                 })
                 .then(() => {
+                    console.log('Successfully added to cart, updating addedToCart flag');
+                    
+                    // Debug cart status after adding item
+                    debugCartIssue(requestData.userId);
+                    
                     // Update the request to indicate it was added to cart
                     return firebase.database().ref(`product_requests/${requestId}`).update({
                         addedToCart: true
                     });
                 })
                 .then(() => {
+                    // Show success alert with more details
+                    alert(`Request approved! Product "${requestData.productName}" has been added to the customer's cart at ₹${price}.`);
+                    
                     // Reset button state
                     submitBtn.innerHTML = originalBtnText;
                     submitBtn.disabled = false;
                     
                     // Reload the requests
                     loadProductRequests();
-                    alert('Request approved and product added to customer\'s cart!');
                 })
                 .catch((error) => {
                     console.error('Error approving request:', error);
-                    alert('Error approving request: ' + error.message);
+                    
+                    // Attempt recovery - force add to cart if that's where it failed
+                    if (requestData && requestData.userId) {
+                        console.log('Attempting recovery - forcing item to cart');
+                        
+                        // Create cart item
+                        const cartItemData = {
+                            productName: requestData.productName,
+                            quantity: parseInt(requestData.quantity) || 1,
+                            price: price,
+                            storeId: requestData.storeId,
+                            storeName: requestData.storeName,
+                            imageURL: requestData.imageURL || 'https://via.placeholder.com/300x300?text=Custom+Request',
+                            isCustom: true,
+                            requestId: requestId,
+                            addedAt: firebase.database.ServerValue.TIMESTAMP,
+                            recoveryAttempt: true
+                        };
+                        
+                        // Force create/update cart
+                        firebase.database().ref(`carts/${requestData.userId}`).push(cartItemData)
+                            .then(() => {
+                                firebase.database().ref(`product_requests/${requestId}`).update({
+                                    addedToCart: true,
+                                    status: 'approved',
+                                    price: price
+                                });
+                                
+                                alert('Recovery successful! The product has been added to the customer\'s cart.');
+                                loadProductRequests();
+                            })
+                            .catch(recoveryError => {
+                                console.error('Recovery failed:', recoveryError);
+                                alert('Error approving request: ' + error.message + '\nRecovery attempt also failed.');
+                            });
+                    } else {
+                        alert('Error approving request: ' + error.message);
+                    }
                     
                     // Reset button state
                     submitBtn.innerHTML = originalBtnText;
@@ -2315,6 +2448,205 @@
             }
             
             return date.toLocaleDateString();
+        }
+        
+        // Function to debug cart issues
+        function debugCartIssue(userId) {
+            if (!userId) {
+                console.error('Cannot debug cart: No user ID provided');
+                return;
+            }
+            
+            console.log(`Checking cart for user: ${userId}`);
+            
+            // Check if user exists
+            firebase.database().ref(`users/${userId}`).once('value')
+                .then(userSnapshot => {
+                    if (userSnapshot.exists()) {
+                        console.log('User exists in database');
+                    } else {
+                        console.log('User does not exist in database');
+                    }
+                    
+                    // Check if cart exists
+                    return firebase.database().ref(`carts/${userId}`).once('value');
+                })
+                .then(cartSnapshot => {
+                    if (cartSnapshot.exists()) {
+                        console.log('Cart exists with items:');
+                        const cartItems = [];
+                        cartSnapshot.forEach(childSnapshot => {
+                            cartItems.push({
+                                id: childSnapshot.key,
+                                ...childSnapshot.val()
+                            });
+                        });
+                        console.table(cartItems);
+                        return cartItems;
+                    } else {
+                        console.log('Cart does not exist for this user');
+                        return [];
+                    }
+                })
+                .catch(error => {
+                    console.error('Error debugging cart:', error);
+                });
+        }
+
+        // Function to force add an item to cart
+        function forceAddToCart(requestId) {
+            const requestCardElement = document.querySelector(`[data-request-id="${requestId}"]`);
+            if (requestCardElement) {
+                requestCardElement.classList.add('processing');
+            }
+            
+            // Get the request data
+            firebase.database().ref(`product_requests/${requestId}`).once('value')
+                .then(snapshot => {
+                    if (!snapshot.exists()) {
+                        throw new Error('Request not found');
+                    }
+                    
+                    const requestData = snapshot.val();
+                    if (!requestData.userId) {
+                        throw new Error('User ID not found in request');
+                    }
+                    
+                    if (!requestData.price) {
+                        throw new Error('Price not set for this request');
+                    }
+                    
+                    // Create cart item
+                    const cartItemData = {
+                        productName: requestData.productName,
+                        quantity: parseInt(requestData.quantity) || 1,
+                        price: requestData.price,
+                        storeId: requestData.storeId,
+                        storeName: requestData.storeName,
+                        imageURL: requestData.imageURL || 'https://via.placeholder.com/300x300?text=Custom+Request',
+                        isCustom: true,
+                        requestId: requestId,
+                        addedAt: firebase.database.ServerValue.TIMESTAMP,
+                        forceAdded: true
+                    };
+                    
+                    // Force add to cart
+                    return firebase.database().ref(`carts/${requestData.userId}`).push(cartItemData)
+                        .then(() => {
+                            // Update request status
+                            return firebase.database().ref(`product_requests/${requestId}`).update({
+                                addedToCart: true
+                            });
+                        });
+                })
+                .then(() => {
+                    alert('Item has been successfully added to customer\'s cart');
+                    if (requestCardElement) {
+                        requestCardElement.classList.remove('processing');
+                    }
+                    loadProductRequests(); // Refresh the list
+                })
+                .catch(error => {
+                    console.error('Error forcing item to cart:', error);
+                    alert('Error: ' + error.message);
+                    if (requestCardElement) {
+                        requestCardElement.classList.remove('processing');
+                    }
+                });
+        }
+
+        // Function to automatically check and fix cart issues
+        function autoFixCartIssues() {
+            console.log('Auto-fixing cart issues...');
+            const currentUserId = firebase.auth().currentUser.uid;
+            
+            // Find approved requests that aren't showing as added to cart
+            firebase.database().ref('product_requests')
+                .orderByChild('storeId')
+                .equalTo(currentUserId)
+                .once('value')
+                .then(snapshot => {
+                    if (!snapshot.exists()) return;
+                    
+                    const requestsToFix = [];
+                    snapshot.forEach(childSnapshot => {
+                        const request = childSnapshot.val();
+                        if (request.status === 'approved' && !request.addedToCart) {
+                            requestsToFix.push({
+                                id: childSnapshot.key,
+                                ...request
+                            });
+                        }
+                    });
+                    
+                    console.log(`Found ${requestsToFix.length} requests to fix`);
+                    
+                    if (requestsToFix.length > 0) {
+                        // Fix each request
+                        const fixPromises = requestsToFix.map(request => {
+                            return new Promise((resolve, reject) => {
+                                // Check if it's actually in the cart already
+                                firebase.database().ref(`carts/${request.userId}`).once('value')
+                                    .then(cartSnapshot => {
+                                        let foundInCart = false;
+                                        
+                                        if (cartSnapshot.exists()) {
+                                            cartSnapshot.forEach(cartItem => {
+                                                if (cartItem.val().requestId === request.id) {
+                                                    foundInCart = true;
+                                                }
+                                            });
+                                        }
+                                        
+                                        if (foundInCart) {
+                                            // It's in cart but not marked as such, just update the flag
+                                            return firebase.database().ref(`product_requests/${request.id}`).update({
+                                                addedToCart: true
+                                            }).then(() => resolve());
+                                        } else {
+                                            // Not in cart, add it
+                                            const cartItemData = {
+                                                productName: request.productName,
+                                                quantity: parseInt(request.quantity) || 1,
+                                                price: request.price,
+                                                storeId: request.storeId,
+                                                storeName: request.storeName,
+                                                imageURL: request.imageURL || 'https://via.placeholder.com/300x300?text=Custom+Request',
+                                                isCustom: true,
+                                                requestId: request.id,
+                                                addedAt: firebase.database.ServerValue.TIMESTAMP,
+                                                autoFixed: true
+                                            };
+                                            
+                                            return firebase.database().ref(`carts/${request.userId}`).push(cartItemData)
+                                                .then(() => {
+                                                    return firebase.database().ref(`product_requests/${request.id}`).update({
+                                                        addedToCart: true
+                                                    });
+                                                })
+                                                .then(() => resolve());
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error(`Error fixing request ${request.id}:`, error);
+                                        reject(error);
+                                    });
+                            });
+                        });
+                        
+                        Promise.all(fixPromises)
+                            .then(() => {
+                                console.log('Auto-fix completed successfully');
+                                loadProductRequests(); // Refresh the display
+                            })
+                            .catch(error => {
+                                console.error('Error during auto-fix:', error);
+                            });
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking for cart issues:', error);
+                });
         }
     </script>
 </body>
