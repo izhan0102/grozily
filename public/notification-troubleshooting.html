@@ -214,33 +214,62 @@
                     resultElement.innerHTML += "<p>New permission status: <strong>" + permission + "</strong></p>";
                     
                     if (permission === "granted") {
-                        sendTestNotification();
+                        sendCrossCompatibleNotification();
                     } else {
                         resultElement.innerHTML += "<p style='color: orange;'>⚠️ Notification permission was not granted</p>";
                     }
                 });
             } else {
                 // Permission already granted, send notification
-                sendTestNotification();
+                sendCrossCompatibleNotification();
             }
             
-            function sendTestNotification() {
+            function sendCrossCompatibleNotification() {
                 try {
-                    const notification = new Notification("Test Notification", {
-                        body: "If you can see this, notifications are working!",
-                        icon: "images/notifications/offer-notification.svg"
-                    });
+                    // Check if this is a mobile device
+                    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
                     
-                    resultElement.innerHTML += "<p style='color: green;'>✅ Notification sent successfully!</p>";
-                    
-                    // Log to console
-                    console.log("Notification sent successfully");
-                    
-                    notification.onclick = function() {
-                        resultElement.innerHTML += "<p style='color: green;'>✅ Notification was clicked!</p>";
-                        window.focus();
-                        notification.close();
-                    };
+                    if (isMobile && 'serviceWorker' in navigator) {
+                        resultElement.innerHTML += "<p>Detected mobile device, using Service Worker for notification...</p>";
+                        
+                        // Register service worker and show notification
+                        navigator.serviceWorker.register('service-worker.js')
+                        .then(function(registration) {
+                            resultElement.innerHTML += "<p>Service Worker registered successfully!</p>";
+                            
+                            // Show notification via service worker
+                            registration.showNotification('Test Notification', {
+                                body: 'If you can see this, notifications are working!',
+                                icon: 'images/notifications/offer-notification.svg',
+                                vibrate: [200, 100, 200],
+                                tag: 'test-notification'
+                            });
+                            
+                            resultElement.innerHTML += "<p style='color: green;'>✅ Notification requested via Service Worker</p>";
+                            console.log("Service Worker notification requested");
+                        })
+                        .catch(function(error) {
+                            resultElement.innerHTML += "<p style='color: red;'>❌ Service Worker registration failed: " + error.message + "</p>";
+                            console.error('Service Worker registration failed:', error);
+                        });
+                    } else {
+                        // Desktop notification
+                        resultElement.innerHTML += "<p>Using direct Notification API (for desktop browsers)...</p>";
+                        
+                        const notification = new Notification("Test Notification", {
+                            body: "If you can see this, notifications are working!",
+                            icon: "images/notifications/offer-notification.svg"
+                        });
+                        
+                        resultElement.innerHTML += "<p style='color: green;'>✅ Notification sent successfully!</p>";
+                        console.log("Notification sent successfully");
+                        
+                        notification.onclick = function() {
+                            resultElement.innerHTML += "<p style='color: green;'>✅ Notification was clicked!</p>";
+                            window.focus();
+                            notification.close();
+                        };
+                    }
                 } catch (error) {
                     resultElement.innerHTML += "<p style='color: red;'>❌ Error sending notification: " + error.message + "</p>";
                     console.error("Error sending notification:", error);
