@@ -261,12 +261,20 @@ function createCartItemElement(item) {
     const quantityNumber = cartItem.querySelector('.quantity-number');
     const quantityControls = cartItem.querySelector('.quantity-controls');
     
-    // Set image URL with fallback
-    itemImage.src = item.imageURL || 'https://via.placeholder.com/80?text=No+Image';
+    // Set image URL with improved fallback mechanism
+    // First try the item's imageURL, if that fails use a default product image,
+    // and if that also fails use a text-based fallback from placeholder.com
+    itemImage.src = item.imageURL || 'images/default-product.png';
     itemImage.alt = item.productName || item.name || 'Product';
     itemImage.onerror = function() {
-        this.onerror = null; 
-        this.src = 'https://via.placeholder.com/80?text=No+Image';
+        // If the main image fails, try a fallback image
+        if (this.src !== 'images/default-product.png' && this.src !== 'https://via.placeholder.com/80?text=📦') {
+            this.src = 'images/default-product.png';
+        } else {
+            // If fallback image also fails, use placeholder
+            this.src = 'https://via.placeholder.com/80?text=📦';
+            this.style.padding = '5px';
+        }
         this.classList.add('fallback-image');
     };
     
@@ -293,14 +301,25 @@ function createCartItemElement(item) {
     }
     
     itemQuantity.textContent = `${item.weight || ''} ${item.unit || ''}`.trim();
-    itemPrice.textContent = `₹${formatPrice(item.price * item.quantity)}`;
+    
+    // Ensure price is a number before calculating
+    const itemPriceValue = typeof item.price === 'number' ? 
+        item.price * item.quantity : 
+        parseFloat(item.price || 0) * item.quantity;
+        
+    itemPrice.textContent = `₹${formatPrice(itemPriceValue)}`;
     quantityNumber.textContent = item.quantity;
     
     // Add price per unit if available
     if (item.price) {
         const pricePerUnit = document.createElement('div');
         pricePerUnit.className = 'price-per-unit';
-        pricePerUnit.textContent = `₹${formatPrice(item.price)} each`;
+        
+        // Ensure price is a number
+        const unitPrice = typeof item.price === 'number' ? 
+            item.price : parseFloat(item.price || 0);
+            
+        pricePerUnit.textContent = `₹${formatPrice(unitPrice)} each`;
         cartItem.querySelector('.item-details').appendChild(pricePerUnit);
     }
     
@@ -891,14 +910,22 @@ function setPageLoading(loading) {
 // Format price with commas for thousands
 function formatPrice(price) {
     // Ensure price is a valid number
-    const numPrice = Number(price);
-    if (isNaN(numPrice)) {
+    const numPrice = parseFloat(price);
+    if (isNaN(numPrice) || !isFinite(numPrice)) {
+        console.warn('Invalid price value:', price);
         return '0.00';
     }
-    return numPrice.toLocaleString('en-IN', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-    });
+    
+    try {
+        return numPrice.toLocaleString('en-IN', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2
+        });
+    } catch (error) {
+        console.error('Error formatting price:', error);
+        // Fallback formatting in case toLocaleString fails
+        return numPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
 }
 
 // Animate discount change

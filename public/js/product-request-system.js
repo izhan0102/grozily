@@ -676,6 +676,9 @@ const ProductRequestSystem = (function() {
                 .then((request) => {
                     console.log('[ProductRequestSystem] Adding to customer cart. User ID:', request.userId);
                     
+                    // Default image for requested products
+                    const defaultProductImage = 'images/default-product.png';
+                    
                     // Add to customer's cart
                     const cartItemData = {
                         productName: request.productName,
@@ -684,7 +687,7 @@ const ProductRequestSystem = (function() {
                         price: price,
                         storeId: request.storeId,
                         storeName: request.storeName,
-                        imageURL: request.imageURL || 'https://via.placeholder.com/300x300?text=Custom+Request',
+                        imageURL: request.imageURL || defaultProductImage,
                         isCustom: true,
                         requestId: requestId,
                         addedFromRequest: true,
