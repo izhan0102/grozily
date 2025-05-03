@@ -23,10 +23,75 @@
 <body onload="window.scrollTo(0, 0);" id="top">
     <a id="top-anchor"></a>
     
-    <!-- Test notification button - fixed positioning -->
-    <div id="test-notification-btn" style="position: fixed; top: 70px; right: 20px; z-index: 9999; background-color: #FF5722; color: white; border-radius: 50%; width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 8px rgba(0,0,0,0.3); cursor: pointer; font-size: 24px;">
+    <!-- Test notification button - fixed positioning with working implementation -->
+    <div id="test-notification-btn" style="position: fixed; top: 70px; right: 20px; z-index: 9999; background-color: #3498db; color: white; border-radius: 50%; width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 8px rgba(0,0,0,0.3); cursor: pointer; font-size: 24px;">
         <i class="fa-solid fa-bell"></i>
     </div>
+    
+    <!-- Add the direct implementation that works -->
+    <script>
+        // Test notification button - using the exact implementation that works
+        document.getElementById('test-notification-btn').addEventListener('click', function() {
+            // Check if notifications are supported
+            if (!("Notification" in window)) {
+                alert("This browser does not support notifications");
+                return;
+            }
+            
+            // Request permission if not granted
+            if (Notification.permission !== "granted") {
+                Notification.requestPermission().then(function(permission) {
+                    console.log("New permission status:", permission);
+                    
+                    if (permission === "granted") {
+                        sendSimpleNotification();
+                    } else {
+                        alert("Notification permission was not granted");
+                    }
+                });
+            } else {
+                // Permission already granted, send notification
+                sendSimpleNotification();
+            }
+            
+            function sendSimpleNotification() {
+                try {
+                    const notification = new Notification("Grozily Notification", {
+                        body: "If you can see this, notifications are working!",
+                        icon: "images/notifications/offer-notification.svg"
+                    });
+                    
+                    console.log("Notification sent successfully");
+                    
+                    notification.onclick = function() {
+                        console.log("Notification was clicked");
+                        window.focus();
+                        notification.close();
+                    };
+                } catch (error) {
+                    console.error("Error sending notification:", error);
+                    alert("Error sending notification: " + error.message);
+                }
+            }
+        });
+        
+        // Auto-send notification on page load if permission is granted
+        document.addEventListener('DOMContentLoaded', function() {
+            setTimeout(function() {
+                if (Notification.permission === "granted") {
+                    try {
+                        const notification = new Notification("Welcome to Grozily", {
+                            body: "You'll receive notifications about your orders and special offers.",
+                            icon: "images/notifications/offer-notification.svg"
+                        });
+                        console.log("Welcome notification sent on page load");
+                    } catch (error) {
+                        console.error("Error sending welcome notification:", error);
+                    }
+                }
+            }, 2000); // Wait for 2 seconds
+        });
+    </script>
 
     <div class="app-container">
         <header class="app-header">
@@ -249,94 +314,5 @@
     <!-- Add the product request system JS -->
     <script src="js/product-request-system.js"></script>
     <script src="home.js"></script>
-
-    <!-- Remove the previous test button at the end of the file and add this improved script right after the button -->
-    <script>
-        // Add direct click handler as soon as DOM is parsed
-        document.getElementById('test-notification-btn').addEventListener('click', function() {
-            console.log('Test notification button clicked');
-            
-            // Try multiple methods to trigger a notification
-            if (window.NotificationHandler && typeof window.NotificationHandler.sendTestNotification === 'function') {
-                console.log('Using NotificationHandler.sendTestNotification');
-                window.NotificationHandler.sendTestNotification();
-            } 
-            else if (window.Notification && Notification.permission === 'granted') {
-                console.log('Using direct Notification API');
-                // Send direct notification as fallback
-                try {
-                    const notification = new Notification('Direct Test Notification', {
-                        body: 'This is a direct test notification!',
-                        icon: 'images/notifications/offer-notification.svg'
-                    });
-                    console.log('Direct notification sent');
-                } catch(e) {
-                    console.error('Error sending direct notification:', e);
-                    alert('Failed to send notification: ' + e.message);
-                }
-            }
-            else if (window.Notification && Notification.permission !== 'denied') {
-                console.log('Requesting permission first');
-                // Request permission first
-                Notification.requestPermission().then(function(permission) {
-                    if (permission === 'granted') {
-                        try {
-                            const notification = new Notification('Permission Granted!', {
-                                body: 'Notifications are now enabled!',
-                                icon: 'images/notifications/offer-notification.svg'
-                            });
-                            console.log('Permission granted notification sent');
-                        } catch(e) {
-                            console.error('Error after permission granted:', e);
-                            alert('Error after permission granted: ' + e.message);
-                        }
-                    } else {
-                        alert('Please allow notifications to test this feature.');
-                    }
-                });
-            }
-            else {
-                alert('Notifications not supported or blocked by your browser.');
-            }
-        });
-    </script>
-
-    <!-- Add immediate notification trigger script -->
-    <script>
-        // Force notification on page load
-        window.addEventListener('load', function() {
-            console.log('Page fully loaded, attempting to send notification');
-            
-            // Add a delay to ensure everything is initialized
-            setTimeout(function() {
-                try {
-                    if(window.NotificationHandler && typeof window.NotificationHandler.sendTestNotification === 'function') {
-                        console.log('Triggering test notification via NotificationHandler');
-                        window.NotificationHandler.sendTestNotification();
-                    }
-                    else if(window.Notification && Notification.permission === 'granted') {
-                        console.log('Sending direct notification');
-                        new Notification('Page Loaded Notification', {
-                            body: 'This notification was triggered on page load',
-                            icon: 'images/notifications/offer-notification.svg'
-                        });
-                    }
-                    else if(window.Notification) {
-                        console.log('Requesting permission on page load');
-                        Notification.requestPermission().then(function(permission) {
-                            if(permission === 'granted') {
-                                new Notification('Notifications Enabled', {
-                                    body: 'You will now receive notifications from Grozily',
-                                    icon: 'images/notifications/offer-notification.svg'
-                                });
-                            }
-                        });
-                    }
-                } catch(e) {
-                    console.error('Error sending notification on page load:', e);
-                }
-            }, 1500);
-        });
-    </script>
 </body>
 </html> 

@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Notification Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            line-height: 1.6;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px 0;
+            border-radius: 4px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        #status {
+            margin: 20px 0;
+            padding: 10px;
+            background: #f8f8f8;
+            border-left: 4px solid #4CAF50;
+        }
+        .blocked {
+            border-left-color: #f44336 !important;
+        }
+    </style>
+</head>
+<body>
+    <h1>Notification Tester</h1>
+    
+    <div id="status">Checking notification permission...</div>
+    
+    <button id="requestPermission">Request Notification Permission</button>
+    <button id="sendNotification" disabled>Send Test Notification</button>
+    <button id="clearLogs">Clear Console Logs</button>
+    
+    <div>
+        <h3>Troubleshooting Steps:</h3>
+        <ol>
+            <li>Check that notifications are enabled in your browser settings</li>
+            <li>Ensure you're on HTTPS or localhost (notifications require secure context)</li>
+            <li>Try a different browser if your current one is blocking notifications</li>
+            <li>Check your system-level notification settings (Windows/macOS/etc.)</li>
+        </ol>
+    </div>
+    
+    <script>
+        // Log starting point
+        console.log('Notification test page loaded');
+        
+        const statusEl = document.getElementById('status');
+        const requestBtn = document.getElementById('requestPermission');
+        const sendBtn = document.getElementById('sendNotification');
+        const clearBtn = document.getElementById('clearLogs');
+        
+        // Check if browser supports notifications
+        if (!("Notification" in window)) {
+            statusEl.textContent = "This browser does not support notifications";
+            statusEl.className = "blocked";
+            requestBtn.disabled = true;
+        } else {
+            updateStatus();
+        }
+        
+        // Update status display
+        function updateStatus() {
+            const permission = Notification.permission;
+            
+            if (permission === "granted") {
+                statusEl.textContent = "✅ Notification permission: GRANTED";
+                requestBtn.disabled = true;
+                sendBtn.disabled = false;
+            } 
+            else if (permission === "denied") {
+                statusEl.textContent = "❌ Notification permission: BLOCKED";
+                statusEl.className = "blocked";
+                requestBtn.disabled = true;
+                sendBtn.disabled = true;
+            } 
+            else {
+                statusEl.textContent = "⚠️ Notification permission: DEFAULT (not requested yet)";
+                requestBtn.disabled = false;
+                sendBtn.disabled = true;
+            }
+            
+            console.log(`Current notification permission: ${permission}`);
+        }
+        
+        // Request permission button
+        requestBtn.addEventListener('click', function() {
+            console.log('Requesting notification permission...');
+            
+            Notification.requestPermission()
+                .then(function(permission) {
+                    console.log(`Permission request result: ${permission}`);
+                    updateStatus();
+                    
+                    if (permission === "granted") {
+                        // Send an initial notification
+                        sendTestNotification("Permission Granted", "You have successfully enabled notifications!");
+                    }
+                })
+                .catch(function(error) {
+                    console.error('Error requesting permission:', error);
+                    statusEl.textContent = `Error requesting permission: ${error.message}`;
+                    statusEl.className = "blocked";
+                });
+        });
+        
+        // Send notification button
+        sendBtn.addEventListener('click', function() {
+            sendTestNotification();
+        });
+        
+        // Clear console button
+        clearBtn.addEventListener('click', function() {
+            console.clear();
+            console.log('Console cleared');
+        });
+        
+        // Function to send a test notification
+        function sendTestNotification(title = "Test Notification", body = "This is a test notification!") {
+            try {
+                console.log(`Sending notification: "${title}" - "${body}"`);
+                
+                const notification = new Notification(title, {
+                    body: body,
+                    icon: "images/notifications/offer-notification.svg",
+                    badge: "images/logo-badge.png",
+                    timestamp: Date.now()
+                });
+                
+                notification.onclick = function() {
+                    console.log('Notification clicked');
+                    window.focus();
+                    notification.close();
+                };
+                
+                console.log('Notification sent successfully!');
+                return true;
+            } catch (error) {
+                console.error('Error sending notification:', error);
+                statusEl.textContent = `Error sending notification: ${error.message}`;
+                return false;
+            }
+        }
+        
+        // Try to automatically send a notification if permission is already granted
+        if (Notification.permission === "granted") {
+            console.log('Permission already granted, sending automatic test notification');
+            // Wait a moment to ensure page is fully loaded
+            setTimeout(function() {
+                sendTestNotification("Automatic Test", "This notification was sent automatically on page load");
+            }, 1000);
+        }
+    </script>
+</body>
+</html> 
