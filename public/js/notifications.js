@@ -3,6 +3,15 @@
  * This file handles web push notifications using the Notification API
  */
 
+console.log('========= NOTIFICATIONS SYSTEM LOADING =========');
+
+// Check if notifications are supported
+if (!('Notification' in window)) {
+    console.error('This browser does not support desktop notification');
+} else {
+    console.log('Notifications are supported! Current permission:', Notification.permission);
+}
+
 // Check if the browser supports notifications
 const NotificationHandler = {
     // Store notification permission status
@@ -508,11 +517,31 @@ const NotificationHandler = {
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[NotificationHandler] Document ready, initializing notification system');
     
-    // Initialize notification system with a slight delay to ensure everything is loaded
-    setTimeout(() => {
-        NotificationHandler.init();
-    }, 2000);
+    // Initialize notification system immediately
+    NotificationHandler.init();
 });
 
-// Export NotificationHandler globally
+// Also try to initialize on window load for reliability
+window.addEventListener('load', function() {
+    console.log('[NotificationHandler] Window loaded, ensuring notification system is initialized');
+    
+    // Check if already initialized
+    if (NotificationHandler.permission === 'default') {
+        console.log('[NotificationHandler] Permission still default, reinitializing');
+        NotificationHandler.init();
+        
+        // Force permission request after a delay if still not granted
+        setTimeout(function() {
+            if (Notification.permission === 'default') {
+                console.log('[NotificationHandler] Forcing permission request');
+                NotificationHandler.requestPermission();
+            } else if (Notification.permission === 'granted') {
+                console.log('[NotificationHandler] Permission already granted, sending test notification');
+                NotificationHandler.sendTestNotification();
+            }
+        }, 2000);
+    }
+});
+
+// Expose globally for direct access
 window.NotificationHandler = NotificationHandler; 

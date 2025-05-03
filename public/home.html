@@ -22,6 +22,12 @@
 </head>
 <body onload="window.scrollTo(0, 0);" id="top">
     <a id="top-anchor"></a>
+    
+    <!-- Test notification button - fixed positioning -->
+    <div id="test-notification-btn" style="position: fixed; top: 70px; right: 20px; z-index: 9999; background-color: #FF5722; color: white; border-radius: 50%; width: 60px; height: 60px; display: flex; justify-content: center; align-items: center; box-shadow: 0 4px 8px rgba(0,0,0,0.3); cursor: pointer; font-size: 24px;">
+        <i class="fa-solid fa-bell"></i>
+    </div>
+
     <div class="app-container">
         <header class="app-header">
             <div class="header-content">
@@ -244,23 +250,92 @@
     <script src="js/product-request-system.js"></script>
     <script src="home.js"></script>
 
-    <!-- Add this right after the opening <body> tag -->
-    <div id="test-notification-btn" style="position: fixed; top: 70px; right: 20px; z-index: 1000; background-color: #4CAF50; color: white; border-radius: 50%; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer;">
-        <i class="fa-solid fa-bell"></i>
-    </div>
-
+    <!-- Remove the previous test button at the end of the file and add this improved script right after the button -->
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const testBtn = document.getElementById('test-notification-btn');
-            if(testBtn) {
-                testBtn.addEventListener('click', function() {
-                    if(window.NotificationHandler && typeof window.NotificationHandler.sendTestNotification === 'function') {
-                        window.NotificationHandler.sendTestNotification();
+        // Add direct click handler as soon as DOM is parsed
+        document.getElementById('test-notification-btn').addEventListener('click', function() {
+            console.log('Test notification button clicked');
+            
+            // Try multiple methods to trigger a notification
+            if (window.NotificationHandler && typeof window.NotificationHandler.sendTestNotification === 'function') {
+                console.log('Using NotificationHandler.sendTestNotification');
+                window.NotificationHandler.sendTestNotification();
+            } 
+            else if (window.Notification && Notification.permission === 'granted') {
+                console.log('Using direct Notification API');
+                // Send direct notification as fallback
+                try {
+                    const notification = new Notification('Direct Test Notification', {
+                        body: 'This is a direct test notification!',
+                        icon: 'images/notifications/offer-notification.svg'
+                    });
+                    console.log('Direct notification sent');
+                } catch(e) {
+                    console.error('Error sending direct notification:', e);
+                    alert('Failed to send notification: ' + e.message);
+                }
+            }
+            else if (window.Notification && Notification.permission !== 'denied') {
+                console.log('Requesting permission first');
+                // Request permission first
+                Notification.requestPermission().then(function(permission) {
+                    if (permission === 'granted') {
+                        try {
+                            const notification = new Notification('Permission Granted!', {
+                                body: 'Notifications are now enabled!',
+                                icon: 'images/notifications/offer-notification.svg'
+                            });
+                            console.log('Permission granted notification sent');
+                        } catch(e) {
+                            console.error('Error after permission granted:', e);
+                            alert('Error after permission granted: ' + e.message);
+                        }
                     } else {
-                        alert('Notification system not initialized yet. Please wait a moment and try again.');
+                        alert('Please allow notifications to test this feature.');
                     }
                 });
             }
+            else {
+                alert('Notifications not supported or blocked by your browser.');
+            }
+        });
+    </script>
+
+    <!-- Add immediate notification trigger script -->
+    <script>
+        // Force notification on page load
+        window.addEventListener('load', function() {
+            console.log('Page fully loaded, attempting to send notification');
+            
+            // Add a delay to ensure everything is initialized
+            setTimeout(function() {
+                try {
+                    if(window.NotificationHandler && typeof window.NotificationHandler.sendTestNotification === 'function') {
+                        console.log('Triggering test notification via NotificationHandler');
+                        window.NotificationHandler.sendTestNotification();
+                    }
+                    else if(window.Notification && Notification.permission === 'granted') {
+                        console.log('Sending direct notification');
+                        new Notification('Page Loaded Notification', {
+                            body: 'This notification was triggered on page load',
+                            icon: 'images/notifications/offer-notification.svg'
+                        });
+                    }
+                    else if(window.Notification) {
+                        console.log('Requesting permission on page load');
+                        Notification.requestPermission().then(function(permission) {
+                            if(permission === 'granted') {
+                                new Notification('Notifications Enabled', {
+                                    body: 'You will now receive notifications from Grozily',
+                                    icon: 'images/notifications/offer-notification.svg'
+                                });
+                            }
+                        });
+                    }
+                } catch(e) {
+                    console.error('Error sending notification on page load:', e);
+                }
+            }, 1500);
         });
     </script>
 </body>
