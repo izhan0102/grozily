@@ -39,6 +39,7 @@ const ProductRequestSystem = (function() {
     let pendingNotifications = [];
     let processedNotifications = new Set(); // Track processed notification IDs
     let requestProcessedStatus = {}; // Track which requests have been processed by status
+    let notificationHistoryKey = 'grozily_notification_history'; // localStorage key
     
     // DOM elements for notifications
     let notificationContainer = null;
@@ -51,6 +52,12 @@ const ProductRequestSystem = (function() {
         
         // Create notification container if it doesn't exist
         createNotificationContainer();
+        
+        // Load processed notifications from localStorage
+        loadProcessedNotifications();
+        
+        // Clear old notifications to prevent localStorage from growing too large
+        clearOldNotifications();
         
         // Check if user is logged in
         firebase.auth().onAuthStateChanged(function(user) {
@@ -76,12 +83,52 @@ const ProductRequestSystem = (function() {
         console.log('[ProductRequestSystem] Initialization complete');
     }
     
+    // Load processed notifications from localStorage
+    function loadProcessedNotifications() {
+        try {
+            const savedData = localStorage.getItem(notificationHistoryKey);
+            if (savedData) {
+                const parsedData = JSON.parse(savedData);
+                
+                // Load processed notification IDs
+                if (parsedData.processedIds && Array.isArray(parsedData.processedIds)) {
+                    processedNotifications = new Set(parsedData.processedIds);
+                    console.log('[ProductRequestSystem] Loaded', processedNotifications.size, 'processed notification IDs from localStorage');
+                }
+                
+                // Load request status tracking
+                if (parsedData.requestStatus && typeof parsedData.requestStatus === 'object') {
+                    requestProcessedStatus = parsedData.requestStatus;
+                    console.log('[ProductRequestSystem] Loaded request status tracking from localStorage');
+                }
+            }
+        } catch (error) {
+            console.error('[ProductRequestSystem] Error loading processed notifications from localStorage:', error);
+        }
+    }
+    
+    // Save processed notifications to localStorage
+    function saveProcessedNotifications() {
+        try {
+            const dataToSave = {
+                processedIds: Array.from(processedNotifications),
+                requestStatus: requestProcessedStatus,
+                lastUpdated: new Date().toISOString()
+            };
+            
+            localStorage.setItem(notificationHistoryKey, JSON.stringify(dataToSave));
+            console.log('[ProductRequestSystem] Saved notification history to localStorage');
+        } catch (error) {
+            console.error('[ProductRequestSystem] Error saving processed notifications to localStorage:', error);
+        }
+    }
+    
     // Create notification container
     function createNotificationContainer() {
         // Check if container already exists
-        if (document.getElementById('grozily-notification-container')) {
-            notificationContainer = document.getElementById('grozily-notification-container');
-            console.log('[ProductRequestSystem] Using existing notification container');
+        notificationContainer = document.getElementById('grozily-notification-container');
+        if (notificationContainer) {
+            console.log('[ProductRequestSystem] Notification container already exists');
             return;
         }
         
@@ -90,129 +137,139 @@ const ProductRequestSystem = (function() {
         // Create container
         notificationContainer = document.createElement('div');
         notificationContainer.id = 'grozily-notification-container';
-        notificationContainer.style.position = 'fixed';
-        notificationContainer.style.top = '20px';
-        notificationContainer.style.right = '20px';
-        notificationContainer.style.zIndex = '9999';
-        notificationContainer.style.display = 'flex';
-        notificationContainer.style.flexDirection = 'column';
-        notificationContainer.style.gap = '10px';
-        notificationContainer.style.maxWidth = '350px';
-        
-        // Add to body
+        notificationContainer.className = 'grozily-notification-container';
         document.body.appendChild(notificationContainer);
-        console.log('[ProductRequestSystem] Notification container added to DOM');
         
-        // Create stylesheet for notifications
-        const style = document.createElement('style');
-        style.textContent = `
-            .grozily-notification {
-                padding: 15px;
-                border-radius: 8px;
-                box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-                margin-bottom: 10px;
-                transform: translateX(120%);
-                transition: transform 0.3s ease;
-                display: flex;
-                align-items: flex-start;
-                overflow: hidden;
-                position: relative;
-            }
-            
-            .grozily-notification.show {
-                transform: translateX(0);
-            }
-            
-            .grozily-notification-icon {
-                margin-right: 12px;
-                font-size: 20px;
-                color: white;
-                width: 24px;
-                text-align: center;
-            }
-            
-            .grozily-notification-content {
-                flex: 1;
-            }
-            
-            .grozily-notification-title {
-                font-weight: bold;
-                font-size: 16px;
-                margin-bottom: 5px;
-                color: white;
-            }
-            
-            .grozily-notification-message {
-                font-size: 14px;
-                color: rgba(255, 255, 255, 0.9);
-            }
-            
-            .grozily-notification-actions {
-                margin-top: 10px;
-                display: flex;
-                gap: 8px;
-            }
-            
-            .grozily-notification-btn {
-                padding: 6px 12px;
-                border-radius: 4px;
-                font-size: 12px;
-                font-weight: bold;
-                cursor: pointer;
-                border: none;
-                transition: background-color 0.2s;
-            }
-            
-            .grozily-notification-primary {
-                background-color: rgba(255, 255, 255, 0.9);
-                color: #333;
-            }
-            
-            .grozily-notification-secondary {
-                background-color: rgba(255, 255, 255, 0.2);
-                color: white;
-            }
-            
-            .grozily-notification-progress {
-                position: absolute;
-                bottom: 0;
-                left: 0;
-                height: 3px;
-                background-color: rgba(255, 255, 255, 0.4);
-                width: 100%;
-            }
-            
-            .grozily-notification-progress-inner {
-                height: 100%;
-                background-color: rgba(255, 255, 255, 0.8);
-                width: 100%;
-                transform-origin: left;
-                animation: notification-progress 5s linear forwards;
-            }
-            
-            @keyframes notification-progress {
-                0% { transform: scaleX(1); }
-                100% { transform: scaleX(0); }
-            }
-            
-            .grozily-notification-success {
-                background-color: #38A169;
-            }
-            
-            .grozily-notification-error {
-                background-color: #E53E3E;
-            }
-            
-            .grozily-notification-info {
-                background-color: #3182CE;
-            }
-            
-            .grozily-notification-warning {
-                background-color: #DD6B20;
-            }
-        `;
-        document.head.appendChild(style);
-        console.log('[ProductRequestSystem] Notification styles added to DOM');
+        // Add CSS styles directly if not already present
+        if (!document.getElementById('grozily-notification-styles')) {
+            const styleTag = document.createElement('style');
+            styleTag.id = 'grozily-notification-styles';
+            styleTag.textContent = `
+                .grozily-notification-container {
+                    position: fixed;
+                    top: 10px;
+                    right: 10px;
+                    max-width: 350px;
+                    z-index: 9999;
+                    display: flex;
+                    flex-direction: column-reverse;
+                    align-items: flex-end;
+                }
+                .grozily-notification {
+                    background-color: #fff;
+                    border-radius: 8px;
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                    margin-bottom: 10px;
+                    overflow: hidden;
+                    width: 100%;
+                    display: flex;
+                    transform: translateX(120%);
+                    transition: transform 0.3s ease-out;
+                    max-height: 0;
+                    opacity: 0;
+                }
+                .grozily-notification.show {
+                    transform: translateX(0);
+                    max-height: 400px;
+                    opacity: 1;
+                }
+                .grozily-notification-icon {
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    width: 50px;
+                    color: white;
+                    font-size: 20px;
+                }
+                .grozily-notification-success .grozily-notification-icon {
+                    background-color: #48BB78;
+                }
+                .grozily-notification-error .grozily-notification-icon {
+                    background-color: #F56565;
+                }
+                .grozily-notification-info .grozily-notification-icon {
+                    background-color: #4299E1;
+                }
+                .grozily-notification-warning .grozily-notification-icon {
+                    background-color: #ECC94B;
+                }
+                .grozily-notification-content {
+                    flex: 1;
+                    padding: 12px 15px;
+                    position: relative;
+                }
+                .grozily-notification-title {
+                    font-weight: bold;
+                    margin-bottom: 5px;
+                    font-size: 16px;
+                }
+                .grozily-notification-message {
+                    font-size: 14px;
+                    color: #4A5568;
+                    margin-bottom: 10px;
+                }
+                .grozily-notification-actions {
+                    display: flex;
+                    justify-content: flex-end;
+                    margin-top: 8px;
+                }
+                .grozily-notification-btn {
+                    border: none;
+                    border-radius: 4px;
+                    padding: 6px 12px;
+                    margin-left: 8px;
+                    cursor: pointer;
+                    font-size: 13px;
+                    font-weight: 500;
+                    transition: background-color 0.2s;
+                }
+                .grozily-notification-primary {
+                    background-color: #4299E1;
+                    color: white;
+                }
+                .grozily-notification-primary:hover {
+                    background-color: #3182CE;
+                }
+                .grozily-notification-secondary {
+                    background-color: #E2E8F0;
+                    color: #4A5568;
+                }
+                .grozily-notification-secondary:hover {
+                    background-color: #CBD5E0;
+                }
+                .grozily-notification-progress {
+                    position: absolute;
+                    bottom: 0;
+                    left: 0;
+                    width: 100%;
+                    height: 3px;
+                    background-color: #EDF2F7;
+                }
+                .grozily-notification-progress-inner {
+                    height: 100%;
+                    width: 100%;
+                    transform-origin: left;
+                    background-color: #CBD5E0;
+                    animation: grozily-notification-progress-animation linear forwards;
+                }
+                @keyframes grozily-notification-progress-animation {
+                    from { transform: scaleX(1); }
+                    to { transform: scaleX(0); }
+                }
+                .custom-badge {
+                    font-size: 10px;
+                    background-color: #805AD5;
+                    color: white;
+                    padding: 2px 6px;
+                    border-radius: 10px;
+                    margin-left: 5px;
+                    display: inline-block;
+                }
+            `;
+            document.head.appendChild(styleTag);
+        }
+        
+        console.log('[ProductRequestSystem] Notification system ready');
     }
     
     // Show notification
@@ -246,7 +303,7 @@ const ProductRequestSystem = (function() {
                 <div class="grozily-notification-message">${message}</div>
                 ${actions.length > 0 ? '<div class="grozily-notification-actions"></div>' : ''}
                 <div class="grozily-notification-progress">
-                    <div class="grozily-notification-progress-inner"></div>
+                    <div class="grozily-notification-progress-inner" style="animation-duration: ${duration}ms;"></div>
                 </div>
             </div>
         `;
@@ -258,8 +315,16 @@ const ProductRequestSystem = (function() {
                 const button = document.createElement('button');
                 button.className = `grozily-notification-btn grozily-notification-${action.type || 'primary'}`;
                 button.textContent = action.text;
-                button.addEventListener('click', () => {
-                    action.onClick();
+                button.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    
+                    // If action has onClick handler, call it
+                    if (typeof action.onClick === 'function') {
+                        action.onClick();
+                    }
+                    
+                    // Close notification if closeOnClick is not explicitly set to false
                     if (action.closeOnClick !== false) {
                         closeNotification(notification);
                     }
@@ -267,6 +332,11 @@ const ProductRequestSystem = (function() {
                 actionsContainer.appendChild(button);
             });
         }
+        
+        // Add click event to the notification to close it
+        notification.addEventListener('click', () => {
+            closeNotification(notification);
+        });
         
         // Add to container
         notificationContainer.appendChild(notification);
@@ -291,10 +361,30 @@ const ProductRequestSystem = (function() {
     // Close notification
     function closeNotification(notification) {
         console.log('[ProductRequestSystem] Closing notification');
+        
+        // Check if notification still exists
+        if (!notification || !notification.parentNode) {
+            console.log('[ProductRequestSystem] Notification already removed');
+            return;
+        }
+        
         notification.classList.remove('show');
+        
+        // Make sure we don't try to remove it multiple times
+        if (notification.dataset.removing === 'true') {
+            console.log('[ProductRequestSystem] Notification already being removed');
+            return;
+        }
+        
+        // Mark as being removed
+        notification.dataset.removing = 'true';
+        
         setTimeout(() => {
-            notification.remove();
-            console.log('[ProductRequestSystem] Notification removed from DOM');
+            // Double check that notification still exists before removing
+            if (notification.parentNode) {
+                notification.parentNode.removeChild(notification);
+                console.log('[ProductRequestSystem] Notification removed from DOM');
+            }
         }, 300);
     }
     
@@ -362,6 +452,9 @@ const ProductRequestSystem = (function() {
             console.log('[ProductRequestSystem] Request already processed with this status, skipping:', requestStatusKey);
             processedNotifications.add(notificationId);
             
+            // Save to localStorage to persist across page refreshes
+            saveProcessedNotifications();
+            
             // Mark notification as read without showing it again
             if (currentUser) {
                 firebase.database().ref(`notifications/${currentUser.uid}/${notificationId}`).update({
@@ -376,6 +469,9 @@ const ProductRequestSystem = (function() {
         // Mark as processed immediately to prevent duplicates even in case of errors
         processedNotifications.add(notificationId);
         requestProcessedStatus[requestStatusKey] = true;
+        
+        // Save to localStorage to persist across page refreshes
+        saveProcessedNotifications();
         
         // Show notification based on type
         if (type === 'product_request') {
@@ -394,7 +490,11 @@ const ProductRequestSystem = (function() {
                         },
                         {
                             text: 'Dismiss',
-                            type: 'secondary'
+                            type: 'secondary',
+                            onClick: () => {
+                                console.log('[ProductRequestSystem] Dismiss button clicked');
+                                // Already handled in closeNotification
+                            }
                         }
                     ]
                 });
@@ -405,7 +505,17 @@ const ProductRequestSystem = (function() {
                     title: title || 'Product Request Rejected',
                     message: message || 'Unfortunately, your product request was declined by the vendor.',
                     type: 'error',
-                    duration: 8000
+                    duration: 8000,
+                    actions: [
+                        {
+                            text: 'Dismiss',
+                            type: 'secondary',
+                            onClick: () => {
+                                console.log('[ProductRequestSystem] Dismiss button clicked');
+                                // Already handled in closeNotification
+                            }
+                        }
+                    ]
                 });
             }
         }
@@ -524,53 +634,52 @@ const ProductRequestSystem = (function() {
         });
     }
     
-    // Approve a product request (vendor only)
+    // Approve a product request
     function approveProductRequest(requestId, price) {
-        console.log('[ProductRequestSystem] Approving product request:', requestId, 'with price:', price);
-        
+        console.log('[ProductRequestSystem] Approving product request:', requestId, 'at price:', price);
         return new Promise((resolve, reject) => {
-            if (!currentUser) {
-                console.error('[ProductRequestSystem] User not authenticated');
-                reject(new Error('User not authenticated'));
+            if (!requestId) {
+                console.error('[ProductRequestSystem] Cannot approve request: Missing request ID');
+                reject(new Error('Missing request ID'));
                 return;
             }
             
-            // Get the request details
-            firebase.database().ref(`product_requests/${requestId}`).once('value')
+            if (!price || isNaN(parseFloat(price)) || parseFloat(price) <= 0) {
+                console.error('[ProductRequestSystem] Cannot approve request: Invalid price');
+                reject(new Error('Invalid price'));
+                return;
+            }
+            
+            // Standardize price to a number
+            price = parseFloat(price).toFixed(2);
+            
+            // Get request data
+            firebase.database().ref(`product_requests/${requestId}`)
+                .once('value')
                 .then((snapshot) => {
                     if (!snapshot.exists()) {
-                        console.error('[ProductRequestSystem] Request not found:', requestId);
                         throw new Error('Request not found');
                     }
                     
-                    const request = snapshot.val();
-                    console.log('[ProductRequestSystem] Retrieved request data:', request);
-                    
-                    // Check if this vendor owns this request
-                    if (request.storeId !== currentUser.uid) {
-                        console.error('[ProductRequestSystem] Permission denied for request:', requestId);
-                        throw new Error('You do not have permission to approve this request');
-                    }
+                    return snapshot.val();
+                })
+                .then((request) => {
+                    console.log('[ProductRequestSystem] Request data:', request);
                     
                     // Update request status
-                    console.log('[ProductRequestSystem] Updating request status to approved');
                     return firebase.database().ref(`product_requests/${requestId}`).update({
                         status: 'approved',
                         price: price,
-                        updatedAt: firebase.database.ServerValue.TIMESTAMP
-                    });
+                        approvedAt: firebase.database.ServerValue.TIMESTAMP
+                    }).then(() => request);
                 })
-                .then((requestSnapshot) => {
-                    console.log('[ProductRequestSystem] Getting updated request data');
-                    return firebase.database().ref(`product_requests/${requestId}`).once('value');
-                })
-                .then((snapshot) => {
-                    const request = snapshot.val();
+                .then((request) => {
                     console.log('[ProductRequestSystem] Adding to customer cart. User ID:', request.userId);
                     
                     // Add to customer's cart
                     const cartItemData = {
                         productName: request.productName,
+                        name: request.productName, // Add name for backward compatibility
                         quantity: parseInt(request.quantity) || 1,
                         price: price,
                         storeId: request.storeId,
@@ -578,78 +687,51 @@ const ProductRequestSystem = (function() {
                         imageURL: request.imageURL || 'https://via.placeholder.com/300x300?text=Custom+Request',
                         isCustom: true,
                         requestId: requestId,
-                        addedAt: firebase.database.ServerValue.TIMESTAMP
+                        addedFromRequest: true,
+                        requestDetails: {
+                            requestId: requestId,
+                            description: request.description,
+                            requestedAt: request.createdAt
+                        }
                     };
                     
                     console.log('[ProductRequestSystem] Cart item data:', cartItemData);
                     
-                    // Check if the cart already exists
-                    return firebase.database().ref(`carts/${request.userId}`).once('value')
-                        .then(cartSnapshot => {
-                            const cartData = cartSnapshot.val() || {};
+                    // Use the items subobject for cart
+                    return firebase.database().ref(`carts/${request.userId}/items/${requestId}`).set(cartItemData)
+                        .then(() => {
+                            console.log('[ProductRequestSystem] Added to cart successfully');
                             
-                            // Get the 'items' property or create it if it doesn't exist
-                            const cartItems = cartData.items || {};
+                            // Mark as added to cart
+                            return firebase.database().ref(`product_requests/${requestId}`).update({
+                                addedToCart: true
+                            });
+                        })
+                        .then(() => {
+                            // Create and send notification
+                            const notificationData = {
+                                type: 'product_request',
+                                title: 'Product Request Approved!',
+                                message: `Your request for ${request.productName} has been approved at ₹${price}.`,
+                                status: 'approved',
+                                requestId: requestId,
+                                price: price,
+                                createdAt: firebase.database.ServerValue.TIMESTAMP,
+                                read: false
+                            };
                             
-                            // Generate a unique key for the item
-                            const itemKey = firebase.database().ref().push().key;
-                            
-                            // Add the new item to the items object
-                            cartItems[itemKey] = cartItemData;
-                            
-                            // Update the cart with the new items object
-                            return firebase.database().ref(`carts/${request.userId}`).update({
-                                items: cartItems
+                            return firebase.database().ref(`notifications/${request.userId}`).push(notificationData);
+                        })
+                        .then(() => {
+                            console.log('[ProductRequestSystem] Notification sent successfully');
+                            resolve({
+                                success: true,
+                                message: 'Product request approved and added to customer\'s cart'
                             });
                         });
                 })
-                .then(() => {
-                    console.log('[ProductRequestSystem] Item added to cart successfully, getting request data for notification');
-                    return firebase.database().ref(`product_requests/${requestId}`).once('value');
-                })
-                .then((snapshot) => {
-                    const request = snapshot.val();
-                    console.log('[ProductRequestSystem] Creating notification for user:', request.userId);
-                    
-                    // Create notification for customer
-                    const notification = {
-                        type: 'product_request',
-                        status: 'approved',
-                        title: 'Product Request Approved!',
-                        message: `Your request for "${request.productName}" has been approved at ₹${price}.`,
-                        requestId: requestId,
-                        price: price,
-                        createdAt: firebase.database.ServerValue.TIMESTAMP,
-                        read: false
-                    };
-                    
-                    console.log('[ProductRequestSystem] Notification data:', notification);
-                    return firebase.database().ref(`notifications/${request.userId}`).push(notification);
-                })
-                .then(() => {
-                    console.log('[ProductRequestSystem] Notification created successfully');
-                    
-                    // Debug: Check if the notification was actually saved
-                    return firebase.database().ref(`product_requests/${requestId}`).once('value');
-                })
-                .then((snapshot) => {
-                    const request = snapshot.val();
-                    console.log('[ProductRequestSystem] Final check - getting notification data for user', request.userId);
-                    
-                    return firebase.database().ref(`notifications/${request.userId}`).once('value');
-                })
-                .then((snapshot) => {
-                    if (snapshot.exists()) {
-                        console.log('[ProductRequestSystem] Notifications exist for user:', snapshot.val());
-                    } else {
-                        console.log('[ProductRequestSystem] No notifications found for user');
-                    }
-                    
-                    console.log('[ProductRequestSystem] Approval process completed successfully');
-                    resolve({ success: true });
-                })
                 .catch((error) => {
-                    console.error('[ProductRequestSystem] Error approving product request:', error);
+                    console.error('[ProductRequestSystem] Error approving request:', error);
                     reject(error);
                 });
         });
@@ -831,6 +913,21 @@ const ProductRequestSystem = (function() {
     };
 })();
 
+// Auto-initialize the system when the script loads
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('[ProductRequestSystem] Auto-initializing on page load');
+    ProductRequestSystem.init();
+});
+
+// Add a cleanup function for page unload to prevent memory leaks
+window.addEventListener('beforeunload', function() {
+    console.log('[ProductRequestSystem] Page unloading, performing cleanup');
+    // Any cleanup needed when navigating away from the page
+});
+
+// Export the ProductRequestSystem to window for debug purposes
+window.ProductRequestSystem = ProductRequestSystem;
+
 // Add a debugging function to check cart data
 function debugCartData(userId) {
     console.log(`[DEBUG] Checking cart data for user: ${userId}`);
@@ -940,22 +1037,45 @@ function migrateCartStructures() {
         });
 }
 
-// Auto initialize when document is ready
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('[ProductRequestSystem] Document ready, initializing system');
-    ProductRequestSystem.init();
-    
-    // Add debug check after a short delay to let auth initialize
-    setTimeout(() => {
-        const currentUser = firebase.auth().currentUser;
-        if (currentUser) {
-            debugCartData(currentUser.uid);
+// Add a method to clear old notifications from localStorage to prevent it from growing too large
+function clearOldNotifications() {
+    try {
+        const savedData = localStorage.getItem(notificationHistoryKey);
+        if (savedData) {
+            const parsedData = JSON.parse(savedData);
             
-            // Check if we're on the cart page
-            if (window.location.pathname.includes('cart.html')) {
-                // Run migration if on cart page
-                migrateCartStructures();
+            // If there's a lastUpdated field and it's more than 7 days old, clear half the notifications
+            if (parsedData.lastUpdated) {
+                const lastUpdated = new Date(parsedData.lastUpdated);
+                const now = new Date();
+                const daysDiff = (now - lastUpdated) / (1000 * 60 * 60 * 24);
+                
+                if (daysDiff > 7 && parsedData.processedIds && parsedData.processedIds.length > 100) {
+                    console.log('[ProductRequestSystem] Clearing old notifications...');
+                    
+                    // Keep only the most recent 50 notifications
+                    const recentNotifications = parsedData.processedIds.slice(-50);
+                    processedNotifications = new Set(recentNotifications);
+                    
+                    // Clear old request status entries (keep only those that match remaining notifications)
+                    const newRequestStatus = {};
+                    Object.keys(requestProcessedStatus).forEach(key => {
+                        // Keep entries that might be related to recent notifications
+                        const requestId = key.split('-')[0];
+                        if (recentNotifications.some(id => id.includes(requestId))) {
+                            newRequestStatus[key] = requestProcessedStatus[key];
+                        }
+                    });
+                    
+                    requestProcessedStatus = newRequestStatus;
+                    
+                    // Save the cleaned data
+                    saveProcessedNotifications();
+                    console.log('[ProductRequestSystem] Cleared old notifications');
+                }
             }
         }
-    }, 5000);
-}); 
+    } catch (error) {
+        console.error('[ProductRequestSystem] Error clearing old notifications:', error);
+    }
+} 

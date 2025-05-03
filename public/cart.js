@@ -263,7 +263,7 @@ function createCartItemElement(item) {
     
     // Set image URL with fallback
     itemImage.src = item.imageURL || 'https://via.placeholder.com/80?text=No+Image';
-    itemImage.alt = item.name;
+    itemImage.alt = item.productName || item.name || 'Product';
     itemImage.onerror = function() {
         this.onerror = null; 
         this.src = 'https://via.placeholder.com/80?text=No+Image';
@@ -273,7 +273,25 @@ function createCartItemElement(item) {
     // Add lazy loading for images
     itemImage.loading = 'lazy';
     
-    itemName.textContent = item.name;
+    // Ensure that either name or productName is used (custom requests use productName)
+    itemName.textContent = item.productName || item.name || 'Custom Product';
+    
+    // Special handling for custom requested products
+    if (item.isCustom) {
+        // Add a "custom requested" badge
+        const customBadge = document.createElement('span');
+        customBadge.className = 'custom-badge';
+        customBadge.textContent = 'Requested Item';
+        customBadge.style.fontSize = '10px';
+        customBadge.style.backgroundColor = '#805AD5';
+        customBadge.style.color = 'white';
+        customBadge.style.padding = '2px 6px';
+        customBadge.style.borderRadius = '10px';
+        customBadge.style.marginLeft = '5px';
+        customBadge.style.display = 'inline-block';
+        itemName.appendChild(customBadge);
+    }
+    
     itemQuantity.textContent = `${item.weight || ''} ${item.unit || ''}`.trim();
     itemPrice.textContent = `₹${formatPrice(item.price * item.quantity)}`;
     quantityNumber.textContent = item.quantity;
@@ -287,7 +305,7 @@ function createCartItemElement(item) {
     }
     
     // Set data attribute for item ID
-    const itemId = item.id || item.productId;
+    const itemId = item.id || item.productId || item.requestId;
     cartItem.setAttribute('data-id', itemId);
     
     // Add event listeners for quantity buttons
@@ -331,9 +349,13 @@ function animateButton(button) {
 
 // Show confirmation dialog
 function showConfirmDialog(item) {
-    const itemId = item.id || item.productId;
+    // Use any available ID field for the item
+    const itemId = item.id || item.productId || item.requestId;
     itemToRemove = itemId;
-    confirmMessage.textContent = 'Are you sure you want to remove this item?';
+    
+    // Use appropriate name for the confirmation message
+    const itemName = item.productName || item.name || 'this item';
+    confirmMessage.textContent = `Are you sure you want to remove ${itemName}?`;
     confirmDialog.classList.add('active');
 }
 
@@ -433,8 +455,14 @@ function animateNumberChange(element, newValue) {
 
 // Increase item quantity
 function increaseItemQuantity(itemId) {
-    const item = cartItems.find(item => item.id === itemId || item.productId === itemId);
-    if (!item) return;
+    const item = cartItems.find(item => 
+        item.id === itemId || item.productId === itemId || item.requestId === itemId
+    );
+    
+    if (!item) {
+        console.error("Item not found:", itemId);
+        return;
+    }
     
     // Update quantity
     item.quantity += 1;
@@ -444,6 +472,13 @@ function increaseItemQuantity(itemId) {
     
     // Highlight the cart item
     const cartItem = document.querySelector(`.cart-item[data-id="${itemId}"]`);
+    if (!cartItem) {
+        console.error("Cart item element not found for id:", itemId);
+        updateCartUI();
+        updateCartInDatabase();
+        return;
+    }
+    
     cartItem.classList.add('item-updated');
     setTimeout(() => cartItem.classList.remove('item-updated'), 500);
     
@@ -472,13 +507,22 @@ function increaseItemQuantity(itemId) {
     
     updateCartInDatabase();
     updateCartTotals();
-    showToast(`Added one more ${item.name} to your cart`, "success");
+    
+    // Use appropriate name for toast message
+    const itemName = item.productName || item.name || 'item';
+    showToast(`Added one more ${itemName} to your cart`, "success");
 }
 
 // Decrease item quantity
 function decreaseItemQuantity(itemId) {
-    const item = cartItems.find(item => item.id === itemId || item.productId === itemId);
-    if (!item) return;
+    const item = cartItems.find(item => 
+        item.id === itemId || item.productId === itemId || item.requestId === itemId
+    );
+    
+    if (!item) {
+        console.error("Item not found:", itemId);
+        return;
+    }
     
     if (item.quantity === 1) {
         // Show confirmation before removing last item
@@ -494,6 +538,13 @@ function decreaseItemQuantity(itemId) {
     
     // Highlight the cart item
     const cartItem = document.querySelector(`.cart-item[data-id="${itemId}"]`);
+    if (!cartItem) {
+        console.error("Cart item element not found for id:", itemId);
+        updateCartUI();
+        updateCartInDatabase();
+        return;
+    }
+    
     cartItem.classList.add('item-updated');
     setTimeout(() => cartItem.classList.remove('item-updated'), 500);
     
@@ -522,7 +573,10 @@ function decreaseItemQuantity(itemId) {
     
     updateCartInDatabase();
     updateCartTotals();
-    showToast(`Removed one ${item.name} from your cart`, "info");
+    
+    // Use appropriate name for toast message
+    const itemName = item.productName || item.name || 'item';
+    showToast(`Removed one ${itemName} from your cart`, "info");
 }
 
 // New function to update cart subtotal immediately
@@ -553,9 +607,10 @@ function updateCartSubtotal() {
 function removeItemFromCart(itemId) {
     console.log("Removing item with ID:", itemId);
     
-    // Find item in cart
+    // Find item in cart with more robust checks for various ID types
     const itemIndex = cartItems.findIndex(item => {
-        const id = item.id || item.productId;
+        // Check all possible ID fields
+        const id = item.id || item.productId || item.requestId;
         return id === itemId;
     });
     
@@ -563,7 +618,8 @@ function removeItemFromCart(itemId) {
     
     if (itemIndex !== -1) {
         // Get item name for toast message
-        const itemName = cartItems[itemIndex].name;
+        const item = cartItems[itemIndex];
+        const itemName = item.productName || item.name || 'Product';
         
         // Find the cart item element
         const cartItemElement = document.querySelector(`.cart-item[data-id="${itemId}"]`);
