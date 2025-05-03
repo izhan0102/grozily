@@ -273,6 +273,36 @@ document.addEventListener('DOMContentLoaded', () => {
     // Load nearby stores regardless of location state
     // This ensures something is shown even before location is detected
     loadNearbyStores();
+    
+    // Test notification - send immediately on page load
+    setTimeout(() => {
+        if (window.NotificationHandler && typeof window.NotificationHandler.sendNotification === 'function') {
+            // Send test notification
+            window.NotificationHandler.sendNotification(
+                '🔔 Test Notification', 
+                {
+                    body: 'This is a test notification from Grozily. Your notification system is working!',
+                    icon: 'images/notifications/offer-notification.svg',
+                    tag: 'test_notification',
+                    requireInteraction: true,
+                    actions: [
+                        {
+                            action: 'dismiss',
+                            title: 'Dismiss'
+                        },
+                        {
+                            action: 'explore',
+                            title: 'Explore App',
+                            url: 'explore.html'
+                        }
+                    ]
+                }
+            );
+            console.log('Test notification sent!');
+        } else {
+            console.error('NotificationHandler not available or not properly initialized');
+        }
+    }, 3000); // Send after 3 seconds to ensure everything is loaded
 });
 
 // Initialize location menu functionality
@@ -1223,40 +1253,64 @@ auth.onAuthStateChanged(user => {
 
 // Load basic user data
 function loadBasicUserData(user) {
-    try {
-        // Set name and email
-        userName.textContent = user.displayName || 'User';
-        userEmail.textContent = user.email || user.phoneNumber || 'No email provided';
-        
-        // Immediately update greeting with whatever name we have so far
-        updateGreetingName(userName.textContent);
-        
-        // Check for more user data in database
-        const userRef = database.ref('users/' + user.uid);
-        userRef.once('value').then(snapshot => {
-            if (snapshot.exists() && snapshot.val().details) {
-                const details = snapshot.val().details;
+    if (!user) return;
+    
+    database.ref(`users/${user.uid}`).once('value')
+        .then(snapshot => {
+            if (snapshot.exists()) {
+                const userData = snapshot.val();
                 
-                // Update user name if available
-                if (details.fullName) {
-                    userName.textContent = details.fullName;
-                    // Update greeting again with the updated name
-                    updateGreetingName(details.fullName);
+                // Update user name and email in UI
+                if (userName) {
+                    const displayName = userData.name || user.displayName || user.email.split('@')[0];
+                    userName.textContent = displayName;
+                    
+                    // Save user name to localStorage for notifications
+                    localStorage.setItem('userName', displayName);
+                    
+                    // Update greeting with name
+                    updateGreetingName(displayName);
                 }
                 
-                // Full greeting update after all data is loaded
-                updateGreeting();
+                if (userEmail) {
+                    userEmail.textContent = user.email;
+                }
+                
+                // Load user location preferences
+                if (userData.defaultLocation) {
+                    setUserLocation(userData.defaultLocation);
+                }
+                
+                // Load cart items count
+                updateCartBadge();
             } else {
-                updateGreeting();
+                console.log('No user data found in database, using auth data');
+                
+                if (userName) {
+                    const displayName = user.displayName || user.email.split('@')[0];
+                    userName.textContent = displayName;
+                    
+                    // Save user name to localStorage for notifications
+                    localStorage.setItem('userName', displayName);
+                    
+                    // Update greeting with name
+                    updateGreetingName(displayName);
+                }
+                
+                if (userEmail) {
+                    userEmail.textContent = user.email;
+                }
             }
+            
+            // Check if we should initialize user location
+            if (!userData || !userData.defaultLocation) {
+                // No location set, try to get current location in background
+                getUserLocation();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading user data:', error);
         });
-    } catch (error) {
-        console.error('Error loading user data:', error);
-        showToast('Failed to load user data', 'error');
-        
-        // Try to update greeting even if there was an error
-        updateGreeting();
-    }
 }
 
 // Helper function to directly update just the greeting name
@@ -1993,6 +2047,11 @@ function addToCart(product) {
                 return cartRef.update({
                     quantity: currentQuantity + 1,
                     updatedAt: new Date().toISOString()
+                }).then(() => {
+                    return {
+                        isNew: false,
+                        quantity: currentQuantity + 1
+                    };
                 });
             } else {
                 // Product doesn't exist, add it
@@ -2007,10 +2066,15 @@ function addToCart(product) {
                     quantity: 1,
                     addedAt: new Date().toISOString(),
                     updatedAt: new Date().toISOString()
+                }).then(() => {
+                    return {
+                        isNew: true,
+                        quantity: 1
+                    };
                 });
             }
         })
-        .then(() => {
+        .then((result) => {
             // Update cart badge
             updateCartBadge();
             
@@ -2026,6 +2090,37 @@ function addToCart(product) {
                     button.classList.remove('added');
                     button.disabled = false;
                 }, 2000);
+            }
+            
+            // Send web push notification if available and it's a new item
+            if (result.isNew && window.NotificationHandler && 
+                typeof window.NotificationHandler.sendNotification === 'function' &&
+                Notification.permission === 'granted') {
+                
+                // Only send notification for new items, not quantity increases
+                if (typeof window.NotificationHandler.sendCartNotification === 'function') {
+                    // Use the specialized cart notification method if available
+                    window.NotificationHandler.sendCartNotification(product);
+                } else {
+                    // Fallback to generic notification
+                    window.NotificationHandler.sendNotification(
+                        'Item Added to Cart', 
+                        {
+                            body: `${product.name} has been added to your cart.`,
+                            icon: product.imageURL || 'images/logo.png',
+                            tag: `cart_add_${product.id}`,
+                            id: product.id,
+                            requireInteraction: false,
+                            actions: [
+                                {
+                                    action: 'view_cart',
+                                    title: 'View Cart',
+                                    url: 'cart.html'
+                                }
+                            ]
+                        }
+                    );
+                }
             }
         })
         .catch(error => {

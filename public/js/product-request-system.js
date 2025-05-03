@@ -498,6 +498,29 @@ const ProductRequestSystem = (function() {
                         }
                     ]
                 });
+                
+                // Also send a web push notification if available
+                if (window.NotificationHandler && 
+                    typeof window.NotificationHandler.sendNotification === 'function' &&
+                    Notification.permission === 'granted') {
+                    
+                    window.NotificationHandler.sendNotification(
+                        title || 'Product Request Approved!', 
+                        {
+                            body: message || `Your requested product has been approved at ₹${price}.`,
+                            tag: `product_request_${requestId}`,
+                            id: requestId,
+                            requireInteraction: true,
+                            actions: [
+                                {
+                                    action: 'view_cart',
+                                    title: 'View Cart',
+                                    url: 'cart.html'
+                                }
+                            ]
+                        }
+                    );
+                }
             } else if (status === 'rejected') {
                 console.log('[ProductRequestSystem] Showing rejected request notification');
                 // Product request rejected
@@ -517,6 +540,22 @@ const ProductRequestSystem = (function() {
                         }
                     ]
                 });
+                
+                // Also send a web push notification if available
+                if (window.NotificationHandler && 
+                    typeof window.NotificationHandler.sendNotification === 'function' &&
+                    Notification.permission === 'granted') {
+                    
+                    window.NotificationHandler.sendNotification(
+                        title || 'Product Request Rejected', 
+                        {
+                            body: message || 'Unfortunately, your product request was declined by the vendor.',
+                            tag: `product_request_${requestId}`,
+                            id: requestId,
+                            requireInteraction: true
+                        }
+                    );
+                }
             }
         }
         

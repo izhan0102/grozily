@@ -1439,4 +1439,142 @@ function confirmLocation() {
     
     // Show success message
     showToast('Delivery location updated', 'success');
+}
+
+// Add product to cart
+function addToCart(product) {
+    // Get current user ID
+    const userId = auth.currentUser.uid;
+    if (!userId) {
+        showToast('Please log in to add items to cart', 'error');
+        return;
+    }
+    
+    // Get the button that was clicked
+    const button = document.querySelector(`.add-to-cart[data-product-id="${product.id}"]`);
+    
+    // Create the flying image animation
+    const productCard = button.closest('.product-card');
+    const productImage = productCard.querySelector('.product-image');
+    const cartIcon = document.querySelector('.nav-item[href="cart.html"] i');
+    
+    if (productImage && cartIcon) {
+        // Get positions
+        const imgRect = productImage.getBoundingClientRect();
+        const cartRect = cartIcon.getBoundingClientRect();
+        
+        // Create the flying image
+        const flyingImg = document.createElement('img');
+        flyingImg.src = productImage.src;
+        flyingImg.classList.add('fly-image-to-cart');
+        flyingImg.style.top = `${imgRect.top}px`;
+        flyingImg.style.left = `${imgRect.left}px`;
+        document.body.appendChild(flyingImg);
+        
+        // Start animation in the next frame
+        requestAnimationFrame(() => {
+            flyingImg.style.top = `${cartRect.top}px`;
+            flyingImg.style.left = `${cartRect.left}px`;
+            flyingImg.style.opacity = '0.7';
+            flyingImg.style.transform = 'scale(0.3)';
+            
+            // Remove the element after animation completes
+            setTimeout(() => {
+                flyingImg.remove();
+            }, 500);
+        });
+    }
+    
+    // Check if user has a cart
+    const cartRef = database.ref(`carts/${userId}/items/${product.id}`);
+    
+    // Check if product is already in cart
+    cartRef.once('value')
+        .then(snapshot => {
+            if (snapshot.exists()) {
+                // Product exists, increase quantity
+                const currentQuantity = snapshot.val().quantity || 1;
+                return cartRef.update({
+                    quantity: currentQuantity + 1,
+                    updatedAt: new Date().toISOString()
+                }).then(() => {
+                    return {
+                      isNew: false,
+                      quantity: currentQuantity + 1
+                    };
+                });
+            } else {
+                // Product doesn't exist, add it
+                return cartRef.set({
+                    productId: product.id,
+                    name: product.name,
+                    price: parseFloat(product.discountedPrice),
+                    originalPrice: parseFloat(product.originalPrice),
+                    imageURL: product.imageURL,
+                    vendorId: product.vendorId,
+                    vendorName: product.vendorName,
+                    quantity: 1,
+                    addedAt: new Date().toISOString(),
+                    updatedAt: new Date().toISOString()
+                }).then(() => {
+                    return {
+                      isNew: true,
+                      quantity: 1
+                    };
+                });
+            }
+        })
+        .then((result) => {
+            // Update cart badge
+            updateCartBadge();
+            
+            // Change button appearance to indicate success
+            if (button) {
+                button.innerHTML = '<i class="fas fa-check"></i> Added to Cart';
+                button.classList.add('added');
+                button.disabled = true;
+                
+                // Change button back after 2 seconds
+                setTimeout(() => {
+                    button.innerHTML = '<i class="fas fa-cart-plus"></i> Add to Cart';
+                    button.classList.remove('added');
+                    button.disabled = false;
+                }, 2000);
+            }
+            
+            // Send web push notification if available and it's a new item
+            if (result.isNew && window.NotificationHandler && 
+                typeof window.NotificationHandler.sendNotification === 'function' &&
+                Notification.permission === 'granted') {
+                
+                // Only send notification for new items, not quantity increases
+                if (typeof window.NotificationHandler.sendCartNotification === 'function') {
+                    // Use the specialized cart notification method if available
+                    window.NotificationHandler.sendCartNotification(product);
+                } else {
+                    // Fallback to generic notification
+                    window.NotificationHandler.sendNotification(
+                        'Item Added to Cart', 
+                        {
+                            body: `${product.name} has been added to your cart.`,
+                            icon: product.imageURL || 'images/logo.png',
+                            tag: `cart_add_${product.id}`,
+                            id: product.id,
+                            requireInteraction: false,
+                            actions: [
+                                {
+                                    action: 'view_cart',
+                                    title: 'View Cart',
+                                    url: 'cart.html'
+                                }
+                            ]
+                        }
+                    );
+                }
+            }
+        })
+        .catch(error => {
+            console.error('Error adding to cart:', error);
+            showToast('Error adding item to cart', 'error');
+        });
 } 
