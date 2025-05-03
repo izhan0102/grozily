@@ -535,7 +535,25 @@ const ProductRequestSystem = (function() {
                     
                     console.log('[ProductRequestSystem] Cart item data:', cartItemData);
                     
-                    return firebase.database().ref(`carts/${request.userId}`).push(cartItemData);
+                    // Check if the cart already exists
+                    return firebase.database().ref(`carts/${request.userId}`).once('value')
+                        .then(cartSnapshot => {
+                            const cartData = cartSnapshot.val() || {};
+                            
+                            // Get the 'items' property or create it if it doesn't exist
+                            const cartItems = cartData.items || {};
+                            
+                            // Generate a unique key for the item
+                            const itemKey = firebase.database().ref().push().key;
+                            
+                            // Add the new item to the items object
+                            cartItems[itemKey] = cartItemData;
+                            
+                            // Update the cart with the new items object
+                            return firebase.database().ref(`carts/${request.userId}`).update({
+                                items: cartItems
+                            });
+                        });
                 })
                 .then(() => {
                     console.log('[ProductRequestSystem] Item added to cart successfully, getting request data for notification');
@@ -765,8 +783,131 @@ const ProductRequestSystem = (function() {
     };
 })();
 
+// Add a debugging function to check cart data
+function debugCartData(userId) {
+    console.log(`[DEBUG] Checking cart data for user: ${userId}`);
+    
+    // Check cart structure
+    firebase.database().ref(`carts/${userId}`).once('value')
+        .then(snapshot => {
+            const data = snapshot.val();
+            console.log(`[DEBUG] Cart data:`, data);
+            
+            // Check if 'items' exists
+            if (data && data.items) {
+                console.log(`[DEBUG] Items found:`, Object.keys(data.items).length);
+                console.log(`[DEBUG] First item:`, Object.values(data.items)[0]);
+            } else {
+                console.log(`[DEBUG] No 'items' property found in cart`);
+                
+                // Check if data was added directly to the cart node
+                if (data) {
+                    console.log(`[DEBUG] Direct cart entries:`, Object.keys(data).length);
+                    
+                    // Attempt to fix the structure if needed
+                    const cartItems = {};
+                    let needsFix = false;
+                    
+                    Object.keys(data).forEach(key => {
+                        const item = data[key];
+                        // Check if this looks like a cart item and not a structure property
+                        if (item && typeof item === 'object' && (item.productName || item.isCustom)) {
+                            cartItems[key] = item;
+                            needsFix = true;
+                        }
+                    });
+                    
+                    if (needsFix) {
+                        console.log(`[DEBUG] Found cart items at root level, fixing structure...`);
+                        firebase.database().ref(`carts/${userId}`).set({ items: cartItems })
+                            .then(() => console.log(`[DEBUG] Cart structure fixed successfully`))
+                            .catch(error => console.error(`[DEBUG] Error fixing cart structure:`, error));
+                    }
+                }
+            }
+        })
+        .catch(error => {
+            console.error(`[DEBUG] Error checking cart:`, error);
+        });
+}
+
+// Fix cart structure for all users
+function migrateCartStructures() {
+    console.log(`[MIGRATION] Starting cart structure migration...`);
+    
+    // Get all carts
+    firebase.database().ref('carts').once('value')
+        .then(snapshot => {
+            if (!snapshot.exists()) {
+                console.log(`[MIGRATION] No carts found to migrate`);
+                return;
+            }
+            
+            const migrationPromises = [];
+            
+            snapshot.forEach(userSnapshot => {
+                const userId = userSnapshot.key;
+                const userData = userSnapshot.val();
+                
+                // Skip if already has items structure
+                if (userData && userData.items) {
+                    console.log(`[MIGRATION] Cart for user ${userId} already has correct structure`);
+                    return;
+                }
+                
+                // Check if this looks like direct cart items
+                const cartItems = {};
+                let needsMigration = false;
+                
+                Object.keys(userData || {}).forEach(key => {
+                    const item = userData[key];
+                    if (item && typeof item === 'object' && (item.productName || item.isCustom)) {
+                        cartItems[key] = item;
+                        needsMigration = true;
+                    }
+                });
+                
+                if (needsMigration) {
+                    console.log(`[MIGRATION] Migrating cart for user ${userId}`);
+                    migrationPromises.push(
+                        firebase.database().ref(`carts/${userId}`).set({ items: cartItems })
+                            .then(() => console.log(`[MIGRATION] Cart migrated for user ${userId}`))
+                    );
+                }
+            });
+            
+            if (migrationPromises.length > 0) {
+                console.log(`[MIGRATION] Migrating ${migrationPromises.length} carts...`);
+                return Promise.all(migrationPromises);
+            } else {
+                console.log(`[MIGRATION] No carts need migration`);
+                return Promise.resolve();
+            }
+        })
+        .then(() => {
+            console.log(`[MIGRATION] Cart structure migration completed`);
+        })
+        .catch(error => {
+            console.error(`[MIGRATION] Error during cart migration:`, error);
+        });
+}
+
 // Auto initialize when document is ready
 document.addEventListener('DOMContentLoaded', function() {
     console.log('[ProductRequestSystem] Document ready, initializing system');
     ProductRequestSystem.init();
+    
+    // Add debug check after a short delay to let auth initialize
+    setTimeout(() => {
+        const currentUser = firebase.auth().currentUser;
+        if (currentUser) {
+            debugCartData(currentUser.uid);
+            
+            // Check if we're on the cart page
+            if (window.location.pathname.includes('cart.html')) {
+                // Run migration if on cart page
+                migrateCartStructures();
+            }
+        }
+    }, 5000);
 }); 

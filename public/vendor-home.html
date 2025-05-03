@@ -2386,15 +2386,67 @@
                 })
                 .then(cartSnapshot => {
                     if (cartSnapshot.exists()) {
-                        console.log('Cart exists with items:');
-                        const cartItems = [];
-                        cartSnapshot.forEach(childSnapshot => {
-                            cartItems.push({
-                                id: childSnapshot.key,
-                                ...childSnapshot.val()
+                        console.log('Cart exists with data:', cartSnapshot.val());
+                        
+                        const cartData = cartSnapshot.val();
+                        let cartItems = [];
+                        
+                        // Check both structures: old direct items and new structure with 'items' property
+                        if (cartData.items) {
+                            console.log('Found items in correct structure (items property)');
+                            Object.keys(cartData.items).forEach(key => {
+                                cartItems.push({
+                                    id: key,
+                                    ...cartData.items[key]
+                                });
                             });
-                        });
-                        console.table(cartItems);
+                        } else {
+                            // Look for items directly in the cart root
+                            console.log('Checking for items at cart root level (old structure)');
+                            cartSnapshot.forEach(childSnapshot => {
+                                const item = childSnapshot.val();
+                                if (item && typeof item === 'object' && (item.productName || item.price)) {
+                                    cartItems.push({
+                                        id: childSnapshot.key,
+                                        ...item
+                                    });
+                                }
+                            });
+                            
+                            if (cartItems.length > 0) {
+                                console.log('Found items at root level, cart structure needs migration');
+                                
+                                // Fix cart structure
+                                const fixedItems = {};
+                                cartItems.forEach(item => {
+                                    fixedItems[item.id] = {
+                                        productName: item.productName,
+                                        quantity: item.quantity,
+                                        price: item.price,
+                                        storeId: item.storeId,
+                                        storeName: item.storeName,
+                                        imageURL: item.imageURL || 'https://via.placeholder.com/300x300?text=Custom+Request',
+                                        isCustom: item.isCustom,
+                                        requestId: item.requestId,
+                                        addedAt: item.addedAt,
+                                        migrated: true
+                                    };
+                                });
+                                
+                                // Update cart structure
+                                firebase.database().ref(`carts/${userId}`).set({ items: fixedItems })
+                                    .then(() => console.log('Cart structure fixed successfully'))
+                                    .catch(error => console.error('Error fixing cart structure:', error));
+                            }
+                        }
+                        
+                        console.log('Cart items count:', cartItems.length);
+                        if (cartItems.length > 0) {
+                            console.table(cartItems);
+                        } else {
+                            console.log('No items found in cart');
+                        }
+                        
                         return cartItems;
                     } else {
                         console.log('Cart does not exist for this user');
@@ -2443,8 +2495,25 @@
                         forceAdded: true
                     };
                     
-                    // Force add to cart
-                    return firebase.database().ref(`carts/${requestData.userId}`).push(cartItemData)
+                    // Check if the cart already exists
+                    return firebase.database().ref(`carts/${requestData.userId}`).once('value')
+                        .then(cartSnapshot => {
+                            const cartData = cartSnapshot.val() || {};
+                            
+                            // Get the 'items' property or create it if it doesn't exist
+                            const cartItems = cartData.items || {};
+                            
+                            // Generate a unique key for the item
+                            const itemKey = firebase.database().ref().push().key;
+                            
+                            // Add the new item to the items object
+                            cartItems[itemKey] = cartItemData;
+                            
+                            // Update the cart with the new items object
+                            return firebase.database().ref(`carts/${requestData.userId}`).update({
+                                items: cartItems
+                            });
+                        })
                         .then(() => {
                             // Update request status
                             return firebase.database().ref(`product_requests/${requestId}`).update({
@@ -2531,7 +2600,25 @@
                                                 autoFixed: true
                                             };
                                             
-                                            return firebase.database().ref(`carts/${request.userId}`).push(cartItemData)
+                                            // Check if the cart already exists
+                                            return firebase.database().ref(`carts/${request.userId}`).once('value')
+                                                .then(cartSnapshot => {
+                                                    const cartData = cartSnapshot.val() || {};
+                                                    
+                                                    // Get the 'items' property or create it if it doesn't exist
+                                                    const cartItems = cartData.items || {};
+                                                    
+                                                    // Generate a unique key for the item
+                                                    const itemKey = firebase.database().ref().push().key;
+                                                    
+                                                    // Add the new item to the items object
+                                                    cartItems[itemKey] = cartItemData;
+                                                    
+                                                    // Update the cart with the new items object
+                                                    return firebase.database().ref(`carts/${request.userId}`).update({
+                                                        items: cartItems
+                                                    });
+                                                })
                                                 .then(() => {
                                                     return firebase.database().ref(`product_requests/${request.id}`).update({
                                                         addedToCart: true
