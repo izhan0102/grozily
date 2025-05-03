@@ -243,5 +243,25 @@
     <!-- Add the product request system JS -->
     <script src="js/product-request-system.js"></script>
     <script src="home.js"></script>
+
+    <!-- Add this right after the opening <body> tag -->
+    <div id="test-notification-btn" style="position: fixed; top: 70px; right: 20px; z-index: 1000; background-color: #4CAF50; color: white; border-radius: 50%; width: 50px; height: 50px; display: flex; justify-content: center; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.3); cursor: pointer;">
+        <i class="fa-solid fa-bell"></i>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const testBtn = document.getElementById('test-notification-btn');
+            if(testBtn) {
+                testBtn.addEventListener('click', function() {
+                    if(window.NotificationHandler && typeof window.NotificationHandler.sendTestNotification === 'function') {
+                        window.NotificationHandler.sendTestNotification();
+                    } else {
+                        alert('Notification system not initialized yet. Please wait a moment and try again.');
+                    }
+                });
+            }
+        });
+    </script>
 </body>
 </html> 

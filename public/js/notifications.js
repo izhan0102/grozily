@@ -32,6 +32,15 @@ const NotificationHandler = {
         this.permission = Notification.permission;
         console.log('[NotificationHandler] Current notification permission:', this.permission);
         
+        // If permission is already granted, send a test notification immediately
+        if (this.permission === 'granted') {
+            console.log('[NotificationHandler] Permission already granted, sending test notification');
+            // Short delay to ensure everything is initialized
+            setTimeout(() => {
+                this.sendTestNotification();
+            }, 1000);
+        }
+        
         // Check if user is logged in with Firebase
         if (typeof firebase !== 'undefined' && firebase.auth) {
             firebase.auth().onAuthStateChanged(user => {
@@ -132,6 +141,9 @@ const NotificationHandler = {
                     // Send welcome notification immediately
                     this.sendWelcomeNotification();
                     
+                    // Also send a test notification immediately
+                    this.sendTestNotification();
+                    
                     // Register for Firebase messaging (if needed in the future)
                     // this.registerForFirebaseMessaging();
                 } else {
@@ -204,6 +216,59 @@ const NotificationHandler = {
             return true;
         } catch (error) {
             console.error('[NotificationHandler] Error sending notification:', error);
+            return false;
+        }
+    },
+    
+    // Send a test notification (added for immediate testing)
+    sendTestNotification: function() {
+        console.log('[NotificationHandler] Sending test notification');
+        
+        try {
+            const options = {
+                body: 'This is a test notification from Grozily. Your notification system is working!',
+                icon: this.icons.offer,
+                badge: this.icons.badge,
+                tag: 'test_notification',
+                requireInteraction: true,
+                vibrate: [200, 100, 200],
+                actions: [
+                    {
+                        action: 'dismiss',
+                        title: 'Dismiss'
+                    },
+                    {
+                        action: 'explore',
+                        title: 'Explore App'
+                    }
+                ]
+            };
+            
+            // Create and show notification
+            const notification = new Notification('🔔 Test Notification', options);
+            
+            // Notification click event
+            notification.onclick = function(event) {
+                event.preventDefault();
+                
+                // Check if action button was clicked
+                if (event.action === 'explore') {
+                    window.open('explore.html', '_blank');
+                } else if (event.action === 'dismiss') {
+                    notification.close();
+                } else {
+                    // Default action: focus window or open new one
+                    if (window.focus) window.focus();
+                }
+                
+                // Close notification
+                notification.close();
+            };
+            
+            console.log('[NotificationHandler] Test notification sent');
+            return true;
+        } catch (error) {
+            console.error('[NotificationHandler] Error sending test notification:', error);
             return false;
         }
     },
