@@ -3,77 +3,149 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Grozily - Vendor Orders</title>
-    <link rel="stylesheet" href="styles.css">
-    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Firebase App (the core Firebase SDK) -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <!-- Firebase Auth -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
-    <!-- Firebase Database -->
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <title>Vendor Orders - Grozily</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+
         body {
-            background-color: #F7FAFC;
+            background-color: #F5F7FA;
+            color: #2D3748;
+            min-height: 100vh;
         }
-        
-        .app-content {
-            padding: 16px;
-            padding-bottom: 70px;
+
+        /* Mobile-first App Layout */
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
         }
-        
+
+        /* Header */
+        .app-header {
+            background-color: #805AD5;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        .header-title {
+            font-size: 18px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .back-button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .header-actions {
+            display: flex;
+            gap: 15px;
+        }
+
+        .header-btn {
+            background: none;
+            border: none;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+
+        .header-btn:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Main Content */
+        .main-content {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+        }
+
         .orders-container {
             max-width: 800px;
             margin: 0 auto;
         }
-        
-        .simple-header {
-            background: linear-gradient(135deg, #805AD5, #6B46C1);
-            color: white;
-            padding: 20px 16px;
-            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
-        }
-        
-        .simple-header h1 {
-            font-size: 24px;
-            margin: 0;
+
+        .section-title {
+            font-size: 18px;
             font-weight: 600;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
         }
-        
-        .back-button {
-            color: white;
-            opacity: 0.9;
+
+        .section-title i {
+            color: #805AD5;
         }
-        
+
+        /* Order Card */
         .order-card {
             background-color: white;
-            border-radius: 16px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-radius: 15px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
             margin-bottom: 20px;
             overflow: hidden;
-            border: 1px solid rgba(0,0,0,0.05);
+            border-left: 4px solid #805AD5;
             transition: all 0.3s ease;
         }
-        
+
         .order-card:hover {
             transform: translateY(-4px);
-            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
         }
-        
+
         .order-header {
-            padding: 20px;
-            border-bottom: 1px solid #eee;
+            padding: 15px 20px;
+            border-bottom: 1px solid #EDF2F7;
             display: flex;
             justify-content: space-between;
             align-items: center;
-            background: linear-gradient(to right, #F7FAFC, #EDF2F7);
+            background: linear-gradient(to right, #F9FAFB, #F7FAFC);
         }
-        
+
         .order-info {
             flex: 1;
         }
-        
+
         .order-id {
             font-size: 15px;
             color: #4A5568;
@@ -83,12 +155,12 @@
             align-items: center;
             gap: 6px;
         }
-        
+
         .order-id i {
             color: #805AD5;
             font-size: 14px;
         }
-        
+
         .order-time {
             font-size: 13px;
             color: #718096;
@@ -97,13 +169,13 @@
             align-items: center;
             gap: 4px;
         }
-        
+
         .order-time i {
             font-size: 12px;
         }
-        
+
         .order-amount {
-            font-size: 22px;
+            font-size: 18px;
             font-weight: 600;
             color: #805AD5;
             text-align: right;
@@ -111,19 +183,19 @@
             padding: 8px 16px;
             border-radius: 12px;
         }
-        
+
         .order-content {
             padding: 20px;
         }
-        
+
         .customer-info {
-            margin-bottom: 20px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid #eee;
+            margin-bottom: 15px;
+            padding-bottom: 15px;
+            border-bottom: 1px solid #EDF2F7;
         }
-        
+
         .customer-name {
-            font-size: 17px;
+            font-size: 16px;
             font-weight: 500;
             color: #2D3748;
             margin: 0 0 8px 0;
@@ -131,53 +203,79 @@
             align-items: center;
             gap: 8px;
         }
-        
-        .customer-name i {
+
+        .customer-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background-color: #F0E7FF;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             color: #805AD5;
             font-size: 16px;
-            background: rgba(128, 90, 213, 0.1);
-            padding: 8px;
-            border-radius: 10px;
+            flex-shrink: 0;
         }
-        
+
+        .customer-details {
+            font-size: 14px;
+            color: #718096;
+            margin-top: 5px;
+        }
+
         .order-items {
             background: #F7FAFC;
             border-radius: 12px;
-            padding: 16px;
+            padding: 15px;
         }
-        
+
         .order-item {
             display: flex;
-            justify-content: space-between;
             align-items: center;
             padding: 12px;
-            border-bottom: 1px dashed rgba(0,0,0,0.1);
+            border-bottom: 1px dashed rgba(0,0,0,0.05);
             background: white;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             border-radius: 8px;
             transition: transform 0.2s;
         }
-        
+
         .order-item:hover {
             transform: translateX(4px);
         }
-        
+
         .order-item:last-child {
             border-bottom: none;
             margin-bottom: 0;
         }
-        
+
+        .item-image {
+            width: 50px;
+            height: 50px;
+            border-radius: 8px;
+            background-color: #F0E7FF;
+            margin-right: 12px;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+
+        .item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
         .item-info {
             flex: 1;
         }
-        
+
         .item-name {
             font-size: 15px;
             color: #2D3748;
             margin: 0;
             font-weight: 500;
         }
-        
+
         .item-quantity {
             font-size: 13px;
             color: #718096;
@@ -186,22 +284,47 @@
             align-items: center;
             gap: 4px;
         }
-        
+
         .item-quantity i {
             font-size: 12px;
             color: #805AD5;
         }
-        
+
         .item-price {
             font-size: 16px;
             font-weight: 600;
             color: #805AD5;
-            margin-left: 16px;
             background: rgba(128, 90, 213, 0.1);
             padding: 6px 12px;
             border-radius: 8px;
+            flex-shrink: 0;
+            margin-left: 10px;
         }
-        
+
+        .order-summary {
+            margin-top: 15px;
+            background: #F0E7FF;
+            border-radius: 10px;
+            padding: 12px 15px;
+        }
+
+        .summary-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 5px 0;
+            font-size: 14px;
+            color: #4A5568;
+        }
+
+        .summary-row.total {
+            font-weight: 600;
+            color: #2D3748;
+            font-size: 16px;
+            padding-top: 8px;
+            margin-top: 5px;
+            border-top: 1px dashed rgba(0,0,0,0.1);
+        }
+
         .empty-orders {
             text-align: center;
             padding: 60px 20px;
@@ -211,44 +334,81 @@
             box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             margin-top: 40px;
         }
-        
+
         .empty-orders i {
             font-size: 48px;
             color: #805AD5;
             margin-bottom: 20px;
             opacity: 0.8;
         }
-        
+
         .empty-orders h3 {
             font-size: 20px;
             margin-bottom: 8px;
             color: #2D3748;
         }
-        
+
         .empty-orders p {
             color: #718096;
             font-size: 15px;
         }
-        
-        .loading-spinner {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(128, 90, 213, 0.1);
+
+        /* Bottom Navigation */
+        .bottom-nav {
+            display: flex;
+            background-color: white;
+            border-top: 1px solid #EDF2F7;
+            padding: 10px 0;
+            box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 100;
+        }
+
+        .nav-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0;
+            color: #718096;
+            text-decoration: none;
+            font-size: 12px;
+            transition: color 0.2s;
+        }
+
+        .nav-item i {
+            font-size: 20px;
+            margin-bottom: 5px;
+        }
+
+        .nav-item.active {
+            color: #805AD5;
+        }
+
+        /* Loading spinner */
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(128, 90, 213, 0.2);
             border-radius: 50%;
             border-top-color: #805AD5;
-            animation: spin 1s linear infinite;
-            margin: 60px auto;
+            animation: spin 1s ease-in-out infinite;
+            margin: 40px auto;
         }
-        
+
         @keyframes spin {
             to {
                 transform: rotate(360deg);
             }
         }
-        
-        @keyframes highlight {
+
+        /* Animations */
+        @keyframes slideIn {
             0% {
-                transform: translateY(-20px);
+                transform: translateY(20px);
                 opacity: 0;
             }
             100% {
@@ -256,35 +416,117 @@
                 opacity: 1;
             }
         }
-        
+
         .new-order {
-            animation: highlight 0.5s ease-out;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        /* Responsive Adjustments */
+        @media (min-width: 768px) {
+            .main-content {
+                padding: 30px;
+            }
+
+            .order-card {
+                display: flex;
+                flex-direction: column;
+            }
+        }
+
+        /* Order status badges */
+        .status-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 12px;
+            margin-left: 10px;
+        }
+
+        .status-pending {
+            background-color: #FEF5E7;
+            color: #F59E0B;
+        }
+
+        .status-processing {
+            background-color: #E6F6FF;
+            color: #3182CE;
+        }
+
+        .status-delivered {
+            background-color: #F0FFF4;
+            color: #38A169;
+        }
+
+        .status-cancelled {
+            background-color: #FFF5F5;
+            color: #E53E3E;
         }
     </style>
 </head>
 <body>
     <div class="app-container">
-        <header class="simple-header">
+        <!-- App Header -->
+        <div class="app-header">
             <button id="back-btn" class="back-button">
-                <i class="fa-solid fa-arrow-left"></i>
+                <i class="fas fa-arrow-left"></i>
             </button>
-            <h1>Vendor Orders</h1>
-        </header>
-        
-        <main class="app-content">
+            <h1 class="header-title">
+                <i class="fas fa-shopping-cart"></i>
+                Vendor Orders
+            </h1>
+            <div class="header-actions">
+                <button class="header-btn" id="refresh-btn">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
             <div class="orders-container">
+                <h2 class="section-title">
+                    <i class="fas fa-clipboard-list"></i>
+                    Recent Orders
+                </h2>
+                
                 <div id="orders-list">
-                    <div class="loading-spinner"></div>
+                    <div class="loader"></div>
                 </div>
                 
                 <div id="empty-orders" class="empty-orders" style="display: none;">
-                    <i class="fa-solid fa-clipboard-list"></i>
+                    <i class="fas fa-shopping-basket"></i>
                     <h3>No Orders Yet</h3>
                     <p>New orders will appear here automatically</p>
                 </div>
             </div>
-        </main>
+        </div>
+
+        <!-- Bottom Navigation -->
+        <div class="bottom-nav">
+            <a href="vendor-home.html" class="nav-item">
+                <i class="fas fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="products.html" class="nav-item">
+                <i class="fas fa-box"></i>
+                <span>Products</span>
+            </a>
+            <a href="vendor-orders.html" class="nav-item active">
+                <i class="fas fa-shopping-cart"></i>
+                <span>Orders</span>
+            </a>
+            <a href="#" class="nav-item">
+                <i class="fas fa-cog"></i>
+                <span>Settings</span>
+            </a>
+        </div>
     </div>
+
+    <!-- Firebase Scripts -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
 
     <script>
         // Firebase configuration
@@ -301,11 +543,10 @@
 
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
-        const auth = firebase.auth();
-        const database = firebase.database();
 
         // DOM Elements
         const backBtn = document.getElementById('back-btn');
+        const refreshBtn = document.getElementById('refresh-btn');
         const ordersList = document.getElementById('orders-list');
         const emptyOrders = document.getElementById('empty-orders');
 
@@ -313,14 +554,22 @@
         document.addEventListener('DOMContentLoaded', () => {
             // Back button
             backBtn.addEventListener('click', () => {
-                window.history.back();
+                window.location.href = 'vendor-home.html';
+            });
+
+            // Refresh button
+            refreshBtn.addEventListener('click', () => {
+                ordersList.innerHTML = '<div class="loader"></div>';
+                loadOrders();
             });
 
             // Check if user is authenticated
-            auth.onAuthStateChanged(user => {
+            firebase.auth().onAuthStateChanged(user => {
                 if (!user) {
-                    window.location.href = 'login.html';
+                    window.location.href = 'vendor-login.html';
                 } else {
+                    // Load vendor details
+                    loadVendorData(user.uid);
                     // Load orders
                     loadOrders();
                     // Listen for new orders
@@ -329,49 +578,195 @@
             });
         });
 
-        // Load all orders
+        // Load vendor details
+        function loadVendorData(vendorId) {
+            firebase.database().ref(`vendors/${vendorId}`).once('value')
+                .then(snapshot => {
+                    if (snapshot.exists()) {
+                        const vendorData = snapshot.val();
+                        // You can use vendorData to customize the page
+                        console.log('Vendor data loaded:', vendorData);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading vendor data:', error);
+                });
+        }
+
+        // Load all orders for the current vendor
         function loadOrders() {
-            const ordersRef = database.ref('allOrders');
+            const vendorId = firebase.auth().currentUser.uid;
+            console.log('Loading orders for vendor ID:', vendorId);
             
-            ordersRef.once('value')
+            // First check orders directly
+            firebase.database().ref('orders').once('value')
                 .then(snapshot => {
                     // Remove loading spinner
                     ordersList.innerHTML = '';
                     
                     if (!snapshot.exists()) {
+                        console.log('No orders found in database');
                         showEmptyOrders();
                         return;
                     }
                     
-                    // Process orders
+                    // Process orders - try different ways the vendor ID might be stored
                     const orders = [];
                     snapshot.forEach(childSnapshot => {
-                        orders.push(childSnapshot.val());
+                        const order = childSnapshot.val();
+                        order.id = childSnapshot.key;
+                        
+                        // Check different possible fields where vendor ID might be stored
+                        if (
+                            (order.vendorId && order.vendorId === vendorId) ||
+                            (order.vendor && order.vendor.id === vendorId) ||
+                            (order.storeId && order.storeId === vendorId) ||
+                            (order.store && order.store.id === vendorId)
+                        ) {
+                            console.log('Found matching order:', order.id);
+                            orders.push(order);
+                        } else if (order.items) {
+                            // Check if any items in the order belong to this vendor
+                            const vendorItems = order.items.filter(item => 
+                                item.vendorId === vendorId || 
+                                item.storeId === vendorId
+                            );
+                            
+                            if (vendorItems.length > 0) {
+                                console.log('Found order with matching items:', order.id);
+                                // Add only the items for this vendor
+                                order.items = vendorItems;
+                                orders.push(order);
+                            }
+                        }
                     });
+                    
+                    // Log found orders
+                    console.log(`Found ${orders.length} orders for this vendor`);
                     
                     // Sort orders by date (newest first)
-                    orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    orders.sort((a, b) => {
+                        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+                    });
                     
                     // Display orders
-                    orders.forEach(order => {
-                        ordersList.appendChild(createOrderElement(order));
-                    });
+                    if (orders.length > 0) {
+                        orders.forEach(order => {
+                            ordersList.appendChild(createOrderElement(order));
+                        });
+                    } else {
+                        // Try checking allOrders collection as fallback
+                        checkAllOrdersCollection(vendorId);
+                    }
                 })
                 .catch(error => {
                     console.error('Error loading orders:', error);
-                    ordersList.innerHTML = '<p class="empty-orders">Failed to load orders</p>';
+                    ordersList.innerHTML = `
+                        <div class="empty-orders">
+                            <i class="fas fa-exclamation-triangle"></i>
+                            <h3>Something went wrong</h3>
+                            <p>Failed to load orders: ${error.message}</p>
+                        </div>
+                    `;
+                });
+        }
+        
+        // Fallback to check allOrders collection
+        function checkAllOrdersCollection(vendorId) {
+            console.log('Checking allOrders collection as fallback');
+            firebase.database().ref('allOrders').once('value')
+                .then(snapshot => {
+                    if (!snapshot.exists()) {
+                        console.log('No allOrders collection found');
+                        showEmptyOrders();
+                        return;
+                    }
+                    
+                    const orders = [];
+                    snapshot.forEach(childSnapshot => {
+                        const order = childSnapshot.val();
+                        order.id = childSnapshot.key;
+                        
+                        // Check different possible fields where vendor ID might be stored
+                        if (
+                            (order.vendorId && order.vendorId === vendorId) ||
+                            (order.vendor && order.vendor.id === vendorId) ||
+                            (order.storeId && order.storeId === vendorId) ||
+                            (order.store && order.store.id === vendorId)
+                        ) {
+                            orders.push(order);
+                        } else if (order.items) {
+                            // Check if any items in the order belong to this vendor
+                            const vendorItems = order.items.filter(item => 
+                                item.vendorId === vendorId || 
+                                item.storeId === vendorId
+                            );
+                            
+                            if (vendorItems.length > 0) {
+                                // Add only the items for this vendor
+                                order.items = vendorItems;
+                                orders.push(order);
+                            }
+                        }
+                    });
+                    
+                    // Sort orders by date (newest first)
+                    orders.sort((a, b) => {
+                        return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+                    });
+                    
+                    // Display orders
+                    if (orders.length > 0) {
+                        orders.forEach(order => {
+                            ordersList.appendChild(createOrderElement(order));
+                        });
+                    } else {
+                        showEmptyOrders();
+                    }
+                })
+                .catch(error => {
+                    console.error('Error checking allOrders:', error);
+                    showEmptyOrders();
                 });
         }
 
-        // Listen for new orders
+        // Listen for new orders - expanded to check multiple fields
         function listenForNewOrders() {
-            const ordersRef = database.ref('allOrders');
+            const vendorId = firebase.auth().currentUser.uid;
+            const ordersRef = firebase.database().ref('orders');
             
             ordersRef.on('child_added', snapshot => {
                 const order = snapshot.val();
-                const existingOrder = document.querySelector(`[data-order-id="${order.orderId}"]`);
+                order.id = snapshot.key;
                 
-                if (!existingOrder) {
+                const existingOrder = document.querySelector(`[data-order-id="${order.id}"]`);
+                if (existingOrder) return;
+                
+                // Check if this order belongs to this vendor
+                let belongsToVendor = false;
+                
+                if (
+                    (order.vendorId && order.vendorId === vendorId) ||
+                    (order.vendor && order.vendor.id === vendorId) ||
+                    (order.storeId && order.storeId === vendorId) ||
+                    (order.store && order.store.id === vendorId)
+                ) {
+                    belongsToVendor = true;
+                } else if (order.items) {
+                    // Check if any items in the order belong to this vendor
+                    const vendorItems = order.items.filter(item => 
+                        item.vendorId === vendorId || 
+                        item.storeId === vendorId
+                    );
+                    
+                    if (vendorItems.length > 0) {
+                        // Add only the items for this vendor
+                        order.items = vendorItems;
+                        belongsToVendor = true;
+                    }
+                }
+                
+                if (belongsToVendor) {
                     // Remove empty orders message if present
                     if (emptyOrders.style.display !== 'none') {
                         emptyOrders.style.display = 'none';
@@ -380,10 +775,8 @@
                     
                     // Add new order at the top
                     const orderElement = createOrderElement(order);
+                    orderElement.classList.add('new-order');
                     ordersList.insertBefore(orderElement, ordersList.firstChild);
-                    
-                    // Highlight new order
-                    orderElement.style.animation = 'highlight 2s';
                 }
             });
         }
@@ -391,14 +784,27 @@
         // Create order element
         function createOrderElement(order) {
             const orderElement = document.createElement('div');
-            orderElement.className = 'order-card new-order';
-            orderElement.dataset.orderId = order.orderId;
+            orderElement.className = 'order-card';
+            orderElement.dataset.orderId = order.id;
             
-            // Calculate total amount (excluding delivery fee)
-            const totalAmount = order.subtotal;
+            // Make the order card clickable to view details
+            orderElement.addEventListener('click', () => {
+                // Store order data in localStorage for the details page
+                localStorage.setItem('selectedOrder', JSON.stringify(order));
+                // Redirect to order details page
+                window.location.href = `vendor-order-details.html?id=${order.id}`;
+            });
+            
+            // Calculate total amount - vendor gets subtotal minus platform fee
+            const subtotal = calculateSubtotal(order.items || []);
+            const platformFeePercent = 5; // Assume 5% platform fee
+            const platformFee = (subtotal * platformFeePercent) / 100;
+            const vendorAmount = subtotal - platformFee;
+            const deliveryFee = order.deliveryFee || 0;
+            const totalAmount = subtotal + deliveryFee;
             
             // Format date
-            const orderDate = new Date(order.createdAt);
+            const orderDate = new Date(order.createdAt || order.timestamp || Date.now());
             const formattedDate = orderDate.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -407,43 +813,132 @@
                 minute: '2-digit'
             });
             
-            // Get customer name from order
-            const customerName = order.deliveryAddress?.name || 'Customer';
+            // Get customer info - improve to check more locations where it might be stored
+            const customerName = 
+                order.userName || 
+                order.user?.name || 
+                order.customerName || 
+                order.customer?.name || 
+                'Customer';
+                
+            const customerInitial = customerName.charAt(0).toUpperCase();
+            
+            // Get order status - check multiple possible status fields
+            const status = 
+                order.status || 
+                order.orderStatus || 
+                order.state || 
+                'pending';
+                
+            const statusClass = getStatusClass(status);
+            const statusText = getStatusText(status);
+            
+            // Get order ID - check multiple possible ID fields
+            const displayOrderId = 
+                order.orderID || 
+                order.orderId || 
+                order.id || 
+                'Unknown';
+            
+            // Build order items HTML
+            let itemsHtml = '';
+            if (order.items && order.items.length > 0) {
+                order.items.forEach(item => {
+                    // Make sure we have the correct fields
+                    const itemName = 
+                        item.name || 
+                        item.productName || 
+                        item.title || 
+                        'Product';
+                        
+                    const itemQuantity = 
+                        item.quantity || 
+                        item.qty || 
+                        1;
+                        
+                    const itemPrice = 
+                        item.price || 
+                        item.unitPrice || 
+                        0;
+                        
+                    const itemTotal = itemPrice * itemQuantity;
+                    
+                    const itemImage = 
+                        item.imageURL || 
+                        item.image || 
+                        item.img || 
+                        'https://via.placeholder.com/50?text=Product';
+                    
+                    itemsHtml += `
+                        <div class="order-item">
+                            <div class="item-image">
+                                <img src="${itemImage}" 
+                                     alt="${itemName}"
+                                     onerror="this.src='https://via.placeholder.com/50?text=Product'">
+                            </div>
+                            <div class="item-info">
+                                <p class="item-name">${itemName}</p>
+                                <p class="item-quantity">
+                                    <i class="fas fa-box"></i>
+                                    Quantity: ${itemQuantity}
+                                </p>
+                            </div>
+                            <div class="item-price">₹${formatPrice(itemTotal)}</div>
+                        </div>
+                    `;
+                });
+            } else {
+                itemsHtml = '<p style="text-align: center; padding: 15px; color: #718096;">No items found</p>';
+            }
             
             orderElement.innerHTML = `
                 <div class="order-header">
                     <div class="order-info">
                         <p class="order-id">
-                            <i class="fa-solid fa-hashtag"></i>
-                            ${order.orderId}
+                            <i class="fas fa-hashtag"></i>
+                            Order #${typeof displayOrderId === 'string' ? displayOrderId.substring(0, 8) : displayOrderId}
+                            <span class="status-badge ${statusClass}">${statusText}</span>
                         </p>
                         <p class="order-time">
-                            <i class="fa-regular fa-clock"></i>
+                            <i class="far fa-calendar-alt"></i>
                             ${formattedDate}
                         </p>
                     </div>
-                    <div class="order-amount">₹${formatPrice(totalAmount)}</div>
+                    <div class="order-amount">₹${formatPrice(vendorAmount)}</div>
                 </div>
                 <div class="order-content">
                     <div class="customer-info">
-                        <h3 class="customer-name">
-                            <i class="fa-solid fa-user"></i>
-                            ${customerName}
-                        </h3>
+                        <div style="display: flex; align-items: center;">
+                            <div class="customer-avatar">
+                                ${customerInitial}
+                            </div>
+                            <div style="margin-left: 10px;">
+                                <h3 class="customer-name">${customerName}</h3>
+                                <div class="customer-details">
+                                    ${order.userPhone || order.user?.phone ? 
+                                        `<div><i class="fas fa-phone"></i> ${order.userPhone || order.user.phone}</div>` : ''}
+                                    ${order.deliveryAddress ? 
+                                        `<div><i class="fas fa-map-marker-alt"></i> ${formatAddress(order.deliveryAddress)}</div>` : ''}
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="order-items">
-                        ${order.items.map(item => `
-                            <div class="order-item">
-                                <div class="item-info">
-                                    <p class="item-name">${item.name}</p>
-                                    <p class="item-quantity">
-                                        <i class="fa-solid fa-box"></i>
-                                        Quantity: ${item.quantity}
-                                    </p>
-                                </div>
-                                <div class="item-price">₹${formatPrice(item.price * item.quantity)}</div>
-                            </div>
-                        `).join('')}
+                        ${itemsHtml}
+                    </div>
+                    <div class="order-summary">
+                        <div class="summary-row">
+                            <div>Subtotal</div>
+                            <div>₹${formatPrice(subtotal)}</div>
+                        </div>
+                        <div class="summary-row">
+                            <div>Platform Fee (${platformFeePercent}%)</div>
+                            <div>-₹${formatPrice(platformFee)}</div>
+                        </div>
+                        <div class="summary-row total">
+                            <div>You Receive</div>
+                            <div>₹${formatPrice(vendorAmount)}</div>
+                        </div>
                     </div>
                 </div>
             `;
@@ -451,9 +946,54 @@
             return orderElement;
         }
 
+        // Calculate subtotal from items
+        function calculateSubtotal(items) {
+            return items.reduce((total, item) => {
+                const price = item.price || 0;
+                const quantity = item.quantity || 1;
+                return total + (price * quantity);
+            }, 0);
+        }
+
+        // Get status class for badge
+        function getStatusClass(status) {
+            switch(status.toLowerCase()) {
+                case 'pending': return 'status-pending';
+                case 'processing': return 'status-processing';
+                case 'delivered': return 'status-delivered';
+                case 'cancelled': return 'status-cancelled';
+                default: return 'status-pending';
+            }
+        }
+
+        // Get status text
+        function getStatusText(status) {
+            switch(status.toLowerCase()) {
+                case 'pending': return 'Pending';
+                case 'processing': return 'Processing';
+                case 'delivered': return 'Delivered';
+                case 'cancelled': return 'Cancelled';
+                default: return 'Pending';
+            }
+        }
+
+        // Format address
+        function formatAddress(address) {
+            if (typeof address === 'string') return address;
+            if (!address) return 'No address provided';
+            
+            const parts = [];
+            if (address.street) parts.push(address.street);
+            if (address.city) parts.push(address.city);
+            if (address.state) parts.push(address.state);
+            if (address.pincode) parts.push(address.pincode);
+            
+            return parts.join(', ') || 'No address provided';
+        }
+
         // Show empty orders message
         function showEmptyOrders() {
-            ordersList.style.display = 'none';
+            ordersList.innerHTML = '';
             emptyOrders.style.display = 'block';
         }
 
