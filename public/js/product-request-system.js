@@ -478,26 +478,59 @@ const ProductRequestSystem = (function() {
             if (status === 'approved') {
                 console.log('[ProductRequestSystem] Showing approved request notification');
                 // Product request approved
-                showNotification({
-                    title: title || 'Product Request Approved!',
-                    message: message || `Your requested product has been approved at ₹${price}.`,
-                    type: 'success',
-                    duration: 8000,
-                    actions: [
-                        {
-                            text: 'View Cart',
-                            onClick: () => window.location.href = 'cart.html'
-                        },
-                        {
-                            text: 'Dismiss',
-                            type: 'secondary',
-                            onClick: () => {
-                                console.log('[ProductRequestSystem] Dismiss button clicked');
-                                // Already handled in closeNotification
+                
+                // Check if this notification is for a vendor (storeId === currentUser.uid)
+                // If the current user is the vendor (store owner), don't show the customer notification
+                if (requestId) {
+                    // Get the request details to check if current user is the vendor
+                    firebase.database().ref(`product_requests/${requestId}`).once('value')
+                        .then(snapshot => {
+                            if (snapshot.exists()) {
+                                const request = snapshot.val();
+                                
+                                // If current user is the vendor, don't show customer notification
+                                if (currentUser && request.storeId === currentUser.uid) {
+                                    console.log('[ProductRequestSystem] Current user is the vendor, skipping customer notification');
+                                    return;
+                                }
+                                
+                                // Otherwise show the notification to the customer
+                                showNotification({
+                                    title: title || 'Product Request Approved!',
+                                    message: message || `Your requested product has been approved at ₹${price}.`,
+                                    type: 'success',
+                                    duration: 8000,
+                                    actions: [
+                                        {
+                                            text: 'View Cart',
+                                            onClick: () => {
+                                                window.location.href = 'cart.html';
+                                            }
+                                        }
+                                    ]
+                                });
                             }
-                        }
-                    ]
-                });
+                        })
+                        .catch(error => {
+                            console.error('[ProductRequestSystem] Error checking request details:', error);
+                        });
+                } else {
+                    // If no request ID, just show the notification
+                    showNotification({
+                        title: title || 'Product Request Approved!',
+                        message: message || `Your requested product has been approved at ₹${price}.`,
+                        type: 'success',
+                        duration: 8000,
+                        actions: [
+                            {
+                                text: 'View Cart',
+                                onClick: () => {
+                                    window.location.href = 'cart.html';
+                                }
+                            }
+                        ]
+                    });
+                }
                 
                 // Also send a web push notification if available
                 if (window.NotificationHandler && 

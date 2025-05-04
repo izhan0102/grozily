@@ -366,32 +366,7 @@
         }
 
         /* Loader */
-        .loader-container {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: rgba(255, 255, 255, 0.8);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            display: none;
-        }
-
-        .loader {
-            width: 50px;
-            height: 50px;
-            border: 3px solid rgba(128, 90, 213, 0.2);
-            border-radius: 50%;
-            border-top-color: #805AD5;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+        /* Loader styles have been removed */
 
         /* Responsive adjustments */
         @media (min-width: 768px) {
@@ -1658,25 +1633,6 @@
                 </div>
             </div>
 
-            <!-- Recent Activity -->
-            <div class="recent-activity">
-                <h2 class="section-title">
-                    <i class="fas fa-history"></i>
-                    Recent Activity
-                </h2>
-                <div class="activity-list" id="activity-list">
-                    <div class="activity-item">
-                        <div class="activity-icon" style="background-color: #805AD5;">
-                            <i class="fas fa-sign-in-alt"></i>
-                        </div>
-                        <div class="activity-details">
-                            <div class="activity-title">Account Login</div>
-                            <div class="activity-time" id="login-time">Just now</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
             <!-- Product Requests -->
             <div class="product-requests">
                 <h2 class="section-title">
@@ -1684,9 +1640,6 @@
                     Product Requests
                     <span class="badge" id="requests-count">0</span>
                     <div style="display: flex; gap: 8px; margin-left: auto;">
-                        <button id="reset-requests-btn" class="reset-requests-btn">
-                            <i class="fas fa-redo-alt"></i> Reset
-                        </button>
                         <button id="clear-all-requests" class="clear-requests-btn">
                             <i class="fas fa-trash-alt"></i> Clear All
                         </button>
@@ -1902,11 +1855,6 @@
         </div>
     </div>
 
-    <!-- Loader -->
-    <div class="loader-container" id="loader">
-        <div class="loader"></div>
-    </div>
-
     <!-- Toast notification element -->
     <div id="vendor-toast" class="vendor-toast">
         <div class="vendor-toast-icon">
@@ -1931,7 +1879,7 @@
                 <div class="confirmation-title">Confirm Action</div>
             </div>
             <div class="confirmation-body">
-                Are you sure you want to clear all product requests? This will only remove them from your view.
+                Are you sure you want to permanently delete all product requests? This action cannot be undone.
             </div>
             <div class="confirmation-footer">
                 <button id="cancel-clear" class="btn-cancel">Cancel</button>
@@ -1976,22 +1924,11 @@
                 console.error('Clear All button not found in DOM');
             }
             
-            // Set up the Reset button
-            const resetBtn = document.getElementById('reset-requests-btn');
-            if (resetBtn) {
-                resetBtn.addEventListener('click', function() {
-                    resetRequestsView();
-                });
-                console.log('Reset button listener added');
-            } else {
-                console.error('Reset button not found in DOM');
-            }
-            
             // Check login status
             firebase.auth().onAuthStateChanged(function(user) {
                 if (user) {
                     console.log('User is logged in:', user.uid);
-                    document.getElementById('loader').style.display = 'none';
+                    // Loader has been removed
                     
                     // Load data
                     loadVendorData();
@@ -2014,15 +1951,12 @@
         });
 
         // DOM Elements
-        const loader = document.getElementById('loader');
         const vendorInitial = document.getElementById('vendor-initial');
         const storeName = document.getElementById('store-name');
         const vendorName = document.getElementById('vendor-name');
         const totalProducts = document.getElementById('total-products');
         const totalOrders = document.getElementById('total-orders');
         const totalRevenue = document.getElementById('total-revenue');
-        const activityList = document.getElementById('activity-list');
-        const loginTime = document.getElementById('login-time');
         const logoutBtn = document.getElementById('logout-btn');
         
         // Profile Modal Elements
@@ -2043,15 +1977,6 @@
         let locationMarker = null;
         let selectedLocation = null;
         let debounceTimeout = null;
-
-        // Show/Hide Loader
-        function showLoader() {
-            loader.style.display = 'flex';
-        }
-
-        function hideLoader() {
-            loader.style.display = 'none';
-        }
 
         // Format currency
         function formatCurrency(amount) {
@@ -2097,7 +2022,6 @@
         }
 
         // Check authentication state
-        showLoader();
         firebase.auth().onAuthStateChanged((user) => {
             if (!user) {
                 // Not logged in, redirect to login
@@ -2135,10 +2059,6 @@
                         vendorAvatar.innerHTML = `<img src="${vendor.profileImageURL}" alt="${vendor.name}" style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">`;
                     }
                     
-                    // Format time for activity log
-                    const lastLoginTime = new Date(user.metadata.lastSignInTime);
-                    loginTime.textContent = timeAgo(lastLoginTime);
-                    
                     // Fill profile form
                     fillProfileForm(vendor);
 
@@ -2153,13 +2073,10 @@
                     
                     // Auto-fix cart issues
                     autoFixCartIssues();
-                    
-                    hideLoader();
                 })
                 .catch((error) => {
                     console.error('Error loading vendor data:', error);
                     alert('Error loading vendor data: ' + error.message);
-                    hideLoader();
                 });
         });
 
@@ -2301,21 +2218,10 @@
                     
                     totalOrders.textContent = ordersCount;
                     totalRevenue.textContent = formatCurrency(revenue);
-                    
-                    // Get recent activities
-                    loadRecentActivities(vendorId);
                 })
                 .catch((error) => {
                     console.error('Error loading dashboard data:', error);
                 });
-        }
-
-        // Load recent activities
-        function loadRecentActivities(vendorId) {
-            // This is a placeholder for actual activity data
-            // In a real app, you would fetch activities from the database
-            
-            // For now, we'll just show the login activity that we already have
         }
 
         // Handle profile button click
@@ -3050,25 +2956,6 @@
         function loadProductRequests() {
             console.log('Loading product requests...');
             
-            // Check if requests were cleared by the user
-            const requestsCleared = localStorage.getItem('requestsCleared') === 'true';
-            console.log('requestsCleared flag in localStorage:', requestsCleared);
-            
-            if (requestsCleared) {
-                console.log('Requests were previously cleared, showing empty state');
-                const requestsContainer = document.getElementById('product-requests-list');
-                const requestsCount = document.getElementById('requests-count');
-                
-                requestsContainer.innerHTML = `
-                    <div class="empty-requests">
-                        <i class="fas fa-inbox"></i>
-                        <p>No product requests yet</p>
-                    </div>
-                `;
-                requestsCount.textContent = '0';
-                return;
-            }
-            
             const requestsContainer = document.getElementById('product-requests-list');
             const requestsCount = document.getElementById('requests-count');
             const currentUserId = firebase.auth().currentUser.uid;
@@ -3256,7 +3143,7 @@
                 .then(() => {
                     console.log('Request approved successfully');
                     
-                    // Show success message
+                    // Show success message to vendor
                     ProductRequestSystem.showNotification({
                         title: 'Request Approved',
                         message: `You've approved this product request and added it to the customer's cart.`,
@@ -3646,12 +3533,14 @@
                 });
         }
 
-        // Function to clear all product requests (frontend only)
+        // Function to clear all product requests
         function clearAllRequests() {
             console.log('clearAllRequests function called');
             
             // Show custom confirmation dialog
             const confirmationDialog = document.getElementById('confirmation-dialog');
+            const confirmationBody = document.querySelector('.confirmation-body');
+            confirmationBody.textContent = 'Are you sure you want to permanently delete all product requests? This action cannot be undone.';
             confirmationDialog.classList.add('show');
             
             // Set up event listeners for the dialog buttons
@@ -3674,38 +3563,77 @@
             newConfirmButton.addEventListener('click', function() {
                 confirmationDialog.classList.remove('show');
                 
+                // Show loading message
+                showToast(
+                    'Deleting Requests',
+                    'Permanently deleting all product requests...',
+                    'info'
+                );
+                
                 try {
-                    console.log('User confirmed clearing all requests');
+                    console.log('User confirmed permanently deleting all requests');
+                    const currentUserId = firebase.auth().currentUser.uid;
                     
-                    const requestsContainer = document.getElementById('product-requests-list');
-                    const requestsCount = document.getElementById('requests-count');
-                    
-                    if (!requestsContainer || !requestsCount) {
-                        console.error('Required DOM elements not found');
-                        return;
-                    }
-                    
-                    // Clear the container
-                    requestsContainer.innerHTML = `
-                        <div class="empty-requests">
-                            <i class="fas fa-inbox"></i>
-                            <p>No product requests yet</p>
-                        </div>
-                    `;
-                    
-                    // Reset the count
-                    requestsCount.textContent = '0';
-                    
-                    // Store in localStorage that requests were cleared
-                    localStorage.setItem('requestsCleared', 'true');
-                    console.log('Requests cleared and localStorage flag set');
-                    
-                    // Show in-page notification
-                    showToast(
-                        'Requests Cleared',
-                        'All product requests have been cleared from your view.',
-                        'info'
-                    );
+                    // Query all product requests for this vendor
+                    firebase.database().ref('product_requests')
+                        .orderByChild('storeId')
+                        .equalTo(currentUserId)
+                        .once('value')
+                        .then((snapshot) => {
+                            if (!snapshot.exists()) {
+                                showToast(
+                                    'No Requests',
+                                    'No product requests to delete.',
+                                    'info'
+                                );
+                                return;
+                            }
+                            
+                            const deletePromises = [];
+                            
+                            // Create an array of delete promises
+                            snapshot.forEach((childSnapshot) => {
+                                const requestId = childSnapshot.key;
+                                deletePromises.push(
+                                    firebase.database().ref(`product_requests/${requestId}`).remove()
+                                );
+                            });
+                            
+                            // Execute all deletes
+                            return Promise.all(deletePromises);
+                        })
+                        .then(() => {
+                            console.log('All product requests deleted successfully');
+                            
+                            // Clear the container
+                            const requestsContainer = document.getElementById('product-requests-list');
+                            const requestsCount = document.getElementById('requests-count');
+                            
+                            requestsContainer.innerHTML = `
+                                <div class="empty-requests">
+                                    <i class="fas fa-inbox"></i>
+                                    <p>No product requests yet</p>
+                                </div>
+                            `;
+                            
+                            // Reset the count
+                            requestsCount.textContent = '0';
+                            
+                            // Show success message
+                            showToast(
+                                'Requests Deleted',
+                                'All product requests have been permanently deleted.',
+                                'success'
+                            );
+                        })
+                        .catch((error) => {
+                            console.error('Error deleting requests:', error);
+                            showToast(
+                                'Error',
+                                'Failed to delete requests: ' + error.message,
+                                'error'
+                            );
+                        });
                 } catch (error) {
                     console.error('Error in clearAllRequests:', error);
                     showToast('Error', error.message, 'error');
@@ -3725,25 +3653,6 @@
             } else {
                 alert(`${title}: ${message}`);
             }
-        }
-
-        // Function to reset the requests view - clear localStorage flag and reload
-        function resetRequestsView() {
-            console.log('Resetting requests view...');
-            
-            // Remove the flag from localStorage
-            localStorage.removeItem('requestsCleared');
-            console.log('requestsCleared flag removed from localStorage');
-            
-            // Show in-page notification
-            showToast(
-                'Requests Reset',
-                'Requests view has been reset. Loading requests again.',
-                'success'
-            );
-            
-            // Load product requests again
-            loadProductRequests();
         }
 
         // Function to show in-page toast notification

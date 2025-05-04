@@ -282,6 +282,77 @@
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
+
+        .mobile-upload-btn {
+            margin-top: 10px;
+            background-color: #805AD5;
+            color: white;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            width: auto;
+        }
+
+        .mobile-upload-btn:hover {
+            background-color: #6B46C1;
+            transform: translateY(-2px);
+        }
+
+        .upload-success {
+            color: #48BB78;
+            font-size: 14px;
+            margin-top: 10px;
+            display: none;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .upload-success.show {
+            display: flex;
+        }
+
+        /* Image source selection */
+        .image-source-options {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            justify-content: center;
+        }
+
+        .source-btn {
+            padding: 10px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        #camera-btn {
+            background-color: #805AD5;
+            color: white;
+        }
+
+        #gallery-btn {
+            background-color: #4299E1;
+            color: white;
+        }
+
+        .source-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
     </style>
 </head>
 <body>
@@ -314,6 +385,24 @@
                             </div>
                             <label for="product-image" class="upload-btn">Choose File</label>
                             <input type="file" id="product-image" class="image-upload-input" accept="image/*">
+
+                            <!-- Image source buttons for mobile -->
+                            <div class="image-source-options">
+                                <button type="button" id="camera-btn" class="source-btn">
+                                    <i class="fas fa-camera"></i> Camera
+                                </button>
+                                <button type="button" id="gallery-btn" class="source-btn">
+                                    <i class="fas fa-images"></i> Gallery
+                                </button>
+                            </div>
+
+                            <!-- Hidden inputs for specific capture methods -->
+                            <input type="file" id="camera-input" class="image-upload-input" accept="image/*" capture="camera" style="display:none">
+                            <input type="file" id="gallery-input" class="image-upload-input" accept="image/*" style="display:none">
+
+                            <div class="upload-success" id="upload-success">
+                                <i class="fas fa-check-circle"></i> Image selected successfully
+                            </div>
 
                             <div class="image-preview-container" id="image-preview-container">
                                 <img src="" id="image-preview" class="image-preview">
@@ -415,6 +504,15 @@
         // Initialize Firebase
         firebase.initializeApp(firebaseConfig);
 
+        // Detect environment for handling image uploads appropriately
+        // Base64 approach works on all environments but increases database size
+        const isLocalEnvironment = window.location.hostname === 'localhost' || 
+                                 window.location.hostname === '127.0.0.1' || 
+                                 window.location.hostname.match(/^192\.168\./);
+        
+        // For access in all environments, use a single approach
+        const useBase64ForImages = true; // Set to true to use base64 for all environments
+
         // DOM Elements
         const productForm = document.getElementById('product-form');
         const productImage = document.getElementById('product-image');
@@ -478,24 +576,13 @@
 
         // Handle image preview
         productImage.addEventListener('change', function() {
-            if (this.files && this.files[0]) {
-                selectedFile = this.files[0];
-
-                // Check file size (max 5MB)
-                if (selectedFile.size > 5 * 1024 * 1024) {
-                    showNotification('Image size should be less than 5MB', 'error');
-                    this.value = '';
-                    selectedFile = null;
-                    imagePreviewContainer.style.display = 'none';
-                    return;
-                }
-
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    imagePreview.src = e.target.result;
-                    imagePreviewContainer.style.display = 'block';
-                }
-                reader.readAsDataURL(selectedFile);
+            console.log('File input changed', this.files);
+            
+            // Check if files exist and file list isn't empty
+            if (this.files && this.files.length > 0) {
+                handleImageSelection(this.files[0]);
+            } else {
+                console.log('No file selected or file selection canceled');
             }
         });
 
@@ -580,22 +667,101 @@
         // Upload image to Firebase Storage
         function uploadImage(file) {
             return new Promise((resolve, reject) => {
+                if (!file) {
+                    reject(new Error('No file selected'));
+                    return;
+                }
+                
+                // Double-check file type again
+                const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
+                if (!validTypes.includes(file.type)) {
+                    reject(new Error('Invalid file type. Only JPG, PNG, and GIF are supported.'));
+                    return;
+                }
+                
+                // Check file size is reasonable before converting to base64
+                if (file.size > 5 * 1024 * 1024) { // 5MB limit
+                    reject(new Error('File size exceeds 5MB. Please choose a smaller image.'));
+                    return;
+                }
+                
+                // We'll use base64 for ALL environments to ensure consistent behavior
+                if (useBase64ForImages) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        console.log('Using base64 image encoding');
+                        
+                        // For very large images, we may need to resize before storing
+                        // This is a simple approach - for production, consider more sophisticated image optimization
+                        const base64String = e.target.result;
+                        
+                        // Check if the base64 string is too long (Firebase has limits)
+                        if (base64String.length > 10 * 1024 * 1024) { // 10MB limit for base64 string
+                            reject(new Error('Image is too large. Please choose a smaller image.'));
+                            return;
+                        }
+                        
+                        resolve(base64String);
+                    };
+                    reader.onerror = function(error) {
+                        console.error('Error reading file:', error);
+                        reject(new Error('Error reading file'));
+                    };
+                    reader.readAsDataURL(file);
+                    return;
+                }
+                
+                // This code will only run if useBase64ForImages is set to false
+                // Using Firebase Storage directly - may face CORS issues in some environments
+                console.log('Attempting Firebase Storage upload');
                 const storageRef = firebase.storage().ref();
                 const fileRef = storageRef.child(`product_images/${currentUser.uid}/${Date.now()}_${file.name}`);
                 
-                const uploadTask = fileRef.put(file);
+                // Create a metadata object
+                const metadata = {
+                    contentType: file.type
+                };
+                
+                const uploadTask = fileRef.put(file, metadata);
 
                 uploadTask.on('state_changed', 
                     (snapshot) => {
                         // Progress tracking could be added here
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        console.log('Upload is ' + progress + '% done');
                     }, 
                     (error) => {
-                        reject(error);
+                        console.error('Upload error:', error);
+                        
+                        // If Firebase Storage fails, fall back to base64
+                        console.log('Firebase Storage upload failed, falling back to base64');
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            resolve(e.target.result);
+                        };
+                        reader.onerror = function(err) {
+                            reject(new Error('Both Firebase Storage and fallback methods failed'));
+                        };
+                        reader.readAsDataURL(file);
                     }, 
                     () => {
                         // Upload complete
                         uploadTask.snapshot.ref.getDownloadURL().then((downloadURL) => {
+                            console.log('File available at', downloadURL);
                             resolve(downloadURL);
+                        }).catch(error => {
+                            console.error('Error getting download URL:', error);
+                            
+                            // If getting download URL fails, fall back to base64
+                            console.log('Getting download URL failed, falling back to base64');
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                resolve(e.target.result);
+                            };
+                            reader.onerror = function(err) {
+                                reject(new Error('Both Firebase Storage and fallback methods failed'));
+                            };
+                            reader.readAsDataURL(file);
                         });
                     }
                 );
@@ -611,6 +777,9 @@
             }
 
             showLoader();
+            
+            // Disable the submit button to prevent multiple submissions
+            submitBtn.disabled = true;
 
             try {
                 let imageURL = '';
@@ -618,12 +787,37 @@
                 // Get image URL - either from upload or direct URL
                 if (isUsingUrl) {
                     imageURL = imageUrl.value.trim();
+                    // Validate URL image exists
+                    try {
+                        const response = await fetch(imageURL, { method: 'HEAD' });
+                        if (!response.ok) {
+                            throw new Error('Image URL is not valid');
+                        }
+                    } catch (error) {
+                        hideLoader();
+                        showNotification('Invalid image URL. Please check the URL and try again.', 'error');
+                        submitBtn.disabled = false;
+                        return;
+                    }
                 } else if (selectedFile) {
-                    imageURL = await uploadImage(selectedFile);
+                    try {
+                        console.log('Uploading image:', selectedFile.name);
+                        imageURL = await uploadImage(selectedFile);
+                        console.log('Image uploaded successfully, URL:', imageURL);
+                    } catch (uploadError) {
+                        console.error('Detailed upload error:', uploadError);
+                        hideLoader();
+                        showNotification('Error uploading image: ' + uploadError.message, 'error');
+                        submitBtn.disabled = false;
+                        return;
+                    }
                 }
 
                 // Generate a new product key
                 const newProductKey = firebase.database().ref().child('products').push().key;
+                if (!newProductKey) {
+                    throw new Error('Failed to generate a new product ID');
+                }
 
                 // Create product data object
                 const productData = {
@@ -639,6 +833,8 @@
                     updatedAt: new Date().toISOString()
                 };
 
+                console.log('Saving product data:', productData);
+
                 // Create updates object for multiple paths
                 const updates = {};
                 updates[`/products/${newProductKey}`] = productData;
@@ -646,6 +842,7 @@
 
                 // Update database
                 await firebase.database().ref().update(updates);
+                console.log('Product saved successfully');
 
                 // Show success message
                 showNotification('Product added successfully!');
@@ -655,25 +852,173 @@
                 selectedFile = null;
                 imagePreviewContainer.style.display = 'none';
 
-                // Redirect back to vendor home after a delay
+                // Redirect back to products page after a delay
                 setTimeout(() => {
-                    window.location.href = 'vendor-home.html';
+                    window.location.href = 'products.html';
                 }, 2000);
 
             } catch (error) {
                 console.error('Error adding product:', error);
-                showNotification('Error adding product: ' + error.message, 'error');
+                
+                // Show more user-friendly error message depending on error type
+                let errorMessage = 'Error adding product';
+                
+                if (error.code) {
+                    // Firebase specific errors
+                    switch (error.code) {
+                        case 'PERMISSION_DENIED':
+                        case 'storage/unauthorized':
+                            errorMessage = 'You don\'t have permission to add products';
+                            break;
+                        case 'NETWORK_ERROR':
+                        case 'OPERATION_FAILED':
+                            errorMessage = 'Network error. Please check your internet connection';
+                            break;
+                        default:
+                            errorMessage = `Error: ${error.message}`;
+                    }
+                } else {
+                    errorMessage = error.message || 'An unknown error occurred';
+                }
+                
+                showNotification(errorMessage, 'error');
+                submitBtn.disabled = false;
             }
 
             hideLoader();
+            submitBtn.disabled = false;
         });
 
         // Make the entire upload container clickable
         uploadContainer.addEventListener('click', function(e) {
-            if (e.target !== productImage) {
-                productImage.click();
+            // Only handle clicks on the container itself, not on buttons or inputs
+            if (e.target === uploadContainer || e.target.closest('.image-upload-icon') || 
+                e.target.closest('.image-upload-text')) {
+                
+                // If we already have a selected file and preview showing, don't open file dialog again
+                if (selectedFile && imagePreviewContainer.style.display === 'block') {
+                    return;
+                }
+                
+                // Clear the file input before opening the file dialog
+                productImage.value = '';
+                
+                // For iOS Safari compatibility
+                setTimeout(function() {
+                    productImage.click();
+                }, 10);
             }
         });
+
+        // Initialize the page
+        document.addEventListener('DOMContentLoaded', function() {
+            // Reset the file input value when the page loads
+            if (productImage) {
+                productImage.value = '';
+            }
+            
+            // Set up the camera and gallery buttons
+            const cameraBtn = document.getElementById('camera-btn');
+            const galleryBtn = document.getElementById('gallery-btn');
+            const cameraInput = document.getElementById('camera-input');
+            const galleryInput = document.getElementById('gallery-input');
+            
+            // Camera button handler
+            if (cameraBtn && cameraInput) {
+                cameraBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevent event bubbling to container
+                    cameraInput.value = '';  // Clear previous selection
+                    cameraInput.click();     // Open camera
+                });
+                
+                // Handle camera capture result
+                cameraInput.addEventListener('change', function(e) {
+                    if (this.files && this.files.length > 0) {
+                        handleImageSelection(this.files[0]);
+                    }
+                });
+            }
+            
+            // Gallery button handler
+            if (galleryBtn && galleryInput) {
+                galleryBtn.addEventListener('click', function(e) {
+                    e.stopPropagation(); // Prevent event bubbling to container
+                    galleryInput.value = '';  // Clear previous selection
+                    galleryInput.click();     // Open gallery
+                });
+                
+                // Handle gallery selection result
+                galleryInput.addEventListener('change', function(e) {
+                    if (this.files && this.files.length > 0) {
+                        handleImageSelection(this.files[0]);
+                    }
+                });
+            }
+            
+            // Add focus event listener to detect when input is clicked
+            productImage.addEventListener('focus', function() {
+                console.log('File input focused');
+                // Clear the input value to ensure change event fires
+                this.value = '';
+            });
+            
+            // Additional click handler for mobile
+            productImage.addEventListener('click', function(e) {
+                console.log('File input clicked');
+                // Some mobile browsers need this to properly trigger the file selection
+                e.stopPropagation();
+            });
+        });
+        
+        // Common function to handle the selected image
+        function handleImageSelection(file) {
+            selectedFile = file;
+            console.log('Selected file:', selectedFile.name, selectedFile.type, selectedFile.size);
+
+            // Check file size (max 5MB)
+            if (selectedFile.size > 5 * 1024 * 1024) {
+                showNotification('Image size should be less than 5MB', 'error');
+                selectedFile = null;
+                imagePreviewContainer.style.display = 'none';
+                return;
+            }
+
+            // Validate file type
+            const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/jpg'];
+            if (!validTypes.includes(selectedFile.type)) {
+                showNotification('Please select a valid image file (JPG, PNG, or GIF)', 'error');
+                selectedFile = null;
+                imagePreviewContainer.style.display = 'none';
+                return;
+            }
+
+            // Read and display the file
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.src = e.target.result;
+                imagePreviewContainer.style.display = 'block';
+                
+                // Show success message
+                const successMsg = document.getElementById('upload-success');
+                if (successMsg) {
+                    successMsg.classList.add('show');
+                    
+                    // Hide after 3 seconds
+                    setTimeout(function() {
+                        successMsg.classList.remove('show');
+                    }, 3000);
+                }
+                
+                console.log('Image preview displayed');
+                
+                // Focus on the next form field after successful image selection
+                // This helps move the user forward in the form
+                setTimeout(function() {
+                    document.getElementById('product-name').focus();
+                }, 500);
+            }
+            reader.readAsDataURL(selectedFile);
+        }
     </script>
 </body>
 </html> 
