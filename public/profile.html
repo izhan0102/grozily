@@ -98,9 +98,58 @@
                             </div>
                         </div>
                     </div>
+
+                    <div class="profile-section">
+                        <h3>Account Options</h3>
+                        <a href="orders.html" class="profile-action">
+                            <i class="fa-solid fa-clipboard-list"></i>
+                            <div class="action-content">
+                                <span class="action-label">My Orders</span>
+                                <span class="action-description">View your order history and track deliveries</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right action-arrow"></i>
+                        </a>
+                        <div class="profile-action" id="edit-profile-btn">
+                            <i class="fa-solid fa-user-edit"></i>
+                            <div class="action-content">
+                                <span class="action-label">Edit Profile</span>
+                                <span class="action-description">Update your personal information</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right action-arrow"></i>
+                        </div>
+                        <div class="profile-action" id="logout-btn">
+                            <i class="fa-solid fa-sign-out-alt"></i>
+                            <div class="action-content">
+                                <span class="action-label">Logout</span>
+                                <span class="action-description">Sign out from your account</span>
+                            </div>
+                            <i class="fa-solid fa-chevron-right action-arrow"></i>
+                        </div>
+                    </div>
                 </div>
             </div>
         </main>
+        
+        <!-- Navigation bar -->
+        <nav class="bottom-nav">
+            <a href="home.html" class="nav-item">
+                <i class="fa-solid fa-home"></i>
+                <span>Home</span>
+            </a>
+            <a href="cart.html" class="nav-item">
+                <i class="fa-solid fa-cart-shopping"></i>
+                <span class="cart-badge" id="cart-badge">0</span>
+                <span>Cart</span>
+            </a>
+            <a href="orders.html" class="nav-item">
+                <i class="fa-solid fa-truck"></i>
+                <span>Orders</span>
+            </a>
+            <a href="profile.html" class="nav-item active">
+                <i class="fa-solid fa-user"></i>
+                <span>Profile</span>
+            </a>
+        </nav>
     </div>
 
     <!-- Toast Message -->
@@ -150,8 +199,38 @@
                 window.location.href = 'login.html';
             } else {
                 loadUserData(user);
+                updateCartBadge(user.uid);
             }
         });
+
+        // Update cart badge
+        function updateCartBadge(userId) {
+            const cartBadge = document.getElementById('cart-badge');
+            if (!cartBadge) return;
+            
+            const cartRef = database.ref(`carts/${userId}/items`);
+            
+            cartRef.once('value')
+                .then(snapshot => {
+                    let itemCount = 0;
+                    
+                    if (snapshot.exists()) {
+                        snapshot.forEach(() => {
+                            itemCount++;
+                        });
+                    }
+                    
+                    if (itemCount > 0) {
+                        cartBadge.textContent = itemCount;
+                        cartBadge.style.display = 'block';
+                    } else {
+                        cartBadge.style.display = 'none';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error updating cart badge:', error);
+                });
+        }
 
         // Load user details
         async function loadUserData(user) {
@@ -243,5 +322,94 @@
             }
         }
     </script>
+
+    <style>
+        .info-value {
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .profile-action {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #eee;
+            cursor: pointer;
+            color: inherit;
+            text-decoration: none;
+        }
+        
+        .profile-action:last-child {
+            border-bottom: none;
+        }
+        
+        .profile-action i:first-child {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background-color: #F5F0FF;
+            color: #6B46C1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 15px;
+        }
+        
+        .action-content {
+            flex: 1;
+        }
+        
+        .action-label {
+            display: block;
+            font-weight: 500;
+            margin-bottom: 3px;
+        }
+        
+        .action-description {
+            font-size: 13px;
+            color: #666;
+        }
+        
+        .action-arrow {
+            color: #999;
+            margin-left: 10px;
+        }
+        
+        #edit-profile-btn, #logout-btn {
+            transition: background-color 0.2s;
+        }
+        
+        #edit-profile-btn:hover, #logout-btn:hover {
+            background-color: #f9f9f9;
+        }
+        
+        #logout-btn i:first-child {
+            background-color: #FDF2F2;
+            color: #E53E3E;
+        }
+        
+        .toast-message {
+            position: fixed;
+            bottom: 80px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 9999;
+            transition: transform 0.3s ease;
+            opacity: 0;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+    </style>
 </body>
 </html> 

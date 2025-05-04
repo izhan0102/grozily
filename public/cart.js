@@ -25,6 +25,7 @@ const emptyCartElement = document.getElementById('empty-cart');
 const cartItemsContainer = document.getElementById('cart-items');
 const cartSummaryElement = document.getElementById('cart-summary');
 const cartSubtotalElement = document.getElementById('cart-subtotal');
+const footerCartSubtotalElement = document.getElementById('footer-cart-subtotal');
 const deliveryFeeElement = document.getElementById('delivery-fee');
 const platformFeeElement = document.getElementById('platform-fee');
 const discountAmountElement = document.getElementById('discount-amount');
@@ -422,6 +423,11 @@ function updateCartTotals() {
     // Update UI elements with animation
     animateNumberChange(cartSubtotalElement, `₹${formatPrice(cartSubtotal)}`);
     
+    // Also update the subtotal in the footer
+    if (footerCartSubtotalElement) {
+        animateNumberChange(footerCartSubtotalElement, `₹${formatPrice(cartSubtotal)}`);
+    }
+    
     // For display purposes, only show the subtotal - we'll still calculate the complete total
     // for when we proceed to checkout, but we won't display platform fee and delivery fee
     
@@ -775,33 +781,22 @@ function applyDiscount() {
 }
 
 // Proceed to checkout
+// Proceed to checkout
+// Proceed to checkout
 function proceedToCheckout() {
     if (cartItems.length === 0) {
         showToast('Your cart is empty', 'error');
         return;
     }
     
-    // Check if delivery location is selected
-    if (!selectedLocationData) {
-        showToast('Please select a delivery location', 'error');
-        showLocationModal();
-        return;
-    }
-    
     // Proceed with checkout
     setButtonLoading(checkoutBtn, true);
     
-    setTimeout(() => {
-        // Simulate checkout process (replace with actual checkout flow)
-        setButtonLoading(checkoutBtn, false);
-        showToast('Order placed successfully!', 'success');
-        
-        // Navigate to orders page after successful checkout
-        setTimeout(() => {
-            window.location.href = 'orders.html';
-        }, 1500);
-        }, 2000);
+    // Redirect to checkout page
+    window.location.href = 'checkout.html';
 }
+
+
 
 // Show toast message
 function showToast(message, type = 'success') {
@@ -1578,3 +1573,5 @@ function addToCart(product) {
             showToast('Error adding item to cart', 'error');
         });
 } 
+
+

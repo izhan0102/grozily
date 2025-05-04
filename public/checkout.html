@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grozily - Checkout</title>
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="cart.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        /* --- Base & Variables --- */
+        :root {
+            --primary: #6B46C1; /* Main purple */
+            --primary-dark: #553C9A;
+            --primary-light: #A78BFA; /* Lighter purple for accents */
+            --primary-lighter: #E9D8FD; /* Very light purple for backgrounds */
+            --primary-bg: #F5F0FF; /* Lightest purple bg */
+            --success: #38A169;
+            --warning: #DD6B20;
+            --danger: #C53030;
+            --gray-100: #F8F9FA; /* Slightly off-white background */
+            --gray-200: #EDF2F7;
+            --gray-300: #E2E8F0;
+            --gray-400: #CBD5E0;
+            --gray-500: #A0AEC0;
+            --gray-600: #718096;
+            --gray-700: #4A5568;
+            --gray-800: #2D3748;
+            --gray-900: #1A202C;
+            --white: #FFFFFF;
+            --border-radius-sm: 6px;
+            --border-radius-md: 10px;
+            --border-radius-lg: 14px;
+            --shadow-sm: 0 1px 3px 0 rgba(0, 0, 0, 0.07), 0 1px 2px 0 rgba(0, 0, 0, 0.04);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.08), 0 2px 4px -1px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.09), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+            --shadow-primary: 0 4px 14px 0 rgba(107, 70, 193, 0.25);
+            --transition-fast: all 0.2s ease;
+            --transition-normal: all 0.3s ease;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        html {
+            scroll-behavior: smooth;
+        }
+
+        body {
+            background-color: var(--gray-100);
+            font-family: 'Roboto', sans-serif;
+            color: var(--gray-700); /* Default text color slightly lighter */
+            line-height: 1.6;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+
+        /* --- App Layout --- */
+        .app-container {
+            max-width: 100%;
+            overflow-x: hidden;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .app-content {
+            flex: 1;
+            padding-bottom: 110px;
+        }
+
+        .checkout-container {
+            padding: 20px 16px; /* Consistent padding */
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        /* --- Header --- */
+        .simple-header {
+            background: linear-gradient(135deg, var(--primary-dark), var(--primary)); /* Reversed gradient */
+            color: var(--white);
+            padding: 12px 16px; /* Adjusted padding */
+            position: sticky;
+            top: 0;
+            z-index: 50;
+            box-shadow: var(--shadow-lg); /* Stronger shadow */
+            display: flex;
+            align-items: center;
+            gap: 12px; /* Adjusted gap */
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+
+        .simple-header h1 {
+            /* Hide the H1 text visually using CSS */
+            font-size: 0; /* Collapse the text */
+            line-height: 0; /* Collapse line height */
+            width: 0;
+            height: 0;
+            overflow: hidden;
+            visibility: hidden;
+            margin: 0;
+            padding: 0;
+            position: absolute; /* Take out of flow */
+        }
+
+        .back-button {
+            color: var(--white);
+            background: transparent; /* Fully transparent */
+            border: 1px solid rgba(255,255,255,0.3); /* Subtle border */
+            border-radius: var(--border-radius-md); /* Consistent radius */
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: var(--transition-fast);
+        }
+
+        .back-button:hover {
+            background: rgba(255,255,255,0.1);
+            border-color: rgba(255,255,255,0.5);
+            transform: scale(1.05);
+        }
+
+        /* --- Sections & Cards --- */
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 2px solid var(--primary-lighter); /* Underline effect */
+        }
+
+        .section-title i {
+            color: var(--primary);
+            font-size: 20px;
+            transition: transform 0.2s ease;
+        }
+
+        .section-title:hover i {
+             transform: scale(1.1);
+        }
+
+        .checkout-card {
+            background-color: var(--white);
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-md);
+            padding: 24px; /* Increased padding */
+            margin-bottom: 28px; /* Increased spacing */
+            border: 1px solid var(--gray-200);
+            transition: var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .checkout-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 5px; /* Vertical accent border */
+            height: 100%;
+            background: var(--primary-light);
+            transition: var(--transition-fast);
+            opacity: 0.8;
+        }
+
+        .checkout-card.delivery::before { background: #38B2AC; }
+        .checkout-card.payment::before { background: var(--warning); }
+        .checkout-card.summary::before { background: var(--primary); }
+
+        .checkout-card:hover::before {
+            width: 8px; /* Expand border on hover */
+            opacity: 1;
+        }
+
+        .checkout-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-xl); /* Stronger shadow on hover */
+            border-color: var(--gray-300);
+        }
+
+        /* --- Delivery Section --- */
+        .delivery-address {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 8px 0;
+        }
+
+        .address-icon {
+            background: linear-gradient(135deg, #81E6D9, #319795); /* Teal gradient */
+            width: 48px;
+            height: 48px;
+            border-radius: 50%; /* Circular icon */
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--white);
+            flex-shrink: 0;
+            font-size: 20px;
+            box-shadow: 0 4px 12px rgba(49, 151, 149, 0.3);
+            transition: transform 0.2s ease;
+        }
+
+        .delivery-address:hover .address-icon {
+            transform: rotate(-10deg) scale(1.1);
+        }
+
+        .address-details {
+            flex: 1;
+        }
+
+        .address-label {
+            font-size: 12px;
+            color: var(--gray-500);
+            margin-bottom: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.6px; /* Increased spacing */
+            font-weight: 500;
+        }
+
+        .address-value {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--gray-700);
+            line-height: 1.5;
+        }
+
+        /* --- Payment Section --- */
+        .payment-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 14px; /* Slightly increased gap */
+        }
+
+        .payment-method {
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            border-radius: var(--border-radius-md);
+            border: 1px solid var(--gray-300);
+            transition: var(--transition-fast);
+            cursor: pointer;
+            position: relative;
+            background-color: var(--white);
+            overflow: hidden;
+        }
+
+        .payment-method::after { /* Highlight effect */
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            background: var(--primary);
+            transition: width 0.3s ease;
+        }
+
+        .payment-method:hover {
+            border-color: var(--primary-light);
+            background-color: var(--primary-bg);
+        }
+
+        .payment-method input[type="radio"] {
+            margin-right: 16px;
+            width: 20px;
+            height: 20px;
+            accent-color: var(--primary);
+            cursor: pointer;
+        }
+
+        .payment-method input[type="radio"]:checked + .payment-logo {
+            background-color: var(--primary-lighter);
+            transform: scale(1.05);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .payment-method input[type="radio"]:checked + .payment-logo i {
+            color: var(--primary);
+        }
+
+        .payment-method input[type="radio"]:checked ~ .payment-name {
+            color: var(--primary-dark);
+            font-weight: 600;
+        }
+
+        .payment-method input[type="radio"]:checked::after {
+            width: 100%; /* Expand highlight on check */
+        }
+
+        .payment-logo {
+            width: 42px;
+            height: 42px;
+            border-radius: var(--border-radius-sm);
+            background-color: var(--gray-200);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 16px;
+            transition: var(--transition-fast);
+        }
+
+        .payment-logo i {
+            font-size: 20px;
+            color: var(--gray-600);
+            transition: var(--transition-fast);
+        }
+
+        .payment-name {
+            font-size: 15px;
+            font-weight: 500;
+            color: var(--gray-700);
+            transition: var(--transition-fast);
+        }
+
+        /* --- Summary Section --- */
+        .order-items {
+            margin-bottom: 20px;
+            padding-right: 4px; /* Ensure scrollbar doesn't overlap */
+        }
+
+        .order-summary-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px; /* Add margin above table */
+        }
+
+        .order-summary-table tr {
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .order-summary-table tr:last-child {
+            border-bottom: none;
+        }
+
+        .order-summary-table td {
+            padding: 14px 4px;
+            vertical-align: middle;
+        }
+
+        .summary-label {
+            font-size: 14px;
+            color: var(--gray-600);
+            padding-left: 8px; /* Align with items */
+        }
+
+        .summary-value {
+            font-size: 15px;
+            font-weight: 600;
+            text-align: right;
+            color: var(--gray-700);
+            padding-right: 8px; /* Align with items */
+        }
+
+        .order-total {
+            background: linear-gradient(135deg, var(--primary-bg), var(--primary-lighter)); /* Purple gradient */
+            border-radius: var(--border-radius-lg); /* Match card radius */
+            padding: 18px 24px;
+            margin-top: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border: 1px solid var(--primary-light);
+            box-shadow: inset 0 1px 3px rgba(255,255,255,0.5);
+        }
+
+        .total-label {
+            font-size: 17px;
+            font-weight: 600;
+            color: var(--primary-dark);
+        }
+
+        .total-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary);
+        }
+
+        .cart-item {
+            display: flex;
+            align-items: center;
+            padding: 12px 8px; /* Add horizontal padding */
+            border-bottom: 1px solid var(--gray-200);
+            transition: var(--transition-fast);
+            background-color: var(--white);
+            border-radius: var(--border-radius-sm);
+            margin-bottom: 8px; /* Add spacing between items */
+            position: relative;
+        }
+
+        .cart-item:hover {
+            background-color: var(--primary-bg);
+            box-shadow: var(--shadow-sm);
+            transform: scale(1.02);
+        }
+
+        .cart-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+
+        .item-image {
+            width: 65px; /* Slightly larger */
+            height: 65px;
+            border-radius: var(--border-radius-md);
+            overflow: hidden;
+            margin-right: 16px;
+            background-color: var(--gray-200);
+            flex-shrink: 0;
+            box-shadow: var(--shadow-sm);
+            border: 1px solid var(--gray-300);
+        }
+
+        .item-image img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: var(--transition-normal);
+        }
+
+        .cart-item:hover .item-image img {
+            transform: scale(1.1);
+        }
+
+        .item-details {
+            flex: 1;
+            margin-right: 8px;
+        }
+
+        .item-name {
+            font-size: 15px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            color: var(--gray-800);
+            line-height: 1.4;
+        }
+
+        .item-quantity {
+            font-size: 13px;
+            color: var(--gray-500);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .item-quantity::before {
+            content: 'Qty:';
+            color: var(--gray-500);
+            margin-right: 4px;
+            font-weight: 500;
+        }
+
+        .item-price {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--primary);
+            text-align: right;
+            background-color: transparent; /* Remove background */
+            padding: 0;
+            border-radius: 0;
+        }
+
+        /* --- Footer --- */
+        .checkout-footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background-color: rgba(255, 255, 255, 0.98); /* Slightly less transparent */
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 -4px 12px rgba(0,0,0,0.08); /* Adjusted shadow */
+            z-index: 100;
+            border-top: 1px solid var(--gray-200);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+        }
+
+        .footer-total {
+            color: var(--gray-800);
+            flex-basis: 40%; /* Give total more defined space */
+        }
+
+        .footer-total-label {
+            font-size: 12px;
+            color: var(--gray-600);
+            margin-bottom: 2px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 500;
+        }
+
+        .footer-total-value {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .place-order-btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: var(--white);
+            border: none;
+            border-radius: var(--border-radius-md);
+            padding: 14px 28px; /* Larger padding */
+            font-size: 17px; /* Larger font */
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center; /* Center content */
+            gap: 10px; /* Increased gap */
+            transition: var(--transition-normal);
+            box-shadow: var(--shadow-primary);
+            white-space: nowrap;
+            flex-grow: 1; /* Allow button to grow */
+            margin-left: 16px; /* Add space between total and button */
+            max-width: 250px; /* Limit max width */
+        }
+
+        .place-order-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 7px 20px 0 rgba(107, 70, 193, 0.35);
+        }
+
+        .place-order-btn:active {
+            transform: translateY(0);
+            box-shadow: 0 3px 10px 0 rgba(107, 70, 193, 0.3);
+        }
+
+        .btn-loader {
+            display: none;
+            width: 20px; /* Larger loader */
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3); /* Thicker border */
+            border-radius: 50%;
+            border-top-color: var(--white);
+            animation: spin 0.8s infinite linear; /* Faster spin */
+        }
+
+        .loading .btn-text {
+            display: none; /* Hide text completely */
+        }
+
+        .loading .btn-loader {
+            display: inline-block;
+        }
+
+        .loading.place-order-btn {
+             min-width: 50px; /* Ensure minimum size for loader */
+             padding: 14px; /* Maintain padding for height */
+        }
+
+        /* --- Order Success Animation --- */
+        .order-success-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(245, 240, 255, 0.95); /* Slightly denser purple overlay */
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+        }
+
+        .order-success-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .success-animation {
+            text-align: center;
+            transform: scale(0.9) translateY(15px);
+            opacity: 0;
+            transition: all 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
+            max-width: 340px;
+            background-color: var(--white);
+            padding: 36px;
+            border-radius: var(--border-radius-lg);
+            box-shadow: var(--shadow-xl);
+            border: 1px solid var(--primary-lighter);
+        }
+
+        .order-success-overlay.show .success-animation {
+            transform: scale(1) translateY(0);
+            opacity: 1;
+        }
+
+        .success-icon {
+            width: 75px;
+            height: 75px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary-light), var(--primary));
+            color: var(--white);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 24px;
+            font-size: 34px;
+            transform: scale(0);
+            animation: popIn 0.7s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards 0.2s;
+            box-shadow: 0 10px 20px rgba(107, 70, 193, 0.3);
+        }
+
+        .success-message {
+            font-size: 24px;
+            font-weight: 600;
+            color: var(--primary-dark);
+            margin-bottom: 12px;
+            opacity: 0;
+            animation: fadeIn 0.6s ease forwards 0.7s;
+        }
+
+        .success-details {
+            font-size: 16px;
+            color: var(--gray-600);
+            opacity: 0;
+            animation: fadeIn 0.6s ease forwards 0.9s;
+            line-height: 1.5;
+        }
+
+        /* --- Keyframes --- */
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0) rotate(-45deg); opacity: 0; }
+            60% { transform: scale(1.15) rotate(10deg); opacity: 1; }
+            100% { transform: scale(1) rotate(0deg); opacity: 1; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- Toast Messages --- */
+        .toast-message {
+            position: fixed;
+            bottom: 110px;
+            left: 50%;
+            transform: translateX(-50%) translateY(100px);
+            background-color: var(--gray-800);
+            color: var(--white);
+            padding: 12px 20px;
+            border-radius: var(--border-radius-md);
+            font-size: 14px;
+            font-weight: 500;
+            z-index: 9999;
+            transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1), opacity 0.4s ease;
+            opacity: 0;
+            max-width: 90%;
+            text-align: center;
+            box-shadow: var(--shadow-md);
+        }
+
+        .toast-message.show {
+            transform: translateX(-50%) translateY(0);
+            opacity: 1;
+        }
+
+        .toast-message.success { background-color: var(--success); }
+        .toast-message.error { background-color: var(--danger); }
+    </style>
+</head>
+<body>
+    <!-- Add success overlay -->
+    <div class="order-success-overlay" id="success-overlay">
+        <div class="success-animation">
+            <div class="success-icon">
+                <i class="fa-solid fa-check"></i>
+            </div>
+            <h2 class="success-message">Order Placed Successfully!</h2>
+            <p class="success-details">Thank you for shopping with us</p>
+        </div>
+    </div>
+    
+    <div class="app-container">
+        <header class="simple-header">
+            <button id="back-btn" class="back-button">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <h1>Checkout</h1>
+        </header>
+        
+        <main class="app-content">
+            <div class="checkout-container">
+                <div class="checkout-card delivery">
+                    <h2 class="section-title"><i class="fa-solid fa-location-dot"></i> Delivery Address</h2>
+                    <div class="delivery-address">
+                        <div class="address-icon">
+                            <i class="fa-solid fa-house"></i>
+                        </div>
+                        <div class="address-details">
+                            <div class="address-label">Deliver to:</div>
+                            <div class="address-value" id="delivery-address">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="checkout-card payment">
+                    <h2 class="section-title"><i class="fa-solid fa-credit-card"></i> Payment Method</h2>
+                    <div class="payment-method">
+                        <input type="radio" name="payment" id="cod" class="payment-radio" checked>
+                        <div class="payment-logo">
+                            <i class="fa-solid fa-money-bill"></i>
+                        </div>
+                        <label for="cod" class="payment-name">Cash on Delivery</label>
+                    </div>
+                    <div class="payment-method">
+                        <input type="radio" name="payment" id="online" class="payment-radio">
+                        <div class="payment-logo">
+                            <i class="fa-solid fa-credit-card"></i>
+                        </div>
+                        <label for="online" class="payment-name">Online Payment (coming soon)</label>
+                    </div>
+                </div>
+                
+                <div class="checkout-card summary">
+                    <h2 class="section-title"><i class="fa-solid fa-clipboard-list"></i> Order Summary</h2>
+                    <div id="order-items">
+                        <!-- Order items will be dynamically added here -->
+                    </div>
+                    <div class="order-summary">
+                        <table class="order-summary-table">
+                            <tr>
+                                <td class="summary-label">Item Total</td>
+                                <td class="summary-value" id="item-total">₹0.00</td>
+                            </tr>
+                            <tr>
+                                <td class="summary-label">Delivery Fee</td>
+                                <td class="summary-value" id="delivery-fee">₹20.00</td>
+                            </tr>
+                            <tr>
+                                <td class="summary-label">Platform Fee <span id="platform-fee-rate">(5%)</span></td>
+                                <td class="summary-value" id="platform-fee">₹0.00</td>
+                            </tr>
+                            <tr id="discount-row" style="display: none;">
+                                <td class="summary-label">Discount</td>
+                                <td class="summary-value" id="discount-amount">-₹0.00</td>
+                            </tr>
+                        </table>
+                        <div class="order-total">
+                            <span class="total-label">Total</span>
+                            <span class="total-value" id="order-total">₹0.00</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+        
+        <div class="checkout-footer">
+            <div class="footer-total">
+                <div class="footer-total-label">Total Amount</div>
+                <div class="footer-total-value" id="footer-total">₹0.00</div>
+            </div>
+            <button id="place-order-btn" class="place-order-btn">
+                <span class="btn-text">Place Order</span>
+                <span class="btn-loader"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Toast Message -->
+    <div id="toast-message" class="toast-message">
+        <div class="toast-content">
+            <i class="toast-icon fa-solid fa-check-circle success"></i>
+            <p class="toast-text"></p>
+        </div>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+            authDomain: "grozily2.firebaseapp.com",
+            databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+            projectId: "grozily2",
+            storageBucket: "grozily2.firebasestorage.app",
+            messagingSenderId: "665300145710",
+            appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+            measurementId: "G-83S7ZWXEB9"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // DOM Elements
+        const backBtn = document.getElementById('back-btn');
+        const placeOrderBtn = document.getElementById('place-order-btn');
+        const orderItemsContainer = document.getElementById('order-items');
+        const itemTotalElement = document.getElementById('item-total');
+        const deliveryFeeElement = document.getElementById('delivery-fee');
+        const platformFeeElement = document.getElementById('platform-fee');
+        const platformFeeRateElement = document.getElementById('platform-fee-rate');
+        const discountRowElement = document.getElementById('discount-row');
+        const discountAmountElement = document.getElementById('discount-amount');
+        const orderTotalElement = document.getElementById('order-total');
+        const footerTotalElement = document.getElementById('footer-total');
+        const deliveryAddressElement = document.getElementById('delivery-address');
+        const toastMessage = document.getElementById('toast-message');
+        const toastText = toastMessage.querySelector('.toast-text');
+
+        // Order data
+        let cartItems = [];
+        let cartSubtotal = 0;
+        let platformFee = 0;
+        let deliveryFee = 20;
+        let discountAmount = 0;
+        let orderTotal = 0;
+        let platformFeeRate = 5;
+        let selectedLocation = null;
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Back button
+            backBtn.addEventListener('click', () => {
+                window.history.back();
+            });
+
+            // Place order button
+            placeOrderBtn.addEventListener('click', placeOrder);
+
+            // Check if user is authenticated
+            auth.onAuthStateChanged(user => {
+                if (!user) {
+                    // No user is signed in, redirect to login page
+                    window.location.href = 'login.html';
+                } else {
+                    // Load cart data
+                    loadCartData(user.uid);
+                    loadDeliveryAddress(user.uid);
+                }
+            });
+        });
+
+        // Load cart data
+        function loadCartData(userId) {
+            const cartRef = database.ref(`carts/${userId}/items`);
+            
+            cartRef.once('value')
+                .then(snapshot => {
+                    if (!snapshot.exists()) {
+                        showToast('Your cart is empty', 'error');
+                        setTimeout(() => {
+                            window.location.href = 'cart.html';
+                        }, 2000);
+                        return;
+                    }
+
+                    cartItems = [];
+                    snapshot.forEach(childSnapshot => {
+                        const item = childSnapshot.val();
+                        cartItems.push(item);
+                    });
+
+                    // Display cart items
+                    displayCartItems();
+                    
+                    // Calculate totals
+                    calculateTotals();
+                })
+                .catch(error => {
+                    console.error('Error loading cart data:', error);
+                    showToast('Failed to load cart data', 'error');
+                });
+        }
+
+        // Load delivery address
+        function loadDeliveryAddress(userId) {
+            const addressRef = database.ref(`users/${userId}/deliveryLocation`);
+            
+            addressRef.once('value')
+                .then(snapshot => {
+                    if (snapshot.exists()) {
+                        selectedLocation = snapshot.val();
+                        
+                        // Display address
+                        let addressText = '';
+                        if (selectedLocation.area) addressText += selectedLocation.area;
+                        if (selectedLocation.district) addressText += ', ' + selectedLocation.district;
+                        if (selectedLocation.pincode) addressText += ', ' + selectedLocation.pincode;
+                        
+                        deliveryAddressElement.textContent = addressText || 'No address available';
+                    } else {
+                        deliveryAddressElement.textContent = 'No delivery address selected';
+                    }
+                })
+                .catch(error => {
+                    console.error('Error loading delivery address:', error);
+                    deliveryAddressElement.textContent = 'Could not load address';
+                });
+        }
+
+        // Display cart items
+        function displayCartItems() {
+            orderItemsContainer.innerHTML = '';
+            
+            cartItems.forEach(item => {
+                const cartItemElement = document.createElement('div');
+                cartItemElement.className = 'cart-item';
+                
+                cartItemElement.innerHTML = `
+                    <div class="item-image">
+                        <img src="${item.imageURL || 'https://via.placeholder.com/60?text=Product'}" 
+                             alt="${item.name || 'Product'}"
+                             onerror="this.src='https://via.placeholder.com/60?text=Product'">
+                    </div>
+                    <div class="item-details">
+                        <h3 class="item-name">${item.name || item.productName || 'Product'}</h3>
+                        <p class="item-quantity">Qty: ${item.quantity}</p>
+                    </div>
+                    <div class="item-price">₹${formatPrice(item.price * item.quantity)}</div>
+                `;
+                
+                orderItemsContainer.appendChild(cartItemElement);
+            });
+        }
+
+        // Calculate order totals
+        function calculateTotals() {
+            // Calculate subtotal
+            cartSubtotal = cartItems.reduce((total, item) => {
+                return total + (item.price * item.quantity);
+            }, 0);
+            
+            // Update platform fee rate based on subtotal
+            if (cartSubtotal > 500) {
+                platformFeeRate = 5;
+                platformFeeRateElement.textContent = `(${platformFeeRate}%)`;
+            } else {
+                platformFeeRate = 8;
+                platformFeeRateElement.textContent = `(${platformFeeRate}%)`;
+            }
+            
+            // Calculate platform fee
+            platformFee = (cartSubtotal * platformFeeRate) / 100;
+            
+            // Check if discount exists and display it
+            if (discountAmount > 0) {
+                discountRowElement.style.display = 'table-row';
+            }
+            
+            // Calculate order total
+            orderTotal = cartSubtotal + platformFee + deliveryFee - discountAmount;
+            
+            // Update UI
+            itemTotalElement.textContent = `₹${formatPrice(cartSubtotal)}`;
+            deliveryFeeElement.textContent = `₹${formatPrice(deliveryFee)}`;
+            platformFeeElement.textContent = `₹${formatPrice(platformFee)}`;
+            
+            if (discountAmount > 0) {
+                discountAmountElement.textContent = `-₹${formatPrice(discountAmount)}`;
+            }
+            
+            orderTotalElement.textContent = `₹${formatPrice(orderTotal)}`;
+            footerTotalElement.textContent = `₹${formatPrice(orderTotal)}`;
+        }
+
+        // Place order
+        function placeOrder() {
+            // Validate delivery address
+            if (!selectedLocation) {
+                showToast('Please add a delivery address', 'error');
+                return;
+            }
+            
+            // Set button to loading state
+            setButtonLoading(true);
+            
+            // Get user ID
+            const userId = auth.currentUser.uid;
+            
+            // Create order object
+            const orderId = generateOrderId();
+            const orderData = {
+                orderId: orderId,
+                userId: userId,
+                items: cartItems,
+                paymentMethod: document.getElementById('cod').checked ? 'Cash on Delivery' : 'Online Payment',
+                status: 'Pending',
+                subtotal: cartSubtotal,
+                platformFee: platformFee,
+                deliveryFee: deliveryFee,
+                discount: discountAmount,
+                total: orderTotal,
+                deliveryAddress: selectedLocation,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            
+            // Save order to database
+            database.ref(`orders/${userId}/${orderId}`).set(orderData)
+                .then(() => {
+                    // Also save to a general orders collection for vendors/admin
+                    return database.ref(`allOrders/${orderId}`).set(orderData);
+                })
+                .then(() => {
+                    // Clear the user's cart
+                    return database.ref(`carts/${userId}/items`).remove();
+                })
+                .then(() => {
+                    // Show success animation
+                    const successOverlay = document.getElementById('success-overlay');
+                    successOverlay.classList.add('show');
+                    
+                    // Redirect to home page after animation
+                    setTimeout(() => {
+                        window.location.href = 'home.html';
+                    }, 2500);
+                })
+                .catch(error => {
+                    console.error('Error placing order:', error);
+                    setButtonLoading(false);
+                    showToast('Failed to place order. Please try again.', 'error');
+                });
+        }
+        
+        // Generate a unique order ID
+        function generateOrderId() {
+            const timestamp = new Date().getTime().toString();
+            const randomNum = Math.floor(Math.random() * 10000).toString().padStart(4, '0');
+            return `ORD${timestamp.slice(-8)}${randomNum}`;
+        }
+
+        // Helper function to set button loading state
+        function setButtonLoading(isLoading) {
+            if (isLoading) {
+                placeOrderBtn.classList.add('loading');
+                placeOrderBtn.disabled = true;
+            } else {
+                placeOrderBtn.classList.remove('loading');
+                placeOrderBtn.disabled = false;
+            }
+        }
+
+        // Format price with commas for thousands
+        function formatPrice(price) {
+            const numPrice = parseFloat(price);
+            if (isNaN(numPrice)) return '0.00';
+            
+            return numPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        // Show toast message
+        function showToast(message, type = 'success') {
+            toastText.textContent = message;
+            toastMessage.className = 'toast-message';
+            toastMessage.classList.add(type);
+            toastMessage.classList.add('show');
+            
+            setTimeout(() => {
+                toastMessage.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

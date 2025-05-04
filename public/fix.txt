@@ -1,0 +1,13 @@
+// Proceed to checkout
+function proceedToCheckout() {
+    if (cartItems.length === 0) {
+        showToast('Your cart is empty', 'error');
+        return;
+    }
+    
+    // Proceed with checkout
+    setButtonLoading(checkoutBtn, true);
+    
+    // Redirect to checkout page
+    window.location.href = 'checkout.html';
+}

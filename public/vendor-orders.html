@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Grozily - Vendor Orders</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Firebase App (the core Firebase SDK) -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <!-- Firebase Auth -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-auth-compat.js"></script>
+    <!-- Firebase Database -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+    <style>
+        body {
+            background-color: #F7FAFC;
+        }
+        
+        .app-content {
+            padding: 16px;
+            padding-bottom: 70px;
+        }
+        
+        .orders-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        
+        .simple-header {
+            background: linear-gradient(135deg, #805AD5, #6B46C1);
+            color: white;
+            padding: 20px 16px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+        }
+        
+        .simple-header h1 {
+            font-size: 24px;
+            margin: 0;
+            font-weight: 600;
+        }
+        
+        .back-button {
+            color: white;
+            opacity: 0.9;
+        }
+        
+        .order-card {
+            background-color: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-bottom: 20px;
+            overflow: hidden;
+            border: 1px solid rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+        
+        .order-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+        }
+        
+        .order-header {
+            padding: 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to right, #F7FAFC, #EDF2F7);
+        }
+        
+        .order-info {
+            flex: 1;
+        }
+        
+        .order-id {
+            font-size: 15px;
+            color: #4A5568;
+            margin: 0;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .order-id i {
+            color: #805AD5;
+            font-size: 14px;
+        }
+        
+        .order-time {
+            font-size: 13px;
+            color: #718096;
+            margin: 6px 0 0 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .order-time i {
+            font-size: 12px;
+        }
+        
+        .order-amount {
+            font-size: 22px;
+            font-weight: 600;
+            color: #805AD5;
+            text-align: right;
+            background: rgba(128, 90, 213, 0.1);
+            padding: 8px 16px;
+            border-radius: 12px;
+        }
+        
+        .order-content {
+            padding: 20px;
+        }
+        
+        .customer-info {
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .customer-name {
+            font-size: 17px;
+            font-weight: 500;
+            color: #2D3748;
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .customer-name i {
+            color: #805AD5;
+            font-size: 16px;
+            background: rgba(128, 90, 213, 0.1);
+            padding: 8px;
+            border-radius: 10px;
+        }
+        
+        .order-items {
+            background: #F7FAFC;
+            border-radius: 12px;
+            padding: 16px;
+        }
+        
+        .order-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            border-bottom: 1px dashed rgba(0,0,0,0.1);
+            background: white;
+            margin-bottom: 8px;
+            border-radius: 8px;
+            transition: transform 0.2s;
+        }
+        
+        .order-item:hover {
+            transform: translateX(4px);
+        }
+        
+        .order-item:last-child {
+            border-bottom: none;
+            margin-bottom: 0;
+        }
+        
+        .item-info {
+            flex: 1;
+        }
+        
+        .item-name {
+            font-size: 15px;
+            color: #2D3748;
+            margin: 0;
+            font-weight: 500;
+        }
+        
+        .item-quantity {
+            font-size: 13px;
+            color: #718096;
+            margin: 4px 0 0 0;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .item-quantity i {
+            font-size: 12px;
+            color: #805AD5;
+        }
+        
+        .item-price {
+            font-size: 16px;
+            font-weight: 600;
+            color: #805AD5;
+            margin-left: 16px;
+            background: rgba(128, 90, 213, 0.1);
+            padding: 6px 12px;
+            border-radius: 8px;
+        }
+        
+        .empty-orders {
+            text-align: center;
+            padding: 60px 20px;
+            color: #4A5568;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            margin-top: 40px;
+        }
+        
+        .empty-orders i {
+            font-size: 48px;
+            color: #805AD5;
+            margin-bottom: 20px;
+            opacity: 0.8;
+        }
+        
+        .empty-orders h3 {
+            font-size: 20px;
+            margin-bottom: 8px;
+            color: #2D3748;
+        }
+        
+        .empty-orders p {
+            color: #718096;
+            font-size: 15px;
+        }
+        
+        .loading-spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(128, 90, 213, 0.1);
+            border-radius: 50%;
+            border-top-color: #805AD5;
+            animation: spin 1s linear infinite;
+            margin: 60px auto;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        @keyframes highlight {
+            0% {
+                transform: translateY(-20px);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+        
+        .new-order {
+            animation: highlight 0.5s ease-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <header class="simple-header">
+            <button id="back-btn" class="back-button">
+                <i class="fa-solid fa-arrow-left"></i>
+            </button>
+            <h1>Vendor Orders</h1>
+        </header>
+        
+        <main class="app-content">
+            <div class="orders-container">
+                <div id="orders-list">
+                    <div class="loading-spinner"></div>
+                </div>
+                
+                <div id="empty-orders" class="empty-orders" style="display: none;">
+                    <i class="fa-solid fa-clipboard-list"></i>
+                    <h3>No Orders Yet</h3>
+                    <p>New orders will appear here automatically</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCtbwkusKvCEYNCHUytaF4tUISNywsADiM",
+            authDomain: "grozily2.firebaseapp.com",
+            databaseURL: "https://grozily2-default-rtdb.firebaseio.com",
+            projectId: "grozily2",
+            storageBucket: "grozily2.firebasestorage.app",
+            messagingSenderId: "665300145710",
+            appId: "1:665300145710:web:4f8d866e07fc902b1131bf",
+            measurementId: "G-83S7ZWXEB9"
+        };
+
+        // Initialize Firebase
+        firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const database = firebase.database();
+
+        // DOM Elements
+        const backBtn = document.getElementById('back-btn');
+        const ordersList = document.getElementById('orders-list');
+        const emptyOrders = document.getElementById('empty-orders');
+
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', () => {
+            // Back button
+            backBtn.addEventListener('click', () => {
+                window.history.back();
+            });
+
+            // Check if user is authenticated
+            auth.onAuthStateChanged(user => {
+                if (!user) {
+                    window.location.href = 'login.html';
+                } else {
+                    // Load orders
+                    loadOrders();
+                    // Listen for new orders
+                    listenForNewOrders();
+                }
+            });
+        });
+
+        // Load all orders
+        function loadOrders() {
+            const ordersRef = database.ref('allOrders');
+            
+            ordersRef.once('value')
+                .then(snapshot => {
+                    // Remove loading spinner
+                    ordersList.innerHTML = '';
+                    
+                    if (!snapshot.exists()) {
+                        showEmptyOrders();
+                        return;
+                    }
+                    
+                    // Process orders
+                    const orders = [];
+                    snapshot.forEach(childSnapshot => {
+                        orders.push(childSnapshot.val());
+                    });
+                    
+                    // Sort orders by date (newest first)
+                    orders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+                    
+                    // Display orders
+                    orders.forEach(order => {
+                        ordersList.appendChild(createOrderElement(order));
+                    });
+                })
+                .catch(error => {
+                    console.error('Error loading orders:', error);
+                    ordersList.innerHTML = '<p class="empty-orders">Failed to load orders</p>';
+                });
+        }
+
+        // Listen for new orders
+        function listenForNewOrders() {
+            const ordersRef = database.ref('allOrders');
+            
+            ordersRef.on('child_added', snapshot => {
+                const order = snapshot.val();
+                const existingOrder = document.querySelector(`[data-order-id="${order.orderId}"]`);
+                
+                if (!existingOrder) {
+                    // Remove empty orders message if present
+                    if (emptyOrders.style.display !== 'none') {
+                        emptyOrders.style.display = 'none';
+                        ordersList.innerHTML = '';
+                    }
+                    
+                    // Add new order at the top
+                    const orderElement = createOrderElement(order);
+                    ordersList.insertBefore(orderElement, ordersList.firstChild);
+                    
+                    // Highlight new order
+                    orderElement.style.animation = 'highlight 2s';
+                }
+            });
+        }
+
+        // Create order element
+        function createOrderElement(order) {
+            const orderElement = document.createElement('div');
+            orderElement.className = 'order-card new-order';
+            orderElement.dataset.orderId = order.orderId;
+            
+            // Calculate total amount (excluding delivery fee)
+            const totalAmount = order.subtotal;
+            
+            // Format date
+            const orderDate = new Date(order.createdAt);
+            const formattedDate = orderDate.toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+            
+            // Get customer name from order
+            const customerName = order.deliveryAddress?.name || 'Customer';
+            
+            orderElement.innerHTML = `
+                <div class="order-header">
+                    <div class="order-info">
+                        <p class="order-id">
+                            <i class="fa-solid fa-hashtag"></i>
+                            ${order.orderId}
+                        </p>
+                        <p class="order-time">
+                            <i class="fa-regular fa-clock"></i>
+                            ${formattedDate}
+                        </p>
+                    </div>
+                    <div class="order-amount">₹${formatPrice(totalAmount)}</div>
+                </div>
+                <div class="order-content">
+                    <div class="customer-info">
+                        <h3 class="customer-name">
+                            <i class="fa-solid fa-user"></i>
+                            ${customerName}
+                        </h3>
+                    </div>
+                    <div class="order-items">
+                        ${order.items.map(item => `
+                            <div class="order-item">
+                                <div class="item-info">
+                                    <p class="item-name">${item.name}</p>
+                                    <p class="item-quantity">
+                                        <i class="fa-solid fa-box"></i>
+                                        Quantity: ${item.quantity}
+                                    </p>
+                                </div>
+                                <div class="item-price">₹${formatPrice(item.price * item.quantity)}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+            
+            return orderElement;
+        }
+
+        // Show empty orders message
+        function showEmptyOrders() {
+            ordersList.style.display = 'none';
+            emptyOrders.style.display = 'block';
+        }
+
+        // Format price with commas for thousands
+        function formatPrice(price) {
+            const numPrice = parseFloat(price);
+            if (isNaN(numPrice)) return '0.00';
+            
+            return numPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+    </script>
+</body>
+</html> 

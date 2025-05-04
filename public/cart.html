@@ -145,31 +145,6 @@
         .discount-container {
             display: none;
         }
-        
-        .platform-fee-notice {
-            text-align: center;
-            font-size: 11px;
-            color: #333;
-            margin: 0;
-            padding: 8px 15px;
-            background-color: rgba(255, 255, 255, 0.85);
-            border-radius: 20px;
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: auto;
-            max-width: 90%;
-            box-sizing: border-box;
-            z-index: 999;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            backdrop-filter: blur(2px);
-            -webkit-backdrop-filter: blur(2px);
-            border: 1px solid rgba(0,0,0,0.05);
-            opacity: 0.9;
-            font-weight: 500;
-            pointer-events: none;
-        }
     </style>
 </head>
 <body>
@@ -231,84 +206,17 @@
             </div>
         </main>
         
-        <!-- Platform fee notice -->
-        <div class="platform-fee-notice">
-            <i class="fa-solid fa-circle-info"></i> Platform fee: 8% for orders under ₹500, 5% for orders above ₹500
-        </div>
-        
         <!-- Sticky checkout footer -->
         <div id="checkout-footer" class="checkout-footer">
             <div class="total-container">
                 <span class="total-label">Items:</span>
-                <span id="cart-subtotal" class="total-amount">₹0.00</span>
+                <span id="footer-cart-subtotal" class="total-amount">₹0.00</span>
             </div>
             <div class="checkout-buttons">
                 <button id="checkout-btn" class="checkout-button">
                     <span class="btn-text">Checkout</span>
                     <span class="btn-loader"></span>
                 </button>
-                <button id="select-location-btn" class="select-location-button">
-                    <i class="fa-solid fa-location-dot"></i>
-                    <span class="btn-text">Delivery Location</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Delivery Location Modal -->
-    <div id="location-modal" class="location-modal">
-        <div class="location-modal-content">
-            <div class="location-modal-header">
-                <h3>Select Delivery Location</h3>
-                <button class="close-popup" id="close-location-modal">&times;</button>
-            </div>
-            <div class="location-modal-body">
-                <!-- Current Location Section -->
-                <div class="current-location-section">
-                    <h4>Current Location</h4>
-                    <div id="current-location-container" class="location-details-container">
-                        <div class="location-info">
-                            <i class="fa-solid fa-location-dot"></i>
-                            <div class="location-text">
-                                <p id="current-area">Fetching location...</p>
-                                <p id="current-district-pincode"><span id="current-district"></span>, <span id="current-pincode"></span></p>
-                            </div>
-                        </div>
-                        <button id="use-current-location" class="use-location-btn">Use This Location</button>
-                    </div>
-                </div>
-                
-                <!-- Search Location Section -->
-                <div class="search-location-section">
-                    <h4>Search Location</h4>
-                    <div class="location-search-container">
-                        <div class="location-search-bar">
-                            <i class="fa-solid fa-search"></i>
-                            <input type="text" id="location-search-input" placeholder="Search for area, landmark, district...">
-                        </div>
-                    </div>
-                    <div id="location-search-results" class="location-search-results"></div>
-                </div>
-                
-                <!-- Map Section -->
-                <div class="map-section">
-                    <div id="location-map" class="location-map"></div>
-                </div>
-                
-                <!-- Selected Location Section -->
-                <div id="selected-location-section" class="selected-location-section" style="display: none;">
-                    <h4>Selected Location</h4>
-                    <div class="location-details-container">
-                        <div class="location-info">
-                            <i class="fa-solid fa-map-marker-alt"></i>
-                            <div class="location-text">
-                                <p id="selected-area">No location selected</p>
-                                <p id="selected-district-pincode"><span id="selected-district"></span>, <span id="selected-pincode"></span></p>
-                            </div>
-                        </div>
-                        <button id="confirm-location-btn" class="confirm-location-btn">Confirm Location</button>
-                    </div>
-                </div>
             </div>
         </div>
     </div>
