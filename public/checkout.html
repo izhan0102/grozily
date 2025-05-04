@@ -88,49 +88,58 @@
 
         /* --- Header --- */
         .simple-header {
-            background: linear-gradient(135deg, var(--primary-dark), var(--primary)); /* Reversed gradient */
+            background: linear-gradient(135deg, #4B2E83, #774DDA); /* Deeper, richer purple gradient */
             color: var(--white);
-            padding: 12px 16px; /* Adjusted padding */
+            padding: 16px 18px; /* Increased padding */
             position: sticky;
             top: 0;
             z-index: 50;
-            box-shadow: var(--shadow-lg); /* Stronger shadow */
+            box-shadow: 0 4px 20px rgba(75, 46, 131, 0.25); /* Custom shadow with purple tint */
             display: flex;
             align-items: center;
-            gap: 12px; /* Adjusted gap */
-            border-bottom: 1px solid rgba(255,255,255,0.1);
+            gap: 12px;
+            border-bottom: 1px solid rgba(255,255,255,0.15); /* Slightly more visible border */
         }
 
         .simple-header h1 {
             /* Hide the H1 text visually using CSS */
-            font-size: 0; /* Collapse the text */
-            line-height: 0; /* Collapse line height */
+            font-size: 0;
+            line-height: 0;
             width: 0;
             height: 0;
             overflow: hidden;
             visibility: hidden;
             margin: 0;
             padding: 0;
-            position: absolute; /* Take out of flow */
+            position: absolute;
         }
 
         .back-button {
             color: var(--white);
-            background: transparent; /* Fully transparent */
-            border: 1px solid rgba(255,255,255,0.3); /* Subtle border */
-            border-radius: var(--border-radius-md); /* Consistent radius */
-            width: 40px;
-            height: 40px;
+            background: rgba(255,255,255,0.12); /* Slightly visible background */
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 50%; /* Perfect circle */
+            width: 42px; /* Slightly larger */
+            height: 42px;
             display: flex;
             align-items: center;
             justify-content: center;
-            transition: var(--transition-fast);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); /* Custom easing */
         }
 
         .back-button:hover {
-            background: rgba(255,255,255,0.1);
-            border-color: rgba(255,255,255,0.5);
-            transform: scale(1.05);
+            background: rgba(255,255,255,0.2);
+            border-color: rgba(255,255,255,0.6);
+            transform: scale(1.05) translateX(-2px); /* Slight move left on hover */
+            box-shadow: 0 0 15px rgba(255,255,255,0.2); /* Glow effect */
+        }
+
+        .back-button:active {
+            transform: scale(0.95);
+        }
+
+        .back-button i {
+            font-size: 18px; /* Slightly larger icon */
         }
 
         /* --- Sections & Cards --- */
@@ -483,29 +492,43 @@
             bottom: 0;
             left: 0;
             right: 0;
-            background-color: rgba(255, 255, 255, 0.98); /* Slightly less transparent */
-            padding: 14px 16px;
+            background: linear-gradient(to right, rgba(245, 240, 255, 0.98), rgba(233, 216, 253, 0.98)); /* Subtle gradient background */
+            padding: 18px 20px; /* Increased padding */
             display: flex;
             justify-content: space-between;
             align-items: center;
-            box-shadow: 0 -4px 12px rgba(0,0,0,0.08); /* Adjusted shadow */
+            box-shadow: 0 -5px 15px rgba(107, 70, 193, 0.12); /* Purple-tinted shadow */
             z-index: 100;
-            border-top: 1px solid var(--gray-200);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
+            border-top: 1px solid var(--primary-lighter);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
         }
 
         .footer-total {
             color: var(--gray-800);
-            flex-basis: 40%; /* Give total more defined space */
+            flex-basis: 42%; /* Slightly more space */
+            position: relative;
+            padding-left: 15px;
+        }
+
+        .footer-total::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            height: 75%;
+            width: 4px;
+            background: linear-gradient(to bottom, var(--primary-light), var(--primary));
+            border-radius: 2px;
         }
 
         .footer-total-label {
-            font-size: 12px;
-            color: var(--gray-600);
-            margin-bottom: 2px;
+            font-size: 13px;
+            color: var(--primary-dark);
+            margin-bottom: 4px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
+            letter-spacing: 0.7px;
             font-weight: 500;
         }
 
@@ -516,6 +539,7 @@
             display: flex;
             align-items: center;
             gap: 8px;
+            text-shadow: 0 1px 1px rgba(0,0,0,0.05); /* Subtle text shadow */
         }
 
         .place-order-btn {
@@ -523,7 +547,7 @@
             color: var(--white);
             border: none;
             border-radius: var(--border-radius-md);
-            padding: 14px 28px; /* Larger padding */
+            padding: 16px 28px; /* Larger padding */
             font-size: 17px; /* Larger font */
             font-weight: 600;
             cursor: pointer;
@@ -531,45 +555,53 @@
             align-items: center;
             justify-content: center; /* Center content */
             gap: 10px; /* Increased gap */
-            transition: var(--transition-normal);
-            box-shadow: var(--shadow-primary);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); /* Smooth transition */
+            box-shadow: 0 6px 16px rgba(107, 70, 193, 0.4); /* Enhanced shadow */
             white-space: nowrap;
             flex-grow: 1; /* Allow button to grow */
             margin-left: 16px; /* Add space between total and button */
             max-width: 250px; /* Limit max width */
+            position: relative;
+            overflow: hidden;
+        }
+
+        .place-order-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent);
+            transition: 0.5s;
         }
 
         .place-order-btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 7px 20px 0 rgba(107, 70, 193, 0.35);
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(107, 70, 193, 0.5);
+        }
+
+        .place-order-btn:hover::after {
+            left: 100%;
         }
 
         .place-order-btn:active {
             transform: translateY(0);
-            box-shadow: 0 3px 10px 0 rgba(107, 70, 193, 0.3);
+            box-shadow: 0 4px 12px rgba(107, 70, 193, 0.35);
         }
 
         .btn-loader {
             display: none;
-            width: 20px; /* Larger loader */
-            height: 20px;
-            border: 3px solid rgba(255, 255, 255, 0.3); /* Thicker border */
-            border-radius: 50%;
-            border-top-color: var(--white);
-            animation: spin 0.8s infinite linear; /* Faster spin */
         }
 
         .loading .btn-text {
-            display: none; /* Hide text completely */
-        }
-
-        .loading .btn-loader {
             display: inline-block;
+            content: "Loading...";
         }
 
         .loading.place-order-btn {
-             min-width: 50px; /* Ensure minimum size for loader */
-             padding: 14px; /* Maintain padding for height */
+            min-width: 140px; /* Ensure enough width for loading text */
+            padding: 16px; /* Maintain padding for height */
         }
 
         /* --- Order Success Animation --- */
@@ -1059,9 +1091,11 @@
             if (isLoading) {
                 placeOrderBtn.classList.add('loading');
                 placeOrderBtn.disabled = true;
+                placeOrderBtn.querySelector('.btn-text').textContent = "Loading...";
             } else {
                 placeOrderBtn.classList.remove('loading');
                 placeOrderBtn.disabled = false;
+                placeOrderBtn.querySelector('.btn-text').textContent = "Place Order";
             }
         }
 
