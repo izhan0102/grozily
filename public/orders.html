@@ -644,23 +644,6 @@
             animation: statusPulse 2s ease-in-out 3 forwards;
         }
         
-        /* Visual indicator for new status */
-        .order-updated::after {
-            content: 'Updated';
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background-color: var(--success);
-            color: white;
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 12px;
-            font-weight: 600;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            opacity: 0;
-            animation: fadeInOut 3s ease-in-out forwards;
-        }
-        
         @keyframes fadeInOut {
             0% { opacity: 0; transform: translateY(-10px); }
             10% { opacity: 1; transform: translateY(0); }
@@ -668,148 +651,76 @@
             100% { opacity: 0; transform: translateY(10px); }
         }
 
-        /* Add style for the status update label */
-        .status-update-label {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: linear-gradient(135deg, var(--success), #2DD4BF);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            gap: 5px;
-            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
-            z-index: 20;
-            animation: slideIn 0.3s ease-out forwards;
-        }
-        
-        @keyframes slideIn {
-            from { transform: translateX(30px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
-        }
-        
-        .status-update-label.fade-out {
-            animation: slideOut 0.3s ease-in forwards;
-        }
-        
-        @keyframes slideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(30px); opacity: 0; }
-        }
-
         /* Enhanced status update notification */
         .status-update-notification {
-            position: absolute;
-            top: 15px;
-            right: 15px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
-            color: white;
-            padding: 12px 15px;
-            border-radius: 12px;
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: linear-gradient(135deg, var(--primary), #F8F7FF);
+            color: var(--white);
+            padding: 12px 16px;
+            border-radius: 10px;
             font-size: 13px;
             font-weight: 500;
-            box-shadow: 0 5px 15px rgba(107, 70, 193, 0.25);
-            z-index: 30;
-            max-width: 200px;
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            transform: translateX(50px);
-            opacity: 0;
-            animation: notificationSlideIn 0.3s forwards, notificationPulse 2s 0.5s infinite;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.2);
-        }
-
-        .status-update-notification-header {
+            box-shadow: 0 5px 15px rgba(107, 70, 193, 0.3);
+            z-index: 1000;
+            max-width: 250px;
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin-bottom: 2px;
+            gap: 10px;
+            animation: notificationSlideIn 0.4s ease forwards, notificationStay 2s 0.4s forwards, notificationSlideOut 0.4s ease 2.4s forwards;
+            opacity: 0;
+            border: none;
         }
 
         .status-update-notification .notification-icon {
-            position: relative;
-            width: 22px;
-            height: 22px;
+            width: 24px;
+            height: 24px;
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.2);
+            background: rgba(255, 255, 255, 0.25);
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
         }
 
         .status-update-notification .notification-icon i {
             font-size: 12px;
             color: white;
-            animation: iconPulse 1s infinite;
         }
 
-        .status-update-notification .notification-icon::after {
-            content: '';
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: rgba(255, 255, 255, 0.3);
-            z-index: -1;
-            animation: ripple 1.5s infinite;
+        .status-update-notification-content {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
         }
 
         .status-update-notification .notification-title {
             font-weight: 600;
-            font-size: 14px;
+            font-size: 13px;
+            color: white;
+            margin-bottom: 2px;
         }
 
         .status-update-notification .notification-message {
             font-size: 12px;
-            opacity: 0.9;
-        }
-
-        .status-update-notification .status-badge {
-            display: inline-block;
-            padding: 3px 8px;
-            border-radius: 10px;
-            font-size: 11px;
-            font-weight: 600;
-            background: rgba(255, 255, 255, 0.2);
-            margin-top: 4px;
-            align-self: flex-start;
-        }
-
-        .status-update-notification.fade-out {
-            animation: notificationSlideOut 0.3s forwards;
+            color: rgba(255, 255, 255, 0.9);
         }
 
         @keyframes notificationSlideIn {
-            from { transform: translateX(50px); opacity: 0; }
-            to { transform: translateX(0); opacity: 1; }
+            0% { transform: translateX(-50%) translateY(-20px); opacity: 0; }
+            100% { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        @keyframes notificationStay {
+            0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+            100% { transform: translateX(-50%) translateY(0); opacity: 1; }
         }
 
         @keyframes notificationSlideOut {
-            from { transform: translateX(0); opacity: 1; }
-            to { transform: translateX(50px); opacity: 0; }
-        }
-
-        @keyframes notificationPulse {
-            0% { box-shadow: 0 5px 15px rgba(107, 70, 193, 0.25); }
-            50% { box-shadow: 0 5px 20px rgba(107, 70, 193, 0.4); }
-            100% { box-shadow: 0 5px 15px rgba(107, 70, 193, 0.25); }
-        }
-
-        @keyframes iconPulse {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.2); }
-            100% { transform: scale(1); }
-        }
-
-        @keyframes ripple {
-            0% { transform: scale(1); opacity: 1; }
-            100% { transform: scale(2); opacity: 0; }
+            0% { transform: translateX(-50%) translateY(0); opacity: 1; }
+            100% { transform: translateX(-50%) translateY(-20px); opacity: 0; }
         }
     </style>
 </head>
@@ -850,14 +761,6 @@
         </main>
     </div>
 
-    <!-- Toast Message -->
-    <div id="toast-message" class="toast-message">
-        <div class="toast-content">
-            <i class="toast-icon fa-solid fa-check-circle success"></i>
-            <p class="toast-text"></p>
-        </div>
-    </div>
-
     <!-- Orders JavaScript -->
     <script>
         // Firebase configuration
@@ -883,8 +786,6 @@
         const emptyOrders = document.getElementById('empty-orders');
         const startShoppingBtn = document.getElementById('start-shopping-btn');
         const filterTabs = document.querySelectorAll('.filter-tab');
-        const toastMessage = document.getElementById('toast-message');
-        const toastText = toastMessage.querySelector('.toast-text');
 
         // App state
         let currentFilter = 'all';
@@ -1455,14 +1356,31 @@
 
         // Show toast message
         function showToast(message, type = 'success') {
-            toastText.textContent = message;
-            toastMessage.className = 'toast-message';
-            toastMessage.classList.add(type);
-            toastMessage.classList.add('show');
+            // Create notification element using our new style
+            const notification = document.createElement('div');
+            notification.className = 'status-update-notification';
             
-            setTimeout(() => {
-                toastMessage.classList.remove('show');
-            }, 3000);
+            // Set icon based on type
+            let statusIcon = 'fa-circle-info';
+            if (type === 'success') statusIcon = 'fa-check-circle';
+            if (type === 'error') statusIcon = 'fa-triangle-exclamation';
+            
+            notification.innerHTML = `
+                <div class="notification-icon">
+                    <i class="fas ${statusIcon}"></i>
+                </div>
+                <div class="status-update-notification-content">
+                    <div class="notification-title">${type === 'success' ? 'Success' : type === 'error' ? 'Error' : 'Info'}</div>
+                    <div class="notification-message">${message}</div>
+                </div>
+            `;
+            
+            // Remove existing notifications if any
+            const existingNotifications = document.querySelectorAll('.status-update-notification');
+            existingNotifications.forEach(n => n.remove());
+            
+            // Add notification to body
+            document.body.appendChild(notification);
         }
 
         // Retry loading orders
@@ -1692,7 +1610,7 @@
                     const prevStatus = updatedOrder.statusHistory[1];
                     if (prevStatus && prevStatus.status) {
                         previousStatus = mapOrderStatus(prevStatus.status);
-                        changeMessage = `Status changed from ${previousStatus} to ${statusText}`;
+                        changeMessage = `Status: ${previousStatus} → ${statusText}`;
                     }
                 }
                 
@@ -1708,24 +1626,17 @@
                 if (statusText.toLowerCase() === 'delivered') statusIcon = 'fa-flag-checkered';
                 
                 notification.innerHTML = `
-                    <div class="status-update-notification-header">
-                        <div class="notification-icon">
-                            <i class="fas ${statusIcon}"></i>
-                        </div>
-                        <div class="notification-title">Status Update</div>
+                    <div class="notification-icon">
+                        <i class="fas ${statusIcon}"></i>
                     </div>
-                    <div class="notification-message">${changeMessage}</div>
-                    <div class="status-badge">${statusText}</div>
+                    <div class="status-update-notification-content">
+                        <div class="notification-title">Status Update</div>
+                        <div class="notification-message">${changeMessage}</div>
+                    </div>
                 `;
                 
-                // Remove existing notification if any
-                const existingNotification = orderCard.querySelector('.status-update-notification');
-                if (existingNotification) {
-                    existingNotification.remove();
-                }
-                
-                // Add notification to order card
-                orderCard.appendChild(notification);
+                // Add notification to body
+                document.body.appendChild(notification);
                 
                 // Add highlight class for card animation
                 orderCard.classList.add('order-updated');
@@ -1733,13 +1644,8 @@
                 // Remove class and notification after animation completes
                 setTimeout(() => {
                     orderCard.classList.remove('order-updated');
-                    notification.classList.add('fade-out');
-                    setTimeout(() => {
-                        if (notification.parentNode === orderCard) {
-                            orderCard.removeChild(notification);
-                        }
-                    }, 500);
-                }, 5000);
+                    // No need to remove the notification - it will be automatically removed by the animation
+                }, 3000);
                 
                 // Scroll to the updated order if not visible
                 if (!isElementInViewport(orderCard)) {
