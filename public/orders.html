@@ -207,21 +207,31 @@
         .order-status {
             font-size: 12px;
             font-weight: 600;
-            padding: 5px 10px;
+            padding: 6px 12px;
             border-radius: 20px;
             text-transform: uppercase;
             letter-spacing: 0.5px;
             color: var(--white);
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
         .status-pending {
             background-color: var(--warning);
         }
 
-        .status-processing {
+        .status-confirmed {
             background-color: var(--info);
         }
+        
+        .status-packed {
+            background-color: var(--primary);
+        }
 
+        .status-shipping {
+            background-color: var(--primary-dark);
+        }
+        
         .status-delivered {
             background-color: var(--success);
         }
@@ -554,6 +564,253 @@
                 align-self: flex-start;
             }
         }
+
+        /* Add loader CSS and retry button styling */
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 3px solid rgba(107, 70, 193, 0.2);
+            border-radius: 50%;
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .retry-btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .retry-btn:hover {
+            background-color: var(--primary-dark);
+        }
+
+        /* Order update animation */
+        @keyframes orderUpdate {
+            0% { transform: translateY(0); box-shadow: 0 2px 8px rgba(0,0,0,0.06); background-color: rgba(255, 255, 255, 1); }
+            10% { transform: translateY(-8px); box-shadow: 0 15px 25px rgba(107, 70, 193, 0.2); background-color: rgba(107, 70, 193, 0.08); }
+            20% { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(107, 70, 193, 0.15); background-color: rgba(107, 70, 193, 0.05); }
+            30% { transform: translateY(-8px); box-shadow: 0 15px 25px rgba(107, 70, 193, 0.2); background-color: rgba(107, 70, 193, 0.08); }
+            40% { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(107, 70, 193, 0.15); background-color: rgba(107, 70, 193, 0.05); }
+            50% { transform: translateY(-8px); box-shadow: 0 15px 25px rgba(107, 70, 193, 0.2); background-color: rgba(107, 70, 193, 0.08); }
+            60% { transform: translateY(-4px); box-shadow: 0 10px 20px rgba(107, 70, 193, 0.15); background-color: rgba(107, 70, 193, 0.05); }
+            100% { transform: translateY(0); box-shadow: 0 2px 8px rgba(0,0,0,0.06); background-color: rgba(255, 255, 255, 1); }
+        }
+        
+        /* Pulsing border animation */
+        @keyframes borderPulse {
+            0% { border-left-color: var(--primary); border-left-width: 4px; }
+            50% { border-left-color: #2DD4BF; border-left-width: 10px; }
+            100% { border-left-color: var(--primary); border-left-width: 4px; }
+        }
+        
+        /* Status badge animation */
+        @keyframes statusPulse {
+            0% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+            50% { transform: scale(1.1); box-shadow: 0 5px 15px rgba(0,0,0,0.2); }
+            100% { transform: scale(1); box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        }
+        
+        /* Apply animations to updated order */
+        .order-updated {
+            animation: orderUpdate 3s ease-in-out;
+            position: relative;
+            z-index: 10;
+        }
+        
+        .order-updated::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            animation: borderPulse 3s ease-in-out;
+            z-index: 1;
+        }
+        
+        .order-updated .order-status {
+            animation: statusPulse 2s ease-in-out 3 forwards;
+        }
+        
+        /* Visual indicator for new status */
+        .order-updated::after {
+            content: 'Updated';
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background-color: var(--success);
+            color: white;
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            opacity: 0;
+            animation: fadeInOut 3s ease-in-out forwards;
+        }
+        
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(-10px); }
+            10% { opacity: 1; transform: translateY(0); }
+            90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(10px); }
+        }
+
+        /* Add style for the status update label */
+        .status-update-label {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, var(--success), #2DD4BF);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.15);
+            z-index: 20;
+            animation: slideIn 0.3s ease-out forwards;
+        }
+        
+        @keyframes slideIn {
+            from { transform: translateX(30px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        
+        .status-update-label.fade-out {
+            animation: slideOut 0.3s ease-in forwards;
+        }
+        
+        @keyframes slideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(30px); opacity: 0; }
+        }
+
+        /* Enhanced status update notification */
+        .status-update-notification {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            padding: 12px 15px;
+            border-radius: 12px;
+            font-size: 13px;
+            font-weight: 500;
+            box-shadow: 0 5px 15px rgba(107, 70, 193, 0.25);
+            z-index: 30;
+            max-width: 200px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            transform: translateX(50px);
+            opacity: 0;
+            animation: notificationSlideIn 0.3s forwards, notificationPulse 2s 0.5s infinite;
+            backdrop-filter: blur(5px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .status-update-notification-header {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 2px;
+        }
+
+        .status-update-notification .notification-icon {
+            position: relative;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .status-update-notification .notification-icon i {
+            font-size: 12px;
+            color: white;
+            animation: iconPulse 1s infinite;
+        }
+
+        .status-update-notification .notification-icon::after {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.3);
+            z-index: -1;
+            animation: ripple 1.5s infinite;
+        }
+
+        .status-update-notification .notification-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .status-update-notification .notification-message {
+            font-size: 12px;
+            opacity: 0.9;
+        }
+
+        .status-update-notification .status-badge {
+            display: inline-block;
+            padding: 3px 8px;
+            border-radius: 10px;
+            font-size: 11px;
+            font-weight: 600;
+            background: rgba(255, 255, 255, 0.2);
+            margin-top: 4px;
+            align-self: flex-start;
+        }
+
+        .status-update-notification.fade-out {
+            animation: notificationSlideOut 0.3s forwards;
+        }
+
+        @keyframes notificationSlideIn {
+            from { transform: translateX(50px); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+
+        @keyframes notificationSlideOut {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(50px); opacity: 0; }
+        }
+
+        @keyframes notificationPulse {
+            0% { box-shadow: 0 5px 15px rgba(107, 70, 193, 0.25); }
+            50% { box-shadow: 0 5px 20px rgba(107, 70, 193, 0.4); }
+            100% { box-shadow: 0 5px 15px rgba(107, 70, 193, 0.25); }
+        }
+
+        @keyframes iconPulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.2); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes ripple {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2); opacity: 0; }
+        }
     </style>
 </head>
 <body>
@@ -672,47 +929,221 @@
 
         // Load user's orders
         function loadOrders(userId) {
-            const ordersRef = database.ref(`orders/${userId}`);
+            // Show loading state
+            ordersList.innerHTML = `
+                <div style="text-align: center; padding: 30px;">
+                    <div class="loader"></div>
+                    <p style="margin-top: 15px; color: #666;">Loading your orders...</p>
+                </div>
+            `;
             
-            ordersRef.once('value')
+            console.log(`========== LOADING ORDERS FOR USER ${userId} ==========`);
+            
+            // DIRECT APPROACH: Query main orders collection first
+            database.ref('orders').once('value')
                 .then(snapshot => {
-                    // Remove loading spinner
-                    ordersList.innerHTML = '';
+                    console.log(`Found ${snapshot.exists() ? snapshot.numChildren() : 0} orders in main orders collection`);
                     
-                    if (!snapshot.exists()) {
-                        // No orders found
+                    // Reset orders array
+                    userOrders = [];
+                    
+                    if (snapshot.exists()) {
+                        snapshot.forEach(childSnapshot => {
+                            const order = childSnapshot.val();
+                            const orderId = childSnapshot.key;
+                            
+                            // Debug each order
+                            console.log(`Examining order ${orderId}`, order);
+                            
+                            // Check user identifiers - be very liberal in our checks
+                            if (
+                                // Direct ID matches
+                                order.userId === userId || 
+                                order.customerId === userId || 
+                                // Nested user object
+                                (order.user && (order.user.id === userId || order.user.uid === userId)) ||
+                                // Customer info
+                                (order.customer && (order.customer.id === userId || order.customer.uid === userId)) ||
+                                // Email match if available 
+                                (order.userEmail === auth.currentUser.email) ||
+                                (order.email === auth.currentUser.email) ||
+                                // Any user phone match
+                                (order.userPhone === auth.currentUser.phoneNumber) ||
+                                (order.phone === auth.currentUser.phoneNumber)
+                            ) {
+                                console.log(`FOUND MATCHING ORDER: ${orderId}`, order);
+                                
+                                // Ensure order has ID fields
+                                order.id = orderId;
+                                order.orderId = orderId;
+                                
+                                // Add to our array
+                                userOrders.push(order);
+                                
+                                // Save to user collections
+                                saveOrderToUserCollection(userId, orderId, order);
+                            }
+                        });
+                    }
+                    
+                    // Then check allOrders collection
+                    return database.ref('allOrders').once('value');
+                })
+                .then(snapshot => {
+                    console.log(`Found ${snapshot.exists() ? snapshot.numChildren() : 0} orders in allOrders collection`);
+                    
+                    if (snapshot.exists()) {
+                        snapshot.forEach(childSnapshot => {
+                            const order = childSnapshot.val();
+                            const orderId = childSnapshot.key;
+                            
+                            // Check if we already found this order
+                            const existingOrder = userOrders.find(o => o.orderId === orderId || o.id === orderId);
+                            if (existingOrder) {
+                                return; // Skip if already found
+                            }
+                            
+                            // Debug each order
+                            console.log(`Examining order ${orderId} from allOrders`, order);
+                            
+                            // Check user identifiers - be very liberal in our checks
+                            if (
+                                // Direct ID matches
+                                order.userId === userId || 
+                                order.customerId === userId || 
+                                // Nested user object
+                                (order.user && (order.user.id === userId || order.user.uid === userId)) ||
+                                // Customer info
+                                (order.customer && (order.customer.id === userId || order.customer.uid === userId)) ||
+                                // Email match if available 
+                                (order.userEmail === auth.currentUser.email) ||
+                                (order.email === auth.currentUser.email) ||
+                                // Any user phone match
+                                (order.userPhone === auth.currentUser.phoneNumber) ||
+                                (order.phone === auth.currentUser.phoneNumber)
+                            ) {
+                                console.log(`FOUND MATCHING ORDER IN allOrders: ${orderId}`, order);
+                                
+                                // Ensure order has ID fields
+                                order.id = orderId;
+                                order.orderId = orderId;
+                                
+                                // Add to our array
+                                userOrders.push(order);
+                                
+                                // Save to user collections
+                                saveOrderToUserCollection(userId, orderId, order);
+                            }
+                        });
+                    }
+                    
+                    // Then check user collections as last resort
+                    return Promise.all([
+                        database.ref(`users/${userId}/orders`).once('value'),
+                        database.ref(`userOrders/${userId}`).once('value')
+                    ]);
+                })
+                .then(([userOrdersSnapshot, userOrdersAltSnapshot]) => {
+                    if (userOrdersSnapshot.exists()) {
+                        userOrdersSnapshot.forEach(childSnapshot => {
+                            const order = childSnapshot.val();
+                            const orderId = childSnapshot.key;
+                            
+                            // Check if we already found this order
+                            const existingOrder = userOrders.find(o => o.orderId === orderId || o.id === orderId);
+                            if (existingOrder) {
+                                return; // Skip if already found
+                            }
+                            
+                            // Add order ID if missing
+                            if (!order.orderId) order.orderId = orderId;
+                            if (!order.id) order.id = orderId;
+                            
+                            console.log(`Found order in user collection: ${orderId}`);
+                            userOrders.push(order);
+                        });
+                    }
+                    
+                    if (userOrdersAltSnapshot.exists()) {
+                        userOrdersAltSnapshot.forEach(childSnapshot => {
+                            const order = childSnapshot.val();
+                            const orderId = childSnapshot.key;
+                            
+                            // Check if we already found this order
+                            const existingOrder = userOrders.find(o => o.orderId === orderId || o.id === orderId);
+                            if (existingOrder) {
+                                return; // Skip if already found
+                            }
+                            
+                            // Add order ID if missing
+                            if (!order.orderId) order.orderId = orderId;
+                            if (!order.id) order.id = orderId;
+                            
+                            console.log(`Found order in userOrders collection: ${orderId}`);
+                            userOrders.push(order);
+                        });
+                    }
+                    
+                    // Final check - did we find any orders?
+                    if (userOrders.length === 0) {
+                        console.log("NO ORDERS FOUND IN ANY LOCATION");
                         showEmptyOrders();
                         return;
                     }
                     
-                    // Process orders
-                    userOrders = [];
-                    snapshot.forEach(childSnapshot => {
-                        const order = childSnapshot.val();
-                        userOrders.push(order);
-                    });
+                    console.log(`FOUND TOTAL ${userOrders.length} ORDERS FOR USER`);
+                    console.log(userOrders);
                     
                     // Sort orders by date (newest first)
                     userOrders.sort((a, b) => {
-                        return new Date(b.createdAt) - new Date(a.createdAt);
+                        const dateA = a.createdAt || a.timestamp || 0;
+                        const dateB = b.createdAt || b.timestamp || 0;
+                        return new Date(dateB) - new Date(dateA);
                     });
+                    
+                    // Set up listeners for updates
+                    setupOrderListeners(userId);
                     
                     // Display orders
                     filterOrders();
                 })
                 .catch(error => {
                     console.error('Error loading orders:', error);
-                    showToast('Failed to load orders', 'error');
+                    ordersList.innerHTML = `
+                        <div style="text-align: center; padding: 30px; color: #666;">
+                            <i class="fa-solid fa-triangle-exclamation" style="font-size: 24px; margin-bottom: 10px; color: #E53E3E;"></i>
+                            <p>Failed to load orders: ${error.message}</p>
+                            <button class="retry-btn" onclick="retryLoadOrders()">Retry</button>
+                        </div>
+                    `;
                 });
         }
-
+        
         // Filter orders based on current filter
         function filterOrders() {
+            console.log(`Filtering ${userOrders.length} orders with filter: ${currentFilter}`);
             ordersList.innerHTML = '';
             
-            const filteredOrders = currentFilter === 'all' 
-                ? userOrders 
-                : userOrders.filter(order => order.status.toLowerCase() === currentFilter);
+            // Debug each order
+            userOrders.forEach(order => {
+                const statusDisplay = mapOrderStatus(order.status || 'pending');
+                console.log(`Order ${order.orderId} - Status: ${order.status}, Mapped to: ${statusDisplay}`);
+            });
+            
+            let filteredOrders = [];
+            
+            if (currentFilter === 'all') {
+                // Show all orders
+                filteredOrders = userOrders;
+            } else {
+                // Filter based on mapped status
+                filteredOrders = userOrders.filter(order => {
+                    const mappedStatus = mapOrderStatus(order.status || 'pending');
+                    return mappedStatus.toLowerCase() === currentFilter.toLowerCase();
+                });
+            }
+            
+            console.log(`After filtering: ${filteredOrders.length} orders match filter '${currentFilter}'`);
             
             if (filteredOrders.length === 0) {
                 // No orders match the filter
@@ -735,9 +1166,11 @@
         function createOrderElement(order) {
             const orderElement = document.createElement('div');
             orderElement.className = 'order-card';
+            // Add data-order-id attribute for easier reference when updating
+            orderElement.dataset.orderId = order.orderId || order.id;
             
             // Format date
-            const orderDate = new Date(order.createdAt);
+            const orderDate = new Date(order.createdAt || order.timestamp || Date.now());
             const formattedDate = orderDate.toLocaleDateString('en-US', {
                 year: 'numeric',
                 month: 'short',
@@ -746,6 +1179,18 @@
                 minute: '2-digit'
             });
             
+            // Map vendor statuses to user-friendly statuses
+            const status = mapOrderStatus(order.status || 'pending');
+            const statusClass = getStatusClass(status);
+            
+            // Use last status update time if available
+            let statusTimeText = '';
+            if (order.lastUpdated) {
+                const statusTime = new Date(order.lastUpdated);
+                const timeAgo = getTimeAgo(statusTime);
+                statusTimeText = `<small class="status-time">${timeAgo}</small>`;
+            }
+            
             // Create header
             const headerHTML = `
                 <div class="order-header">
@@ -753,15 +1198,21 @@
                         <p class="order-id">${order.orderId}</p>
                         <p class="order-date">${formattedDate}</p>
                     </div>
-                    <span class="order-status status-${order.status.toLowerCase()}">${order.status}</span>
+                    <span class="order-status ${statusClass}">
+                        ${status}
+                        ${statusTimeText}
+                    </span>
                 </div>
             `;
             
             // Create items section
             let itemsHTML = '<div class="order-items">';
             
+            // Make sure items is an array
+            const items = Array.isArray(order.items) ? order.items : [];
+            
             // Display up to 3 items
-            const itemsToShow = order.items.slice(0, 3);
+            const itemsToShow = items.slice(0, 3);
             itemsToShow.forEach(item => {
                 itemsHTML += `
                     <div class="order-item">
@@ -780,13 +1231,18 @@
             });
             
             // Show message if there are more items
-            if (order.items.length > 3) {
-                const remainingItems = order.items.length - 3;
+            if (items.length > 3) {
+                const remainingItems = items.length - 3;
                 itemsHTML += `
                     <div class="order-item" style="justify-content: center; color: #6B46C1;">
                         +${remainingItems} more item${remainingItems > 1 ? 's' : ''}
                     </div>
                 `;
+            }
+            
+            // If no items, show a message
+            if (items.length === 0) {
+                itemsHTML += `<div style="text-align: center; padding: 15px; color: #718096;">No items found</div>`;
             }
             
             itemsHTML += '</div>';
@@ -795,13 +1251,13 @@
             const footerHTML = `
                 <div class="order-footer">
                     <span class="order-total-label">Order Total</span>
-                    <span class="order-total-value">₹${formatPrice(order.total)}</span>
+                    <span class="order-total-value">₹${formatPrice(order.total || 0)}</span>
                 </div>
                 <div class="order-actions">
                     <button class="order-expand-btn" onclick="toggleOrderDetails(this)">
                         Order Details <i class="fa-solid fa-chevron-down"></i>
                     </button>
-                    ${order.status.toLowerCase() === 'delivered' ? `
+                    ${status.toLowerCase() === 'delivered' ? `
                         <button class="order-action-btn primary" onclick="reorderItems('${order.orderId}', this)">
                             <span class="btn-text">
                                 <i class="fa-solid fa-rotate"></i> Reorder
@@ -812,20 +1268,60 @@
                 </div>
             `;
             
+            // Create status history section if available
+            let statusHistoryHTML = '';
+            if (Array.isArray(order.statusHistory) && order.statusHistory.length > 0) {
+                statusHistoryHTML = `
+                    <div class="status-history" style="display: none;">
+                        <h4 style="margin: 15px 0 10px; font-size: 14px; color: #4A5568;">Status Updates</h4>
+                        <div class="status-timeline">
+                `;
+                
+                // Sort status updates by timestamp (newest first)
+                const sortedUpdates = [...order.statusHistory].sort((a, b) => 
+                    (b.timestamp || 0) - (a.timestamp || 0)
+                );
+                
+                // Add timeline items
+                sortedUpdates.forEach(update => {
+                    const updateTime = new Date(update.timestamp);
+                    const formattedTime = updateTime.toLocaleString();
+                    const statusText = mapOrderStatus(update.status);
+                    const statusClass = getStatusClass(statusText);
+                    
+                    statusHistoryHTML += `
+                        <div class="timeline-item">
+                            <div class="timeline-badge ${statusClass}"></div>
+                            <div class="timeline-content">
+                                <div class="timeline-header">
+                                    <span class="timeline-status">${statusText}</span>
+                                    <span class="timeline-time">${formattedTime}</span>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                statusHistoryHTML += `
+                        </div>
+                    </div>
+                `;
+            }
+            
             // Create hidden details section
             const detailsSection = `
                 <div class="order-details" style="display: none;">
                     <div class="order-detail-row">
                         <span class="order-detail-label">Subtotal</span>
-                        <span class="order-detail-value">₹${formatPrice(order.subtotal)}</span>
+                        <span class="order-detail-value">₹${formatPrice(order.subtotal || 0)}</span>
                     </div>
                     <div class="order-detail-row">
                         <span class="order-detail-label">Delivery Fee</span>
-                        <span class="order-detail-value">₹${formatPrice(order.deliveryFee)}</span>
+                        <span class="order-detail-value">₹${formatPrice(order.deliveryFee || 0)}</span>
                     </div>
                     <div class="order-detail-row">
                         <span class="order-detail-label">Platform Fee</span>
-                        <span class="order-detail-value">₹${formatPrice(order.platformFee)}</span>
+                        <span class="order-detail-value">₹${formatPrice(order.platformFee || 0)}</span>
                     </div>
                     ${order.discount && order.discount > 0 ? `
                         <div class="order-detail-row">
@@ -835,7 +1331,7 @@
                     ` : ''}
                     <div class="order-detail-row" style="margin-top: 8px; font-weight: 600;">
                         <span class="order-detail-label">Total</span>
-                        <span class="order-detail-value">₹${formatPrice(order.total)}</span>
+                        <span class="order-detail-value">₹${formatPrice(order.total || 0)}</span>
                     </div>
                     
                     <div class="order-delivery-info">
@@ -848,9 +1344,11 @@
                     <div class="order-delivery-info">
                         <div class="address-label">Payment Method:</div>
                         <div class="order-delivery-address">
-                            ${order.paymentMethod}
+                            ${order.paymentMethod || 'Not specified'}
                         </div>
                     </div>
+                    
+                    ${statusHistoryHTML}
                 </div>
             `;
             
@@ -864,12 +1362,19 @@
         function toggleOrderDetails(button) {
             const orderCard = button.closest('.order-card');
             const detailsSection = orderCard.querySelector('.order-details');
+            const statusHistory = orderCard.querySelector('.status-history');
             
             if (detailsSection.style.display === 'none') {
                 detailsSection.style.display = 'block';
+                if (statusHistory) {
+                    statusHistory.style.display = 'block';
+                }
                 orderCard.classList.add('expanded');
             } else {
                 detailsSection.style.display = 'none';
+                if (statusHistory) {
+                    statusHistory.style.display = 'none';
+                }
                 orderCard.classList.remove('expanded');
             }
         }
@@ -958,6 +1463,300 @@
             setTimeout(() => {
                 toastMessage.classList.remove('show');
             }, 3000);
+        }
+
+        // Retry loading orders
+        function retryLoadOrders() {
+            const user = auth.currentUser;
+            if (user) {
+                loadOrders(user.uid);
+            } else {
+                window.location.href = 'login.html';
+            }
+        }
+
+        // Map vendor statuses to user-friendly display statuses
+        function mapOrderStatus(status) {
+            status = (status || 'pending').toLowerCase();
+            
+            switch (status) {
+                case 'pending':
+                    return 'Pending';
+                case 'confirmed':
+                    return 'Confirmed';
+                case 'packed':
+                    return 'Packed';
+                case 'out-for-delivery':
+                case 'out for delivery':
+                    return 'Out for Delivery';
+                case 'delivered':
+                    return 'Delivered';
+                case 'cancelled':
+                case 'canceled':
+                    return 'Cancelled';
+                default:
+                    return 'Pending';
+            }
+        }
+        
+        // Get status class for visual styling
+        function getStatusClass(statusText) {
+            statusText = statusText.toLowerCase();
+            
+            switch (statusText) {
+                case 'pending':
+                    return 'status-pending';
+                case 'confirmed':
+                    return 'status-confirmed';
+                case 'packed':
+                    return 'status-packed';
+                case 'out for delivery':
+                case 'out-for-delivery':
+                    return 'status-shipping';
+                case 'delivered':
+                    return 'status-delivered';
+                case 'cancelled':
+                case 'canceled':
+                    return 'status-cancelled';
+                default:
+                    return 'status-pending';
+            }
+        }
+
+        // Save order to user collections for future reference
+        function saveOrderToUserCollection(userId, orderId, orderData) {
+            // Make a copy of the order data (to avoid reference issues)
+            const orderCopy = JSON.parse(JSON.stringify(orderData));
+            
+            // Make sure the order has the user ID
+            if (!orderCopy.userId) {
+                orderCopy.userId = userId;
+            }
+            
+            // Make sure the order has the order ID
+            if (!orderCopy.orderId) {
+                orderCopy.orderId = orderId;
+            }
+            
+            // Make sure order has items array
+            if (!orderCopy.items || !Array.isArray(orderCopy.items)) {
+                orderCopy.items = [];
+            }
+            
+            // Create update object for both user order locations
+            const updates = {};
+            updates[`users/${userId}/orders/${orderId}`] = orderCopy;
+            updates[`userOrders/${userId}/${orderId}`] = orderCopy;
+            
+            // Update the database
+            database.ref().update(updates)
+                .then(() => {
+                    console.log(`Successfully saved order ${orderId} to user ${userId}'s collections`);
+                })
+                .catch(error => {
+                    console.error('Error saving order to user collections:', error);
+                });
+        }
+        
+        // Set up listeners for order updates
+        function setupOrderListeners(userId) {
+            console.log("Setting up order update listeners");
+            
+            // Listen for updates in both user collections
+            database.ref(`users/${userId}/orders`).on('child_changed', snapshot => {
+                if (snapshot.exists()) {
+                    updateOrderInLocalArray(snapshot.val());
+                }
+            });
+            
+            database.ref(`userOrders/${userId}`).on('child_changed', snapshot => {
+                if (snapshot.exists()) {
+                    updateOrderInLocalArray(snapshot.val());
+                }
+            });
+            
+            // For each order we found in main collections, set up a real-time listener
+            userOrders.forEach(order => {
+                if (order.orderId) {
+                    // Listen to this specific order in the main collections
+                    database.ref(`orders/${order.orderId}`).on('value', snapshot => {
+                        if (snapshot.exists()) {
+                            const updatedOrder = snapshot.val();
+                            updatedOrder.orderId = order.orderId;
+                            
+                            // Update user's collections with the latest data
+                            saveOrderToUserCollection(userId, order.orderId, updatedOrder);
+                            
+                            // Also update in our local array
+                            updateOrderInLocalArray(updatedOrder);
+                        }
+                    });
+                    
+                    database.ref(`allOrders/${order.orderId}`).on('value', snapshot => {
+                        if (snapshot.exists()) {
+                            const updatedOrder = snapshot.val();
+                            updatedOrder.orderId = order.orderId;
+                            
+                            // Update user's collections with the latest data
+                            saveOrderToUserCollection(userId, order.orderId, updatedOrder);
+                            
+                            // Also update in our local array
+                            updateOrderInLocalArray(updatedOrder);
+                        }
+                    });
+                }
+            });
+        }
+        
+        // Update a specific order in the local array
+        function updateOrderInLocalArray(updatedOrder) {
+            if (!updatedOrder || !updatedOrder.orderId) {
+                console.warn("Tried to update order with missing orderId:", updatedOrder);
+                return;
+            }
+            
+            console.log(`Updating local order: ${updatedOrder.orderId} with status ${updatedOrder.status}`);
+            
+            // Find the order in our array
+            const index = userOrders.findIndex(o => o.orderId === updatedOrder.orderId);
+            
+            if (index !== -1) {
+                // Update the order
+                userOrders[index] = updatedOrder;
+                console.log(`Order ${updatedOrder.orderId} updated in local array`);
+            } else {
+                // If not found, add it
+                console.log(`Order ${updatedOrder.orderId} not found in local array, adding it`);
+                userOrders.push(updatedOrder);
+            }
+            
+            // Re-filter and display orders
+            filterOrders();
+            
+            // Show toast notification
+            showToast('Order updated', 'success');
+        }
+
+        // Calculate time ago
+        function getTimeAgo(date) {
+            const now = new Date();
+            const seconds = Math.floor((now - date) / 1000);
+            
+            let interval = Math.floor(seconds / 31536000);
+            if (interval >= 1) {
+                return interval === 1 ? '1 year ago' : `${interval} years ago`;
+            }
+            
+            interval = Math.floor(seconds / 2592000);
+            if (interval >= 1) {
+                return interval === 1 ? '1 month ago' : `${interval} months ago`;
+            }
+            
+            interval = Math.floor(seconds / 86400);
+            if (interval >= 1) {
+                return interval === 1 ? '1 day ago' : `${interval} days ago`;
+            }
+            
+            interval = Math.floor(seconds / 3600);
+            if (interval >= 1) {
+                return interval === 1 ? '1 hour ago' : `${interval} hours ago`;
+            }
+            
+            interval = Math.floor(seconds / 60);
+            if (interval >= 1) {
+                return interval === 1 ? '1 minute ago' : `${interval} minutes ago`;
+            }
+            
+            return seconds < 10 ? 'just now' : `${seconds} seconds ago`;
+        }
+
+        // Highlight updated order in the UI with animation
+        function highlightUpdatedOrder(orderId) {
+            // Find the order in our array
+            const updatedOrder = userOrders.find(o => o.orderId === orderId);
+            if (!updatedOrder) return;
+            
+            // Find the order card in the DOM
+            const orderCard = document.querySelector(`[data-order-id="${orderId}"]`);
+            if (orderCard) {
+                // Get status information
+                const statusElement = orderCard.querySelector('.order-status');
+                const statusText = statusElement ? statusElement.textContent.trim() : '';
+                
+                // Check what changed by comparing with previous status in status history
+                let changeMessage = 'Order updated';
+                let previousStatus = 'Pending';
+                
+                if (Array.isArray(updatedOrder.statusHistory) && updatedOrder.statusHistory.length >= 2) {
+                    // Get the previous status (index 1 since index 0 is current status)
+                    const prevStatus = updatedOrder.statusHistory[1];
+                    if (prevStatus && prevStatus.status) {
+                        previousStatus = mapOrderStatus(prevStatus.status);
+                        changeMessage = `Status changed from ${previousStatus} to ${statusText}`;
+                    }
+                }
+                
+                // Create notification element
+                const notification = document.createElement('div');
+                notification.className = 'status-update-notification';
+                
+                // Set icon based on status
+                let statusIcon = 'fa-circle-info';
+                if (statusText.toLowerCase() === 'confirmed') statusIcon = 'fa-check-circle';
+                if (statusText.toLowerCase() === 'packed') statusIcon = 'fa-box';
+                if (statusText.toLowerCase() === 'out for delivery') statusIcon = 'fa-truck';
+                if (statusText.toLowerCase() === 'delivered') statusIcon = 'fa-flag-checkered';
+                
+                notification.innerHTML = `
+                    <div class="status-update-notification-header">
+                        <div class="notification-icon">
+                            <i class="fas ${statusIcon}"></i>
+                        </div>
+                        <div class="notification-title">Status Update</div>
+                    </div>
+                    <div class="notification-message">${changeMessage}</div>
+                    <div class="status-badge">${statusText}</div>
+                `;
+                
+                // Remove existing notification if any
+                const existingNotification = orderCard.querySelector('.status-update-notification');
+                if (existingNotification) {
+                    existingNotification.remove();
+                }
+                
+                // Add notification to order card
+                orderCard.appendChild(notification);
+                
+                // Add highlight class for card animation
+                orderCard.classList.add('order-updated');
+                
+                // Remove class and notification after animation completes
+                setTimeout(() => {
+                    orderCard.classList.remove('order-updated');
+                    notification.classList.add('fade-out');
+                    setTimeout(() => {
+                        if (notification.parentNode === orderCard) {
+                            orderCard.removeChild(notification);
+                        }
+                    }, 500);
+                }, 5000);
+                
+                // Scroll to the updated order if not visible
+                if (!isElementInViewport(orderCard)) {
+                    orderCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }
+            }
+        }
+
+        // Check if element is in viewport
+        function isElementInViewport(el) {
+            const rect = el.getBoundingClientRect();
+            return (
+                rect.top >= 0 &&
+                rect.left >= 0 &&
+                rect.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+                rect.right <= (window.innerWidth || document.documentElement.clientWidth)
+            );
         }
     </script>
 </body>

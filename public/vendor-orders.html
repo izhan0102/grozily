@@ -421,6 +421,54 @@
             animation: slideIn 0.3s ease-out;
         }
 
+        /* Animation for new orders */
+        @keyframes highlightNew {
+            0% { background-color: rgba(128, 90, 213, 0.2); }
+            100% { background-color: white; }
+        }
+
+        .new-order {
+            animation: highlightNew 2s ease-out;
+            border-left: 4px solid #38A169 !important;
+        }
+
+        /* Animation for updated orders */
+        @keyframes highlightUpdate {
+            0% { background-color: rgba(128, 90, 213, 0.2); }
+            50% { background-color: rgba(128, 90, 213, 0.1); }
+            100% { background-color: white; }
+        }
+
+        .updated-order {
+            animation: highlightUpdate 2s ease-out;
+            border-left: 4px solid #3182CE !important;
+        }
+
+        /* Helper function styles */
+        .status-pending {
+            background-color: #718096;
+        }
+
+        .status-confirmed {
+            background-color: #3182CE;
+        }
+
+        .status-packed {
+            background-color: #805AD5;
+        }
+
+        .status-shipping {
+            background-color: #DD6B20;
+        }
+
+        .status-delivered {
+            background-color: #38A169;
+        }
+
+        .status-cancelled {
+            background-color: #E53E3E;
+        }
+
         /* Responsive Adjustments */
         @media (min-width: 768px) {
             .main-content {
@@ -730,14 +778,22 @@
                 });
         }
 
-        // Listen for new orders - expanded to check multiple fields
+        // Listen for new orders and status updates - expanded to check multiple fields
         function listenForNewOrders() {
             const vendorId = firebase.auth().currentUser.uid;
+            
+            // First listen to orders collection
             const ordersRef = firebase.database().ref('orders');
             
+            // Listen for new orders
             ordersRef.on('child_added', snapshot => {
                 const order = snapshot.val();
                 order.id = snapshot.key;
+                
+                // Store the key as orderId as well for consistency
+                if (!order.orderId) {
+                    order.orderId = snapshot.key;
+                }
                 
                 const existingOrder = document.querySelector(`[data-order-id="${order.id}"]`);
                 if (existingOrder) return;
@@ -777,6 +833,105 @@
                     const orderElement = createOrderElement(order);
                     orderElement.classList.add('new-order');
                     ordersList.insertBefore(orderElement, ordersList.firstChild);
+                    
+                    // Play notification sound and show toast
+                    showToast('New Order', 'You have received a new order!', 'success');
+                }
+            });
+            
+            // Listen for order changes/updates
+            ordersRef.on('child_changed', snapshot => {
+                const updatedOrder = snapshot.val();
+                updatedOrder.id = snapshot.key;
+                
+                // Store the key as orderId as well for consistency
+                if (!updatedOrder.orderId) {
+                    updatedOrder.orderId = snapshot.key;
+                }
+                
+                // Check if this order belongs to this vendor
+                let belongsToVendor = false;
+                
+                if (
+                    (updatedOrder.vendorId && updatedOrder.vendorId === vendorId) ||
+                    (updatedOrder.vendor && updatedOrder.vendor.id === vendorId) ||
+                    (updatedOrder.storeId && updatedOrder.storeId === vendorId) ||
+                    (updatedOrder.store && updatedOrder.store.id === vendorId)
+                ) {
+                    belongsToVendor = true;
+                } else if (updatedOrder.items) {
+                    // Check if any items in the order belong to this vendor
+                    const vendorItems = updatedOrder.items.filter(item => 
+                        item.vendorId === vendorId || 
+                        item.storeId === vendorId
+                    );
+                    
+                    if (vendorItems.length > 0) {
+                        // Update only the items for this vendor
+                        updatedOrder.items = vendorItems;
+                        belongsToVendor = true;
+                    }
+                }
+                
+                if (belongsToVendor) {
+                    // Find existing order element
+                    const existingOrder = document.querySelector(`[data-order-id="${updatedOrder.id}"]`);
+                    
+                    if (existingOrder) {
+                        // Get previous order status
+                        const previousStatus = existingOrder.querySelector('.order-status').textContent.trim();
+                        
+                        // Update the order in the UI
+                        const newOrderElement = createOrderElement(updatedOrder);
+                        existingOrder.parentNode.replaceChild(newOrderElement, existingOrder);
+                        
+                        // Highlight the updated order
+                        newOrderElement.classList.add('updated-order');
+                        setTimeout(() => {
+                            newOrderElement.classList.remove('updated-order');
+                        }, 3000);
+                        
+                        // Check if status changed and show toast
+                        const newStatus = updatedOrder.status || 'pending';
+                        if (previousStatus !== getStatusText(newStatus)) {
+                            showToast('Order Updated', `Order #${updatedOrder.id.substring(0, 8)} status changed to ${getStatusText(newStatus)}`, 'info');
+                        }
+                        
+                        // Update in localStorage if needed
+                        const storedOrder = JSON.parse(localStorage.getItem('selectedOrder') || '{}');
+                        if (storedOrder.id === updatedOrder.id) {
+                            localStorage.setItem('selectedOrder', JSON.stringify(updatedOrder));
+                        }
+                    }
+                }
+            });
+            
+            // Also listen to allOrders collection for changes
+            const allOrdersRef = firebase.database().ref('allOrders');
+            
+            // Similar listener for allOrders
+            allOrdersRef.on('child_changed', snapshot => {
+                const updatedOrder = snapshot.val();
+                updatedOrder.id = snapshot.key;
+                
+                // Check if this order is already displayed (if not, it's not relevant to this vendor)
+                const existingOrder = document.querySelector(`[data-order-id="${updatedOrder.id}"]`);
+                if (!existingOrder) return;
+                
+                // Update the order in the UI
+                const newOrderElement = createOrderElement(updatedOrder);
+                existingOrder.parentNode.replaceChild(newOrderElement, existingOrder);
+                
+                // Highlight the updated order
+                newOrderElement.classList.add('updated-order');
+                setTimeout(() => {
+                    newOrderElement.classList.remove('updated-order');
+                }, 3000);
+                
+                // Update in localStorage if needed
+                const storedOrder = JSON.parse(localStorage.getItem('selectedOrder') || '{}');
+                if (storedOrder.id === updatedOrder.id) {
+                    localStorage.setItem('selectedOrder', JSON.stringify(updatedOrder));
                 }
             });
         }
@@ -957,23 +1112,49 @@
 
         // Get status class for badge
         function getStatusClass(status) {
-            switch(status.toLowerCase()) {
-                case 'pending': return 'status-pending';
-                case 'processing': return 'status-processing';
-                case 'delivered': return 'status-delivered';
-                case 'cancelled': return 'status-cancelled';
-                default: return 'status-pending';
+            status = String(status).toLowerCase();
+            
+            switch (status) {
+                case 'pending':
+                    return 'status-pending';
+                case 'confirmed':
+                    return 'status-confirmed';
+                case 'packed':
+                    return 'status-packed';
+                case 'out-for-delivery':
+                case 'out for delivery':
+                    return 'status-shipping';
+                case 'delivered':
+                    return 'status-delivered';
+                case 'cancelled':
+                case 'canceled':
+                    return 'status-cancelled';
+                default:
+                    return 'status-pending';
             }
         }
 
         // Get status text
         function getStatusText(status) {
-            switch(status.toLowerCase()) {
-                case 'pending': return 'Pending';
-                case 'processing': return 'Processing';
-                case 'delivered': return 'Delivered';
-                case 'cancelled': return 'Cancelled';
-                default: return 'Pending';
+            status = String(status).toLowerCase();
+            
+            switch (status) {
+                case 'pending':
+                    return 'Pending';
+                case 'confirmed':
+                    return 'Confirmed';
+                case 'packed':
+                    return 'Packed';
+                case 'out-for-delivery':
+                case 'out for delivery':
+                    return 'Out for Delivery';
+                case 'delivered':
+                    return 'Delivered';
+                case 'cancelled':
+                case 'canceled':
+                    return 'Cancelled';
+                default:
+                    return 'Pending';
             }
         }
 
@@ -997,12 +1178,9 @@
             emptyOrders.style.display = 'block';
         }
 
-        // Format price with commas for thousands
+        // Format price with commas
         function formatPrice(price) {
-            const numPrice = parseFloat(price);
-            if (isNaN(numPrice)) return '0.00';
-            
-            return numPrice.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+            return parseFloat(price).toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
         }
     </script>
 </body>
