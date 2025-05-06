@@ -24,46 +24,139 @@
         document.addEventListener('DOMContentLoaded', function() {
             console.log("DOM loaded - preparing notification");
             
+            // Detect if user is on mobile
+            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            console.log("Device detection - Mobile:", isMobile);
+            
             // Function to show notification that will be called after permission check
             function showNotification() {
                 console.log("Attempting to show notification with permission:", Notification.permission);
                 
                 try {
-                    // Direct browser notification - simpler approach
-                    new Notification("Hi!", {
-                        body: "Welcome to Grozily!",
-                        icon: "images/logo.png",
-                        requireInteraction: false
-                    });
-                    console.log("Notification sent successfully");
+                    if (isMobile && 'serviceWorker' in navigator) {
+                        // Mobile approach with service worker
+                        console.log("Using service worker approach for mobile");
+                        
+                        // Create a simple service worker if it doesn't exist
+                        if (!navigator.serviceWorker.controller) {
+                            // Create a blob with minimal service worker code
+                            const swBlob = new Blob([
+                                `self.addEventListener('install', event => { self.skipWaiting(); });
+                                self.addEventListener('activate', event => { event.waitUntil(self.clients.claim()); });`
+                            ], {type: 'text/javascript'});
+                            
+                            // Register the service worker
+                            navigator.serviceWorker.register(URL.createObjectURL(swBlob))
+                                .then(reg => {
+                                    console.log("Service worker registered:", reg);
+                                    
+                                    // Show notification through service worker
+                                    reg.showNotification("Hi!", {
+                                        body: "Welcome to Grozily!",
+                                        icon: "images/logo.png",
+                                        requireInteraction: false,
+                                        vibrate: [100, 50, 100]
+                                    }).then(() => console.log("Mobile notification sent"))
+                                    .catch(err => console.error("Mobile notification error:", err));
+                                })
+                                .catch(err => {
+                                    console.error("Service worker registration failed:", err);
+                                    fallbackNotification();
+                                });
+                        } else {
+                            // Service worker already exists
+                            navigator.serviceWorker.ready.then(reg => {
+                                reg.showNotification("Hi!", {
+                                    body: "Welcome to Grozily!",
+                                    icon: "images/logo.png",
+                                    requireInteraction: false,
+                                    vibrate: [100, 50, 100]
+                                }).then(() => console.log("Mobile notification sent"))
+                                .catch(err => console.error("Mobile notification error:", err));
+                            });
+                        }
+                    } else {
+                        // Desktop approach
+                        new Notification("Hi!", {
+                            body: "Welcome to Grozily!",
+                            icon: "images/logo.png",
+                            requireInteraction: false
+                        });
+                        console.log("Desktop notification sent successfully");
+                    }
                 } catch(error) {
                     console.error("Error showing notification:", error);
-                    
-                    // Try with NotificationHandler as fallback
-                    if (window.NotificationHandler) {
-                        console.log("Trying NotificationHandler as fallback");
-                        NotificationHandler.sendNotification("Hi!", {
-                            body: "Welcome to Grozily!",
-                            icon: "images/logo.png"
-                        });
-                    }
+                    fallbackNotification();
                 }
             }
             
-            // Check notification permission status and request if needed
-            if (Notification.permission === "granted") {
-                console.log("Permission already granted");
-                // Set a timeout to ensure everything is loaded
-                setTimeout(showNotification, 3000);
-            } 
-            else if (Notification.permission !== "denied") {
-                console.log("Requesting notification permission");
-                Notification.requestPermission().then(function(permission) {
-                    console.log("Permission response:", permission);
-                    if (permission === "granted") {
-                        setTimeout(showNotification, 1000);
+            // Fallback to NotificationHandler system
+            function fallbackNotification() {
+                if (window.NotificationHandler) {
+                    console.log("Trying NotificationHandler as fallback");
+                    NotificationHandler.sendNotification("Hi!", {
+                        body: "Welcome to Grozily!",
+                        icon: "images/logo.png"
+                    });
+                }
+            }
+            
+            // Mobile devices often require user interaction before showing notifications
+            if (isMobile) {
+                console.log("Mobile device detected - adding notification button");
+                
+                // Create a small button to trigger notification with user interaction
+                const notifyBtn = document.createElement('button');
+                notifyBtn.textContent = "Show Welcome Message";
+                notifyBtn.style.position = "fixed";
+                notifyBtn.style.bottom = "120px";
+                notifyBtn.style.right = "10px";
+                notifyBtn.style.zIndex = "1000";
+                notifyBtn.style.backgroundColor = "#6B46C1";
+                notifyBtn.style.color = "white";
+                notifyBtn.style.border = "none";
+                notifyBtn.style.borderRadius = "20px";
+                notifyBtn.style.padding = "8px 16px";
+                notifyBtn.style.boxShadow = "0 2px 5px rgba(0,0,0,0.2)";
+                notifyBtn.style.fontSize = "14px";
+                
+                // Add listener
+                notifyBtn.addEventListener('click', function() {
+                    console.log("Notification button clicked");
+                    this.remove(); // Remove the button after click
+                    
+                    // Request permission and show notification
+                    if (Notification.permission === "granted") {
+                        showNotification();
+                    } else {
+                        Notification.requestPermission().then(permission => {
+                            console.log("Permission response:", permission);
+                            if (permission === "granted") {
+                                showNotification();
+                            }
+                        });
                     }
                 });
+                
+                // Add to body after a delay to ensure DOM is ready
+                setTimeout(() => document.body.appendChild(notifyBtn), 1000);
+            } 
+            else {
+                // Desktop - check permission and show notification automatically
+                if (Notification.permission === "granted") {
+                    console.log("Permission already granted");
+                    // Set a timeout to ensure everything is loaded
+                    setTimeout(showNotification, 3000);
+                } 
+                else if (Notification.permission !== "denied") {
+                    console.log("Requesting notification permission");
+                    Notification.requestPermission().then(function(permission) {
+                        console.log("Permission response:", permission);
+                        if (permission === "granted") {
+                            setTimeout(showNotification, 1000);
+                        }
+                    });
+                }
             }
         });
     </script>
