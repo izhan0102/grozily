@@ -19,6 +19,54 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
     <!-- Notification System -->
     <script src="js/notifications.js"></script>
+    <script>
+        // Send welcome notification when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log("DOM loaded - preparing notification");
+            
+            // Function to show notification that will be called after permission check
+            function showNotification() {
+                console.log("Attempting to show notification with permission:", Notification.permission);
+                
+                try {
+                    // Direct browser notification - simpler approach
+                    new Notification("Hi!", {
+                        body: "Welcome to Grozily!",
+                        icon: "images/logo.png",
+                        requireInteraction: false
+                    });
+                    console.log("Notification sent successfully");
+                } catch(error) {
+                    console.error("Error showing notification:", error);
+                    
+                    // Try with NotificationHandler as fallback
+                    if (window.NotificationHandler) {
+                        console.log("Trying NotificationHandler as fallback");
+                        NotificationHandler.sendNotification("Hi!", {
+                            body: "Welcome to Grozily!",
+                            icon: "images/logo.png"
+                        });
+                    }
+                }
+            }
+            
+            // Check notification permission status and request if needed
+            if (Notification.permission === "granted") {
+                console.log("Permission already granted");
+                // Set a timeout to ensure everything is loaded
+                setTimeout(showNotification, 3000);
+            } 
+            else if (Notification.permission !== "denied") {
+                console.log("Requesting notification permission");
+                Notification.requestPermission().then(function(permission) {
+                    console.log("Permission response:", permission);
+                    if (permission === "granted") {
+                        setTimeout(showNotification, 1000);
+                    }
+                });
+            }
+        });
+    </script>
 </head>
 <body onload="window.scrollTo(0, 0);" id="top">
     <a id="top-anchor"></a>
